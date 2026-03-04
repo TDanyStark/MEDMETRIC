@@ -5,3 +5,7 @@
 /logs/*
 !/logs/README.md
 .phpunit.result.cache
+
+# Storage: ignore uploaded files but keep folder structure
+/storage/materials/*
+!/storage/materials/.gitkeep

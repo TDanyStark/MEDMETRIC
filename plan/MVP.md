@@ -20,7 +20,7 @@ Decisiones cerradas para MVP:
 
 ---
 
-## Fase 0 - Preparacion y estructura base
+## [x] Fase 0 - Preparacion y estructura base
 
 ### Objetivo
 
