@@ -126,6 +126,8 @@ El administrador debe poder crear y gestionar estas estructuras.
 - Modulo de contenido (carga, aprobacion, biblioteca)
 - Vista de reproduccion/lectura para visita medica
 - Vista publica de medico optimizada para acceso inmediato
+- Usa librerias para todo, para evitar crear cosas de 0, no reinventes la rueda, por ejemplo para querys, puedes usar tanckstack query, y asi para todo.
+- importante que siempre pienses en la mejor UX, que sea facil de manejar, que requiera de pocos clics hacer cosas
 
 ### Base de Datos (MySQL)
 
@@ -181,5 +183,5 @@ Entidades sugeridas para el arranque:
 
 ## Buenas practicas
 
-1. No repitas codigo, si ves que algo se puede repetir crea los metodos o funciones o componentes en un lugar
-2. Siempre ten en cuenta esos lugares de funciones, metodos y componentes, para que busques si ya existe algo que te pueda servir y no repetir codigo
+1. No repitas codigo, si ves que algo se puede repetir crea los metodos o funciones o componentes en un lugar especifico donde sea facil de compartir
+2. Siempre ten en cuenta esos lugares de funciones, metodos y componentes, para que cuando estes implementando un feature o un ajuste busques si ya existe algo que te pueda servir y no repetir codigo
