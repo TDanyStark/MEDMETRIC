@@ -62,15 +62,16 @@ El administrador debe poder crear y gestionar estas estructuras.
 - Pertenece a una organizacion
 - Crea y gestiona marcas
 - Crea y gestiona materiales (PDF, video, link externo)
-- Crea y gestiona visitadores medicos de su alcance
+- Gestiona la suscripcion de visitadores medicos de su organizacion a su contenido
 - Publica o solicita aprobacion de contenido segun flujo definido
 
 ### 3) Visitador Medico
 
-- Pertenece a una organizacion y responde a un gerente
-- Accede a materiales aprobados/publicados
+- Pertenece a una organizacion
+- Puede estar suscrito a uno o varios gerentes para acceder a su contenido
+- Accede a materiales aprobados/publicados de sus gerentes suscritos
 - Usa el contenido durante la visita medica
-- Genera sesiones/links para que el medico vea el contenido
+- Crea sesiones seleccionando materiales especificos y genera links para el medico
 
 ### 4) Medico (sin login)
 
@@ -134,12 +135,12 @@ Entidades sugeridas para el arranque:
 - brands
 - users
 - roles
-- user_organization_rel
+- rep_manager_access (suscripciones)
 - materials
-- material_approvals
 - visit_sessions
+- visit_session_materials (materiales por sesion)
+- material_views
 - material_events
-- external_link_events
 
 ## Seguridad y Cumplimiento
 

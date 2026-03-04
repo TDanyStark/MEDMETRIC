@@ -46,7 +46,7 @@ Dejar una base estable para implementar por modulos sin deuda estructural.
 
 ---
 
-## Fase 1 - Modelo de datos (MySQL)
+## [x] Fase 1 - Modelo de datos (MySQL)
 
 ### Objetivo
 
@@ -59,9 +59,11 @@ Crear el esquema minimo para multi-organizacion, materiales, sesiones y metricas
 3. `users`
 4. `brands`
 5. `materials`
-6. `visit_sessions`
-7. `material_views`
-8. `material_events` (opcional MVP temprano, recomendado)
+6. `rep_manager_access` (suscripcion rep -> gerente)
+7. `visit_sessions`
+8. `visit_session_materials` (materiales elegidos para la sesion)
+9. `material_views`
+10. `material_events` (opcional MVP temprano, recomendado)
 
 ### Campos clave
 
@@ -131,7 +133,7 @@ Permitir al administrador crear y gestionar estructura organizacional.
 
 - Admin puede crear gerentes y visitadores
 - Usuario siempre pertenece a una organizacion
-- Gerente puede estar asociado a multiples visitadores
+- Un visitador puede estar suscrito a multiples gerentes
 
 ### Resultado esperado
 
@@ -189,8 +191,8 @@ Permitir al visitador usar material aprobado y generar acceso para medico.
 
 ### Reglas
 
-- Visitador solo ve materiales aprobados de su organizacion
-- Al crear sesion, se genera `doctor_token` para compartir
+- Visitador solo ve materiales aprobados de sus gerentes suscritos
+- Al crear sesion, se seleccionan materiales especificos y se genera `doctor_token`
 - Token medico no expira en MVP
 
 ### Resultado esperado
