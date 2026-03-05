@@ -75,11 +75,6 @@ class GetMaterialResourceAction extends Action
             }
         }
 
-        // Track view if view_id is provided (from previous open call)
-        if (!empty($queryParams['view_id'])) {
-            $this->trackAccess((int) $queryParams['view_id'], $materialId, $queryParams);
-        }
-
         $type = $material->getType();
 
         return match ($type) {
@@ -151,18 +146,7 @@ class GetMaterialResourceAction extends Action
             ], 404);
         }
 
-        // Track outbound click if view_id provided
-        if (!empty($queryParams['view_id'])) {
-            $this->materialViewRepository->recordEvent(
-                (int) $queryParams['view_id'],
-                $material->getId(),
-                'outbound_click',
-                $externalUrl
-            );
-        }
-
-        // For links, we can either redirect or return the URL
-        // In MVP we return the URL and let frontend handle it
+        // For links, we return the URL and let frontend handle it
         return $this->respondWithData([
             'type'         => 'link',
             'url'          => $externalUrl,
@@ -188,24 +172,5 @@ class GetMaterialResourceAction extends Action
         }
 
         return null;
-    }
-
-    private function trackAccess(int $viewId, int $materialId, array $queryParams): void
-    {
-        // Record progress if provided
-        if (!empty($queryParams['progress'])) {
-            $this->materialViewRepository->recordEvent(
-                $viewId,
-                $materialId,
-                'progress',
-                $queryParams['progress']
-            );
-        }
-
-        $this->logger->info('Material resource accessed', [
-            'view_id'     => $viewId,
-            'material_id' => $materialId,
-            'progress'    => $queryParams['progress'] ?? null,
-        ]);
     }
 }

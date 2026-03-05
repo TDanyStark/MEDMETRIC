@@ -107,10 +107,6 @@ Puede haber múltiples administradores por organización.
 - Organizacion, gerente, visitador, marca y material
 - Tipo de material (pdf/video/link)
 - Timestamp de inicio
-- Eventos:
-  - apertura de material
-  - porcentaje visto (video/pdf)
-  - clics salientes (enlaces externos)
 - Datos tecnicos basicos:
   - user-agent
   - ip (si politica lo permite)
@@ -156,7 +152,6 @@ Entidades sugeridas para el arranque:
 - visit_sessions
 - visit_session_materials (materiales por sesion)
 - material_views
-- material_events
 
 Nota: Los usuarios con rol `org_admin` se asocian a una organización mediante `users.organization_id`.
 

@@ -39,23 +39,6 @@ class DbMaterialViewRepository implements MaterialViewRepositoryInterface
         return (int) $this->pdo->lastInsertId();
     }
 
-    public function recordEvent(int $viewId, int $materialId, string $eventType, ?string $eventValue = null): void
-    {
-        $stmt = $this->pdo->prepare(
-            'INSERT INTO material_events 
-             (material_view_id, material_id, event_type, event_value, occurred_at) 
-             VALUES 
-             (:material_view_id, :material_id, :event_type, :event_value, NOW())'
-        );
-
-        $stmt->execute([
-            ':material_view_id' => $viewId,
-            ':material_id'      => $materialId,
-            ':event_type'       => $eventType,
-            ':event_value'      => $eventValue,
-        ]);
-    }
-
     public function findById(int $id): ?array
     {
         $stmt = $this->pdo->prepare(
@@ -132,39 +115,6 @@ class DbMaterialViewRepository implements MaterialViewRepositoryInterface
             'page'      => $page,
             'per_page'  => $pageSize,
             'last_page' => (int) ceil($total / $pageSize),
-        ];
-    }
-
-    public function getMaterialStats(int $materialId): array
-    {
-        // Total views by type
-        $viewsStmt = $this->pdo->prepare(
-            'SELECT viewer_type, COUNT(*) as count
-             FROM material_views
-             WHERE material_id = :material_id
-             GROUP BY viewer_type'
-        );
-        $viewsStmt->execute([':material_id' => $materialId]);
-        $viewsByType = $viewsStmt->fetchAll(PDO::FETCH_KEY_PAIR);
-
-        // Total events by type
-        $eventsStmt = $this->pdo->prepare(
-            'SELECT me.event_type, COUNT(*) as count
-             FROM material_events me
-             JOIN material_views mv ON me.material_view_id = mv.id
-             WHERE mv.material_id = :material_id
-             GROUP BY me.event_type'
-        );
-        $eventsStmt->execute([':material_id' => $materialId]);
-        $eventsByType = $eventsStmt->fetchAll(PDO::FETCH_KEY_PAIR);
-
-        return [
-            'views_by_type'  => [
-                'rep'    => (int) ($viewsByType['rep'] ?? 0),
-                'doctor' => (int) ($viewsByType['doctor'] ?? 0),
-            ],
-            'total_views'    => array_sum($viewsByType),
-            'events_by_type' => $eventsByType,
         ];
     }
 }

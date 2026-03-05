@@ -64,7 +64,6 @@ Crear el esquema minimo para multi-organizacion, materiales, sesiones y metricas
 8. `visit_sessions`
 9. `visit_session_materials` (materiales elegidos para la sesion)
 10. `material_views`
-11. `material_events` (opcional MVP temprano, recomendado)
 
 ### Campos clave
 

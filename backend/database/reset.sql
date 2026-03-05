@@ -3,7 +3,6 @@
 
 SET FOREIGN_KEY_CHECKS = 0;
 
-DROP TABLE IF EXISTS `material_events`;
 DROP TABLE IF EXISTS `material_views`;
 DROP TABLE IF EXISTS `visit_session_materials`;
 DROP TABLE IF EXISTS `visit_sessions`;

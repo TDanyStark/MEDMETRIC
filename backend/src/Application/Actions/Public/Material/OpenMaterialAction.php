@@ -89,9 +89,6 @@ class OpenMaterialAction extends Action
 
         $viewId = $this->materialViewRepository->createView($viewData);
 
-        // Record open event
-        $this->materialViewRepository->recordEvent($viewId, $materialId, 'open');
-
         $this->logger->info('Material opened', [
             'view_id'      => $viewId,
             'material_id'  => $materialId,
