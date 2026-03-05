@@ -1,5 +1,6 @@
-import { NavLink, useNavigate } from 'react-router-dom'
-import { Building2, Users, LogOut, LayoutDashboard, LucideIcon } from 'lucide-react'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { Building2, Users, LogOut, LayoutDashboard, LucideIcon, X } from 'lucide-react'
+import { useEffect } from 'react'
 import { useAuth } from '@/contexts/useAuth'
 import { cn, getInitials } from '@/lib/utils'
 import { Role } from '@/types'
@@ -9,6 +10,11 @@ interface NavItemData {
   label: string;
   icon: LucideIcon;
   end?: boolean;
+}
+
+interface SidebarProps {
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 const NAV_ITEMS: Record<Role, NavItemData[]> = {
@@ -39,11 +45,17 @@ function NavItem({ to, label, icon: Icon, end }: NavItemData) {
   )
 }
 
-export function Sidebar() {
+export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
 
   const items = user ? (NAV_ITEMS[user.role] ?? []) : []
+
+  // Close mobile drawer when route changes.
+  useEffect(() => {
+    onClose()
+  }, [location.pathname, onClose])
 
   const handleLogout = () => {
     logout()
@@ -51,41 +63,72 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="flex h-full w-64 flex-col border-r border-slate-200 bg-white shadow-sm">
-      {/* Logo */}
-      <div className="flex items-center gap-3 border-b border-slate-100 px-6 py-6">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-600 shadow-sm">
-          <span className="text-sm font-bold text-white">M</span>
-        </div>
-        <span className="text-lg font-bold text-slate-900 tracking-tight">MedMetric</span>
-      </div>
+    <>
+      {/* Mobile backdrop */}
+      <button
+        type="button"
+        aria-label="Cerrar menu"
+        onClick={onClose}
+        className={cn(
+          'fixed inset-0 z-40 bg-slate-900/40 transition-opacity md:hidden',
+          isOpen ? 'opacity-100' : 'pointer-events-none opacity-0',
+        )}
+      />
 
-      {/* Nav */}
-      <nav className="flex-1 px-4 py-6 space-y-1">
-        {items.map(item => (
-          <NavItem key={item.to} {...item} />
-        ))}
-      </nav>
+      <aside
+        className={cn(
+          'fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-slate-200 bg-white shadow-sm transition-transform duration-300',
+          isOpen ? 'translate-x-0' : '-translate-x-full',
+          'md:static md:h-full md:translate-x-0',
+        )}
+      >
+        {/* Logo */}
+        <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-6 py-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-600 shadow-sm">
+              <span className="text-sm font-bold text-white">M</span>
+            </div>
+            <span className="text-lg font-bold tracking-tight text-slate-900">MedMetric</span>
+          </div>
 
-      {/* User footer */}
-      <div className="border-t border-slate-100 px-4 py-4 bg-slate-50/50">
-        <div className="flex items-center gap-3 rounded-xl px-3 py-2.5">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-teal-100 text-sm font-bold text-teal-700">
-            {getInitials(user?.name)}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="truncate text-sm font-semibold text-slate-900 leading-tight">{user?.name}</p>
-            <p className="truncate text-xs text-slate-500 font-medium capitalize mt-0.5">{user?.role}</p>
-          </div>
           <button
-            onClick={handleLogout}
-            title="Cerrar sesión"
-            className="rounded-lg p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all"
+            type="button"
+            onClick={onClose}
+            className="rounded-lg p-2 text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-700 md:hidden"
+            title="Cerrar menu"
+            aria-label="Cerrar menu"
           >
-            <LogOut className="h-4 w-4" />
+            <X className="h-5 w-5" />
           </button>
         </div>
-      </div>
-    </aside>
+
+        {/* Nav */}
+        <nav className="flex-1 space-y-1 px-4 py-6">
+          {items.map(item => (
+            <NavItem key={item.to} {...item} />
+          ))}
+        </nav>
+
+        {/* User footer */}
+        <div className="border-t border-slate-100 bg-slate-50/50 px-4 py-4">
+          <div className="flex items-center gap-3 rounded-xl px-3 py-2.5">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-teal-100 text-sm font-bold text-teal-700">
+              {getInitials(user?.name)}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold leading-tight text-slate-900">{user?.name}</p>
+              <p className="mt-0.5 truncate text-xs font-medium capitalize text-slate-500">{user?.role}</p>
+            </div>
+            <button
+              onClick={handleLogout}
+              title="Cerrar sesión"
+              className="rounded-lg p-2 text-slate-400 transition-all hover:bg-red-50 hover:text-red-600"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      </aside>
+    </>
   )
 }
