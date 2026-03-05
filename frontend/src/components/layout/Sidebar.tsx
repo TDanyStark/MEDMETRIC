@@ -78,7 +78,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         </div>
 
         {blueprint && (
-          <div className="mt-5 rounded-[24px] border border-border/80 bg-background/85 p-4">
+          <div className="mt-5 rounded-3xl border border-border/80 bg-background/85 p-4">
             <p className="text-[0.7rem] uppercase tracking-[0.22em] text-muted-foreground">{blueprint.eyebrow}</p>
             <h2 className="mt-2 font-display text-xl text-foreground">{blueprint.label}</h2>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">{blueprint.deck}</p>
@@ -126,12 +126,12 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   return (
     <>
-      <aside className="hidden h-screen w-[22rem] shrink-0 border-r border-border/60 bg-sidebar/55 md:block">
+      <aside className="hidden h-screen w-88 shrink-0 border-r border-border/60 bg-sidebar/55 md:block">
         {content}
       </aside>
 
       <Sheet open={isOpen} onOpenChange={open => (!open ? onClose() : undefined)}>
-        <SheetContent side="left" className="w-[22rem] border-r border-border/60 bg-sidebar p-0">
+        <SheetContent side="left" className="w-88 border-r border-border/60 bg-sidebar p-0">
           <div className="flex items-center justify-end border-b border-border/70 px-4 py-3">
             <button
               type="button"
