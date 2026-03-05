@@ -358,7 +358,7 @@ export default function UsersPage() {
         <select
           value={role}
           onChange={e => updateFilters({ role: e.target.value })}
-          className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition-all shadow-sm min-w-[140px]"
+          className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition-all shadow-sm min-w-35"
         >
           <option value="">Todos los roles</option>
           {roles.map(r => (
@@ -369,7 +369,7 @@ export default function UsersPage() {
         <select
           value={organizationId}
           onChange={e => updateFilters({ organization_id: e.target.value })}
-          className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition-all shadow-sm min-w-[200px]"
+          className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition-all shadow-sm min-w-50"
         >
           <option value="">Todas las organizaciones</option>
           {organizations.map(o => (

@@ -1,4 +1,4 @@
-import { useState, useCallback, ReactNode } from 'react'
+import { useState, useCallback, ReactNode, useMemo } from 'react'
 import api from '../services/api'
 import { AuthContext } from './AuthContextValue'
 import { ApiResponse, User } from '../types'
@@ -39,8 +39,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setUser(null)
   }, [])
 
+  const value = useMemo(() => {
+    return { user, login, logout }
+  }, [user])
+
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   )
