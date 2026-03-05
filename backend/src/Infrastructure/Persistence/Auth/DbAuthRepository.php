@@ -10,21 +10,26 @@ use PDO;
 
 class DbAuthRepository implements AuthRepositoryInterface
 {
+    private PDO $pdo;
+
+    public function __construct()
+    {
+        $this->pdo = Connection::getConnection();
+    }
+
     /**
      * Find a user by email joining the roles table to get the role name.
      * Returns the full row (including password_hash) or null.
      */
     public function findByEmail(string $email): ?array
     {
-        $pdo = Connection::getConnection();
-
-        $stmt = $pdo->prepare(
+        $stmt = $this->pdo->prepare(
             'SELECT u.id, u.email, u.name, u.password_hash, u.active, u.organization_id,
                     r.name AS role
-             FROM   users u
-             JOIN   roles r ON r.id = u.role_id
-             WHERE  u.email = :email
-             LIMIT  1'
+            FROM   users u
+            JOIN   roles r ON r.id = u.role_id
+            WHERE  u.email = :email
+            LIMIT  1'
         );
 
         $stmt->execute([':email' => $email]);
@@ -38,9 +43,7 @@ class DbAuthRepository implements AuthRepositoryInterface
      */
     public function updateLastLogin(int $userId): void
     {
-        $pdo = Connection::getConnection();
-
-        $stmt = $pdo->prepare(
+        $stmt = $this->pdo->prepare(
             'UPDATE users SET last_login_at = NOW() WHERE id = :id'
         );
 
