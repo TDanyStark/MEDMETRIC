@@ -1,7 +1,14 @@
+import { ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/useAuth'
+import { Role } from '../../types'
 
-export function ProtectedRoute({ children, roles }) {
+interface ProtectedRouteProps {
+  children: ReactNode;
+  roles?: Role[];
+}
+
+export function ProtectedRoute({ children, roles }: ProtectedRouteProps) {
   const { user } = useAuth()
   const location = useLocation()
 
@@ -15,5 +22,5 @@ export function ProtectedRoute({ children, roles }) {
     return <Navigate to={home} replace />
   }
 
-  return children
+  return <>{children}</>
 }

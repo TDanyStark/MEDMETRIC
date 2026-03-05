@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, FormEvent } from 'react'
 import { Plus, Pencil, Users, Search, Link2 } from 'lucide-react'
 import {
   useAdminUsers,
@@ -17,29 +17,47 @@ import { Modal } from '../../components/ui/Modal'
 import { Table, Thead, Th, Tbody, Tr, Td } from '../../components/ui/Table'
 import { useToast } from '../../components/ui/useToast'
 import { formatDateTime, getInitials } from '../../lib/utils'
+import { Role, User, Organization } from '../../types'
 
-const ROLE_BADGE = {
+const ROLE_BADGE: Record<string, any> = {
   admin:   'admin',
   manager: 'manager',
   rep:     'rep',
 }
 
-const ROLE_LABEL = {
+const ROLE_LABEL: Record<string, string> = {
   admin:   'Administrador',
   manager: 'Gerente',
   rep:     'Visitador',
 }
 
-const EMPTY_FORM = {
+interface UserFormData {
+  name: string;
+  email: string;
+  password?: string;
+  organization_id: string;
+  role_id: string;
+  active: boolean;
+}
+
+const EMPTY_FORM: UserFormData = {
   name: '', email: '', password: '',
   organization_id: '', role_id: '', active: true,
 }
 
-function UserForm({ initial, onSubmit, loading, organizations, roles }) {
-  const [form, setForm]     = useState(initial ?? EMPTY_FORM)
-  const [errors, setErrors] = useState({})
+interface UserFormProps {
+  initial?: UserFormData;
+  onSubmit: (data: UserFormData) => void;
+  loading: boolean;
+  organizations?: Organization[];
+  roles?: { id: number; name: string }[];
+}
 
-  const set = (field, value) => {
+function UserForm({ initial, onSubmit, loading, organizations, roles }: UserFormProps) {
+  const [form, setForm]     = useState<UserFormData>(initial ?? EMPTY_FORM)
+  const [errors, setErrors] = useState<Record<string, string>>({})
+
+  const set = (field: keyof UserFormData, value: string | boolean) => {
     setForm(prev => ({ ...prev, [field]: value }))
     if (errors[field]) setErrors(prev => ({ ...prev, [field]: '' }))
   }
@@ -47,7 +65,7 @@ function UserForm({ initial, onSubmit, loading, organizations, roles }) {
   const isEditing = !!initial
 
   const validate = () => {
-    const e = {}
+    const e: Record<string, string> = {}
     if (!form.name.trim())            e.name            = 'El nombre es requerido.'
     if (!form.email.trim())           e.email           = 'El correo es requerido.'
     if (!isEditing && !form.password) e.password        = 'La contraseña es requerida.'
@@ -59,7 +77,7 @@ function UserForm({ initial, onSubmit, loading, organizations, roles }) {
     return Object.keys(e).length === 0
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
     if (!validate()) return
     // Don't send empty password on edit
@@ -138,22 +156,26 @@ function UserForm({ initial, onSubmit, loading, organizations, roles }) {
   )
 }
 
-function SubscriptionsModal({ rep, open, onClose }) {
+interface SubscriptionsModalProps {
+  rep: User | null;
+  open: boolean;
+  onClose: () => void;
+}
+
+function SubscriptionsModal({ rep, open, onClose }: SubscriptionsModalProps) {
   const toast    = useToast()
   const { data: subs } = useRepSubscriptions(rep?.id, { enabled: open })
   const { data: users } = useAdminUsers({ organization_id: rep?.organization_id, role: 'manager' })
   const updateMutation  = useUpdateRepSubscriptions()
 
+  const [selected, setSelected] = useState<number[] | null>(null)
+
   if (!rep) return null
 
   const managers     = users ?? []
   const activeSubs   = (subs ?? []).filter(s => s.active).map(s => s.manager_id)
-  const [selected, setSelected] = useState(null)
 
-  // Initialize selected on open
-  const currentSelected = selected ?? activeSubs
-
-  const toggle = (managerId) => {
+  const toggle = (managerId: number) => {
     const curr = selected ?? activeSubs
     setSelected(
       curr.includes(managerId)
@@ -166,8 +188,9 @@ function SubscriptionsModal({ rep, open, onClose }) {
     try {
       await updateMutation.mutateAsync({ repId: rep.id, managerIds: selected ?? activeSubs })
       toast({ message: 'Suscripciones actualizadas.' })
+      setSelected(null)
       onClose()
-    } catch (err) {
+    } catch (err: any) {
       toast({ message: err.message, type: 'error' })
     }
   }
@@ -220,8 +243,8 @@ export default function UsersPage() {
   const [orgFilter, setOrgFilter]     = useState('')
   const [search, setSearch]           = useState('')
   const [creating, setCreating]       = useState(false)
-  const [editing, setEditing]         = useState(null)
-  const [managingSubs, setManagingSubs] = useState(null) // rep user
+  const [editing, setEditing]         = useState<User | null>(null)
+  const [managingSubs, setManagingSubs] = useState<User | null>(null)
 
   const { data: users, isLoading, error } = useAdminUsers({
     role:            roleFilter || undefined,
@@ -237,22 +260,32 @@ export default function UsersPage() {
     u.email.toLowerCase().includes(search.toLowerCase()),
   )
 
-  const handleCreate = async (form) => {
+  const handleCreate = async (form: UserFormData) => {
     try {
-      await createMutation.mutateAsync(form)
+      await createMutation.mutateAsync({
+        ...form,
+        organization_id: Number(form.organization_id),
+        role_id: Number(form.role_id),
+      })
       setCreating(false)
       toast({ message: 'Usuario creado exitosamente.' })
-    } catch (err) {
+    } catch (err: any) {
       toast({ message: err.message, type: 'error' })
     }
   }
 
-  const handleUpdate = async (form) => {
+  const handleUpdate = async (form: UserFormData) => {
+    if (!editing) return
     try {
-      await updateMutation.mutateAsync({ id: editing.id, ...form })
+      await updateMutation.mutateAsync({
+        id: editing.id,
+        ...form,
+        organization_id: Number(form.organization_id),
+        role_id: Number(form.role_id),
+      })
       setEditing(null)
       toast({ message: 'Usuario actualizado exitosamente.' })
-    } catch (err) {
+    } catch (err: any) {
       toast({ message: err.message, type: 'error' })
     }
   }
@@ -328,14 +361,14 @@ export default function UsersPage() {
         ) : (
           <Table>
             <Thead>
-              <tr>
+              <Tr>
                 <Th>Usuario</Th>
                 <Th>Rol</Th>
                 <Th>Organización</Th>
                 <Th>Último acceso</Th>
                 <Th>Estado</Th>
                 <Th className="w-20" />
-              </tr>
+              </Tr>
             </Thead>
             <Tbody>
               {filtered.map(u => (

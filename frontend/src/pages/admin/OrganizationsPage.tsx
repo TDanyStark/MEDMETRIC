@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, FormEvent } from 'react'
 import { Plus, Pencil, Building2, Search } from 'lucide-react'
 import { useOrganizations, useCreateOrganization, useUpdateOrganization } from '../../hooks/useOrganizations'
 import { Button } from '../../components/ui/Button'
@@ -8,18 +8,27 @@ import { Modal } from '../../components/ui/Modal'
 import { Table, Thead, Th, Tbody, Tr, Td } from '../../components/ui/Table'
 import { useToast } from '../../components/ui/useToast'
 import { formatDate } from '../../lib/utils'
+import { Organization } from '../../types'
 
-const EMPTY_FORM = { name: '', slug: '', active: true }
+type OrgData = Pick<Organization, 'name' | 'slug' | 'active'>;
 
-function OrgForm({ initial, onSubmit, loading }) {
-  const [form, setForm] = useState(initial ?? EMPTY_FORM)
-  const [errors, setErrors] = useState({})
+const EMPTY_FORM: OrgData = { name: '', slug: '', active: true }
 
-  const set = (field, value) => {
+interface OrgFormProps {
+  initial?: OrgData;
+  onSubmit: (data: OrgData) => void;
+  loading: boolean;
+}
+
+function OrgForm({ initial, onSubmit, loading }: OrgFormProps) {
+  const [form, setForm] = useState<OrgData>(initial ?? EMPTY_FORM)
+  const [errors, setErrors] = useState<Record<string, string>>({})
+
+  const set = (field: keyof OrgData, value: string | boolean) => {
     setForm(prev => {
       const next = { ...prev, [field]: value }
       // Auto-generate slug from name when creating
-      if (field === 'name' && !initial) {
+      if (field === 'name' && !initial && typeof value === 'string') {
         next.slug = value
           .toLowerCase()
           .replace(/[^a-z0-9\s-]/g, '')
@@ -32,14 +41,14 @@ function OrgForm({ initial, onSubmit, loading }) {
   }
 
   const validate = () => {
-    const e = {}
+    const e: Record<string, string> = {}
     if (!form.name.trim()) e.name = 'El nombre es requerido.'
     if (!form.slug.trim()) e.slug = 'El slug es requerido.'
     setErrors(e)
     return Object.keys(e).length === 0
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
     if (!validate()) return
     onSubmit(form)
@@ -89,29 +98,30 @@ export default function OrganizationsPage() {
 
   const [search, setSearch]   = useState('')
   const [creating, setCreating] = useState(false)
-  const [editing, setEditing]   = useState(null) // org object
+  const [editing, setEditing]   = useState<Organization | null>(null)
 
   const filtered = (orgs ?? []).filter(o =>
     o.name.toLowerCase().includes(search.toLowerCase()) ||
     o.slug.toLowerCase().includes(search.toLowerCase()),
   )
 
-  const handleCreate = async (form) => {
+  const handleCreate = async (form: OrgData) => {
     try {
       await createMutation.mutateAsync(form)
       setCreating(false)
       toast({ message: 'Organización creada exitosamente.' })
-    } catch (err) {
+    } catch (err: any) {
       toast({ message: err.message, type: 'error' })
     }
   }
 
-  const handleUpdate = async (form) => {
+  const handleUpdate = async (form: OrgData) => {
+    if (!editing) return
     try {
       await updateMutation.mutateAsync({ id: editing.id, ...form })
       setEditing(null)
       toast({ message: 'Organización actualizada exitosamente.' })
-    } catch (err) {
+    } catch (err: any) {
       toast({ message: err.message, type: 'error' })
     }
   }
@@ -167,13 +177,13 @@ export default function OrganizationsPage() {
         ) : (
           <Table>
             <Thead>
-              <tr>
+              <Tr>
                 <Th>Nombre</Th>
                 <Th>Slug</Th>
                 <Th>Estado</Th>
                 <Th>Creada</Th>
                 <Th className="w-12" />
-              </tr>
+              </Tr>
             </Thead>
             <Tbody>
               {filtered.map(org => (

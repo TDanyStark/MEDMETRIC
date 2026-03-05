@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, FormEvent } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/useAuth'
 import { Button } from '../components/ui/Button'
@@ -14,9 +14,9 @@ export default function LoginPage() {
   const [error, setError]       = useState('')
   const [loading, setLoading]   = useState(false)
 
-  const from = location.state?.from?.pathname ?? null
+  const from = (location.state as any)?.from?.pathname ?? null
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setError('')
     setLoading(true)
@@ -32,7 +32,7 @@ export default function LoginPage() {
       // Route by role
       const home = user.role === 'admin' ? '/admin' : user.role === 'manager' ? '/manager' : '/rep'
       navigate(home, { replace: true })
-    } catch (err) {
+    } catch (err: any) {
       setError(err.message || 'Credenciales inválidas.')
     } finally {
       setLoading(false)

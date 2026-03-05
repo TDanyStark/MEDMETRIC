@@ -1,3 +1,4 @@
+import { ReactNode } from 'react'
 import { cn } from '../../lib/utils'
 
 const variants = {
@@ -9,7 +10,13 @@ const variants = {
   rep:      'bg-amber-50 text-amber-700 ring-1 ring-amber-200',
 }
 
-export function Badge({ variant = 'default', className, children }) {
+interface BadgeProps {
+  variant?: keyof typeof variants;
+  className?: string;
+  children: ReactNode;
+}
+
+export function Badge({ variant = 'default', className, children }: BadgeProps) {
   return (
     <span className={cn(
       'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',

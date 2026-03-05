@@ -1,10 +1,17 @@
 import { NavLink, useNavigate } from 'react-router-dom'
-import { Building2, Users, LogOut, LayoutDashboard, ChevronRight } from 'lucide-react'
+import { Building2, Users, LogOut, LayoutDashboard, LucideIcon } from 'lucide-react'
 import { useAuth } from '../../contexts/useAuth'
-import { cn } from '../../lib/utils'
-import { getInitials } from '../../lib/utils'
+import { cn, getInitials } from '../../lib/utils'
+import { Role } from '../../types'
 
-const NAV_ITEMS = {
+interface NavItemData {
+  to: string;
+  label: string;
+  icon: LucideIcon;
+  end?: boolean;
+}
+
+const NAV_ITEMS: Record<Role, NavItemData[]> = {
   admin: [
     { to: '/admin',              label: 'Dashboard',      icon: LayoutDashboard, end: true },
     { to: '/admin/organizations', label: 'Organizaciones', icon: Building2 },
@@ -14,7 +21,7 @@ const NAV_ITEMS = {
   rep: [],
 }
 
-function NavItem({ to, label, icon: Icon, end }) {
+function NavItem({ to, label, icon: Icon, end }: NavItemData) {
   return (
     <NavLink
       to={to}
@@ -36,7 +43,7 @@ export function Sidebar() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
 
-  const items = NAV_ITEMS[user?.role] ?? []
+  const items = user ? (NAV_ITEMS[user.role] ?? []) : []
 
   const handleLogout = () => {
     logout()

@@ -1,14 +1,23 @@
-import { Building2, Users, UserCheck, Briefcase } from 'lucide-react'
+import { Building2, Users, UserCheck, Briefcase, LucideIcon } from 'lucide-react'
 import { useOrganizations } from '../../hooks/useOrganizations'
 import { useAdminUsers } from '../../hooks/useAdminUsers'
 import { Link } from 'react-router-dom'
 import { formatDateTime } from '../../lib/utils'
 import { Badge } from '../../components/ui/Badge'
+import { User } from '../../types'
 
-const ROLE_LABEL = { admin: 'Administrador', manager: 'Gerente', rep: 'Visitador' }
-const ROLE_BADGE = { admin: 'admin', manager: 'manager', rep: 'rep' }
+const ROLE_LABEL: Record<string, string> = { admin: 'Administrador', manager: 'Gerente', rep: 'Visitador' }
+const ROLE_BADGE: Record<string, any> = { admin: 'admin', manager: 'manager', rep: 'rep' }
 
-function StatCard({ icon: Icon, label, value, to, color = 'teal' }) {
+interface StatCardProps {
+  icon: LucideIcon;
+  label: string;
+  value?: number;
+  to: string;
+  color?: 'teal' | 'blue' | 'amber' | 'violet';
+}
+
+function StatCard({ icon: Icon, label, value, to, color = 'teal' }: StatCardProps) {
   const colorMap = {
     teal:   { bg: 'bg-teal-50',   text: 'text-teal-600'   },
     blue:   { bg: 'bg-blue-50',   text: 'text-blue-600'   },
@@ -38,7 +47,7 @@ export default function AdminDashboard() {
   const reps     = (allUsers ?? []).filter(u => u.role === 'rep')
 
   const recentUsers = [...(allUsers ?? [])].sort((a, b) =>
-    new Date(b.created_at) - new Date(a.created_at),
+    new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
   ).slice(0, 5)
 
   return (
@@ -65,7 +74,7 @@ export default function AdminDashboard() {
           <div className="py-10 text-center text-sm text-slate-400">Sin usuarios aún.</div>
         ) : (
           <ul className="divide-y divide-slate-100">
-            {recentUsers.map(u => (
+            {recentUsers.map((u: User) => (
               <li key={u.id} className="flex items-center justify-between px-5 py-3 hover:bg-slate-50/60 transition-colors">
                 <div>
                   <p className="text-sm font-medium text-slate-900">{u.name}</p>
