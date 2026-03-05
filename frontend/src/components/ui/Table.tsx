@@ -27,7 +27,7 @@ export function Thead({ children }: { children: ReactNode }) {
 export function Th({ children, className }: TableProps) {
   return (
     <th className={cn(
-      'px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-500',
+      'px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500',
       className,
     )}>
       {children}
@@ -53,7 +53,7 @@ export function Tr({ children, className, ...props }: TrProps) {
 
 export function Td({ children, className }: TableProps) {
   return (
-    <td className={cn('px-4 py-3 text-slate-700', className)}>
+    <td className={cn('px-6 py-4 text-slate-700', className)}>
       {children}
     </td>
   )

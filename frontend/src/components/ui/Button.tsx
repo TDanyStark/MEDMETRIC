@@ -9,9 +9,9 @@ const variants = {
 }
 
 const sizes = {
-  sm: 'h-7 px-3 text-xs gap-1.5',
-  md: 'h-8 px-3.5 text-sm gap-2',
-  lg: 'h-10 px-5 text-sm gap-2',
+  sm: 'h-8 px-3 text-xs gap-1.5',
+  md: 'h-10 px-4 text-sm gap-2',
+  lg: 'h-11 px-5 text-sm gap-2',
 }
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
