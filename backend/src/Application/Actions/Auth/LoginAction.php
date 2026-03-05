@@ -56,7 +56,7 @@ class LoginAction extends Action
             'email'           => $user['email'],
             'name'            => $user['name'],
             'role'            => $user['role'],
-            'organization_id' => (int)  $user['organization_id'],
+            'organization_id' => $user['organization_id'] !== null ? (int) $user['organization_id'] : null,
         ];
 
         $token = $this->jwtService->generate($tokenPayload);
@@ -70,7 +70,7 @@ class LoginAction extends Action
                 'email'           => $user['email'],
                 'name'            => $user['name'],
                 'role'            => $user['role'],
-                'organization_id' => (int)  $user['organization_id'],
+                'organization_id' => $user['organization_id'] !== null ? (int) $user['organization_id'] : null,
             ],
         ]);
     }

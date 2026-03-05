@@ -12,10 +12,13 @@ use App\Application\Actions\Admin\Organization\CreateOrganizationAction;
 use App\Application\Actions\Admin\Organization\ListOrganizationsAction;
 use App\Application\Actions\Admin\Organization\UpdateOrganizationAction;
 use App\Application\Actions\Admin\User\CreateAdminUserAction;
+use App\Application\Actions\Admin\User\CreateOrgAdminAction;
 use App\Application\Actions\Admin\User\GetRepSubscriptionsAction;
 use App\Application\Actions\Admin\User\ListAdminUsersAction;
+use App\Application\Actions\Admin\User\ListOrgAdminsAction;
 use App\Application\Actions\Admin\User\ListRolesAction;
 use App\Application\Actions\Admin\User\UpdateAdminUserAction;
+use App\Application\Actions\Admin\User\UpdateOrgAdminAction;
 use App\Application\Actions\Admin\User\UpdateRepSubscriptionsAction;
 use App\Application\Actions\Auth\LoginAction;
 use App\Application\Actions\Auth\MeAction;
@@ -87,22 +90,45 @@ return function (App $app) {
         })->add(JwtMiddleware::class);
 
         // -------------------------------------------------------------------------
-        // Admin routes (JWT + admin role required)
+        // Super Admin routes (JWT + superadmin role required)
+        // Super Admin manages: organizations, org_admins
         // -------------------------------------------------------------------------
-        $group->group('/admin', function (RouteCollectorProxy $admin) {
-
-            // Roles catalog (useful for user form)
-            $admin->get('/roles', ListRolesAction::class);
+        $group->group('/superadmin', function (RouteCollectorProxy $superadmin) {
 
             // Organizations
-            $admin->group('/organizations', function (RouteCollectorProxy $orgs) {
+            $superadmin->group('/organizations', function (RouteCollectorProxy $orgs) {
                 $orgs->get('',        ListOrganizationsAction::class);
                 $orgs->post('',       CreateOrganizationAction::class);
                 $orgs->put('/{id}',   UpdateOrganizationAction::class);
             });
 
-            // Users
-            $admin->group('/users', function (RouteCollectorProxy $users) {
+            // Org Admins management
+            $superadmin->group('/org-admins', function (RouteCollectorProxy $orgAdmins) {
+                $orgAdmins->get('',      ListOrgAdminsAction::class);
+                $orgAdmins->post('',      CreateOrgAdminAction::class);
+                $orgAdmins->put('/{id}',  UpdateOrgAdminAction::class);
+            });
+
+            // Roles catalog (useful for forms)
+            $superadmin->get('/roles', ListRolesAction::class);
+
+        })->add(function ($request, $handler) use ($app) {
+            $responseFactory = $app->getContainer()->get(ResponseFactoryInterface::class);
+            return (new RoleMiddleware($responseFactory, ['superadmin']))->process($request, $handler);
+        })->add(JwtMiddleware::class);
+
+        // -------------------------------------------------------------------------
+        // Org Admin routes (JWT + org_admin role required)
+        // Org Admin manages: users (managers, reps), brands, brand assignments
+        // All filtered by their organization
+        // -------------------------------------------------------------------------
+        $group->group('/org-admin', function (RouteCollectorProxy $orgAdmin) {
+
+            // Roles catalog (useful for user form)
+            $orgAdmin->get('/roles', ListRolesAction::class);
+
+            // Users (managers and reps only - org_admin cannot manage other org_admins)
+            $orgAdmin->group('/users', function (RouteCollectorProxy $users) {
                 $users->get('',           ListAdminUsersAction::class);
                 $users->post('',          CreateAdminUserAction::class);
                 $users->put('/{id}',      UpdateAdminUserAction::class);
@@ -112,15 +138,15 @@ return function (App $app) {
                 $users->put('/{id}/subscriptions',  UpdateRepSubscriptionsAction::class);
             });
 
-            // Brands (Admin manages brands)
-            $admin->group('/brands', function (RouteCollectorProxy $brands) {
+            // Brands (Org Admin manages brands for their organization)
+            $orgAdmin->group('/brands', function (RouteCollectorProxy $brands) {
                 $brands->get('',       AdminListBrandsAction::class);
                 $brands->post('',      CreateBrandAction::class);
                 $brands->put('/{id}',  UpdateBrandAction::class);
             });
 
             // Manager brand assignments
-            $admin->group('/managers/{managerId}/brands', function (RouteCollectorProxy $mb) {
+            $orgAdmin->group('/managers/{managerId}/brands', function (RouteCollectorProxy $mb) {
                 $mb->get('',  GetManagerBrandsAction::class);
                 $mb->post('', AssignBrandsToManagerAction::class);
                 $mb->delete('', RemoveBrandsFromManagerAction::class);
@@ -128,7 +154,7 @@ return function (App $app) {
 
         })->add(function ($request, $handler) use ($app) {
             $responseFactory = $app->getContainer()->get(ResponseFactoryInterface::class);
-            return (new RoleMiddleware($responseFactory, ['admin']))->process($request, $handler);
+            return (new RoleMiddleware($responseFactory, ['org_admin']))->process($request, $handler);
         })->add(JwtMiddleware::class);
 
         // -------------------------------------------------------------------------

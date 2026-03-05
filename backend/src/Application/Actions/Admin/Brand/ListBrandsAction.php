@@ -22,8 +22,16 @@ class ListBrandsAction extends Action
     {
         $queryParams = $this->request->getQueryParams();
         
+        // Get current user from JWT
+        $authUser = $this->request->getAttribute('auth_user');
+        $isOrgAdmin = $authUser !== null && $authUser['role'] === 'org_admin';
+        
         $organizationId = null;
-        if (isset($queryParams['organization_id']) && $queryParams['organization_id'] !== '') {
+        
+        // If org_admin, force filter by their organization
+        if ($isOrgAdmin) {
+            $organizationId = $authUser['organization_id'] ?? null;
+        } elseif (isset($queryParams['organization_id']) && $queryParams['organization_id'] !== '') {
             $organizationId = (int) $queryParams['organization_id'];
         }
 

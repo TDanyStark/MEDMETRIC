@@ -33,7 +33,7 @@ class DbAdminUserRepository implements AdminUserRepositoryInterface
                        u.created_at,
                        u.updated_at
                 FROM   users u
-                JOIN   organizations o ON o.id = u.organization_id
+                LEFT JOIN organizations o ON o.id = u.organization_id
                 JOIN   roles r         ON r.id = u.role_id';
     }
 

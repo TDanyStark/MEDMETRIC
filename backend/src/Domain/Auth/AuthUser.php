@@ -13,12 +13,12 @@ use JsonSerializable;
 class AuthUser implements JsonSerializable
 {
     public function __construct(
-        private int    $id,
-        private string $email,
-        private string $name,
-        private string $role,
-        private int    $organizationId,
-        private bool   $active
+        private int       $id,
+        private string    $email,
+        private string    $name,
+        private string    $role,
+        private ?int      $organizationId,
+        private bool      $active
     ) {}
 
     public function getId(): int
@@ -41,7 +41,7 @@ class AuthUser implements JsonSerializable
         return $this->role;
     }
 
-    public function getOrganizationId(): int
+    public function getOrganizationId(): ?int
     {
         return $this->organizationId;
     }

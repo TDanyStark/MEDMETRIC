@@ -11,7 +11,11 @@ use App\Domain\AdminUser\AdminUserRepositoryInterface;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Log\LoggerInterface;
 
-class CreateAdminUserAction extends Action
+/**
+ * Create Org Admin (for Super Admin)
+ * Creates a new org_admin user and assigns to an organization
+ */
+class CreateOrgAdminAction extends Action
 {
     public function __construct(
         LoggerInterface $logger,
@@ -24,26 +28,11 @@ class CreateAdminUserAction extends Action
     {
         $body = $this->getFormData();
 
-        // Get current user from JWT
-        $authUser = $this->request->getAttribute('auth_user');
-        $isOrgAdmin = $authUser !== null && $authUser['role'] === 'org_admin';
-
         // Required fields
         $name           = trim((string) ($body['name']            ?? ''));
         $email          = trim((string) ($body['email']           ?? ''));
         $password       = trim((string) ($body['password']        ?? ''));
         $organizationId = isset($body['organization_id']) ? (int) $body['organization_id'] : 0;
-        $roleId         = isset($body['role_id'])         ? (int) $body['role_id']         : 0;
-
-        // If org_admin, force their organization and validate role
-        if ($isOrgAdmin) {
-            $organizationId = $authUser['organization_id'] ?? 0;
-            // org_admin can only create manager (3) or rep (4)
-            if ($roleId !== 3 && $roleId !== 4) {
-                $error = new ActionError(ActionError::VALIDATION_ERROR, 'Invalid role. Org Admin can only create managers or representatives.');
-                return $this->respond(new ActionPayload(422, null, $error));
-            }
-        }
 
         // Validation
         $errors = [];
@@ -52,7 +41,6 @@ class CreateAdminUserAction extends Action
         if ($email === '')          { $errors[] = 'Email is required.'; }
         if ($password === '')       { $errors[] = 'Password is required.'; }
         if ($organizationId === 0)  { $errors[] = 'Organization is required.'; }
-        if ($roleId === 0)          { $errors[] = 'Role is required.'; }
 
         if (!empty($errors)) {
             $error = new ActionError(ActionError::VALIDATION_ERROR, implode(' ', $errors));
@@ -74,17 +62,18 @@ class CreateAdminUserAction extends Action
             return $this->respond(new ActionPayload(422, null, $error));
         }
 
+        // Role ID 2 = org_admin
         $user = $this->adminUserRepository->create([
             'name'            => $name,
             'email'           => $email,
             'password'        => $password,
             'organization_id' => $organizationId,
-            'role_id'         => $roleId,
+            'role_id'         => 2, // org_admin role
             'active'          => isset($body['active']) ? (bool) $body['active'] : true,
         ]);
 
-        $this->logger->info('User created', ['user_id' => $user->getId(), 'email' => $email, 'created_by_role' => $authUser['role'] ?? 'unknown']);
+        $this->logger->info('Org Admin created by superadmin', ['user_id' => $user->getId(), 'email' => $email, 'organization_id' => $organizationId]);
 
-        return $this->respondWithData($user, 201, 'User created successfully.');
+        return $this->respondWithData($user, 201, 'Organization Admin created successfully.');
     }
 }

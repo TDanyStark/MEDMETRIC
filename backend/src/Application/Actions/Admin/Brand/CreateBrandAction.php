@@ -22,7 +22,20 @@ class CreateBrandAction extends Action
     {
         $data = $this->getFormData();
 
-        if (empty($data['organization_id'])) {
+        // Get current user from JWT
+        $authUser = $this->request->getAttribute('auth_user');
+        $isOrgAdmin = $authUser !== null && $authUser['role'] === 'org_admin';
+
+        $organizationId = null;
+        
+        // If org_admin, use their organization
+        if ($isOrgAdmin) {
+            $organizationId = $authUser['organization_id'] ?? null;
+        } elseif (!empty($data['organization_id'])) {
+            $organizationId = (int) $data['organization_id'];
+        }
+
+        if (empty($organizationId)) {
             return $this->respondWithData(['error' => 'organization_id is required'], 422);
         }
 
@@ -30,7 +43,6 @@ class CreateBrandAction extends Action
             return $this->respondWithData(['error' => 'Brand name is required'], 422);
         }
 
-        $organizationId = (int) $data['organization_id'];
         $name = trim($data['name']);
 
         // Check for duplicates in the same organization

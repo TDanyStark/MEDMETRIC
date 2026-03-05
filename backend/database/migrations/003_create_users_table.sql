@@ -2,10 +2,12 @@
 -- Description: Create users table with role and organization references.
 --              Reps belong to an organization only. Their access to specific
 --              managers is defined in the rep_manager_access table (migration 009).
+--              Superadmin has organization_id NULL (access to all organizations).
+--              Org admins, managers and reps must belong to an organization.
 
 CREATE TABLE IF NOT EXISTS `users` (
     `id`              INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `organization_id` INT UNSIGNED NOT NULL,
+    `organization_id` INT UNSIGNED NULL,
     `role_id`         INT UNSIGNED NOT NULL,
     `name`            VARCHAR(150) NOT NULL,
     `email`           VARCHAR(255) NOT NULL,

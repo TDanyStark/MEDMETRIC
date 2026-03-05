@@ -26,7 +26,18 @@ class ListAdminUsersAction extends Action
         if ($role === '') $role = null;
 
         $organizationId = null;
-        if (isset($queryParams['organization_id']) && $queryParams['organization_id'] !== '') {
+        
+        // Get current user from JWT
+        $authUser = $this->request->getAttribute('auth_user');
+        
+        // If user is org_admin, force filter by their organization
+        if ($authUser !== null && $authUser['role'] === 'org_admin') {
+            $organizationId = $authUser['organization_id'] ?? null;
+            // org_admin can only view manager and rep roles (not other org_admins or superadmin)
+            if ($role === null || !in_array($role, ['manager', 'rep'], true)) {
+                $role = null; // Reset role filter if not valid for org_admin
+            }
+        } elseif (isset($queryParams['organization_id']) && $queryParams['organization_id'] !== '') {
             $organizationId = (int) $queryParams['organization_id'];
         }
 
