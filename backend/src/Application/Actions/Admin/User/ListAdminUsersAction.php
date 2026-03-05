@@ -21,13 +21,23 @@ class ListAdminUsersAction extends Action
     protected function action(): Response
     {
         $queryParams    = $this->request->getQueryParams();
-        $role           = $queryParams['role']            ?? null;
-        $organizationId = isset($queryParams['organization_id'])
-            ? (int) $queryParams['organization_id']
-            : null;
+        
+        $role           = $queryParams['role'] ?? null;
+        if ($role === '') $role = null;
 
-        $users = $this->adminUserRepository->findAll($role, $organizationId);
+        $organizationId = null;
+        if (isset($queryParams['organization_id']) && $queryParams['organization_id'] !== '') {
+            $organizationId = (int) $queryParams['organization_id'];
+        }
 
-        return $this->respondWithData($users);
+        $search         = $queryParams['q'] ?? null;
+        if ($search === '') $search = null;
+
+        $page           = (int) ($queryParams['page'] ?? 1);
+        if ($page < 1) $page = 1;
+
+        $result = $this->adminUserRepository->findAll($role, $organizationId, $search, $page);
+
+        return $this->respondWithData($result);
     }
 }

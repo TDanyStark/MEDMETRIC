@@ -19,17 +19,51 @@ class DbOrganizationRepository implements OrganizationRepositoryInterface
         $this->pdo = Connection::getConnection();
     }
 
-    public function findAll(): array
+    public function findAll(?string $search = null, int $page = 1): array
     {
-        $stmt = $this->pdo->query(
-            'SELECT id, name, slug, active, created_at, updated_at
-             FROM   organizations
-             ORDER  BY name ASC'
-        );
+        $pageSize = \App\Infrastructure\Config\PaginationConfig::PAGE_SIZE;
+        $offset   = ($page - 1) * $pageSize;
+
+        $where  = [];
+        $params = [];
+
+        if ($search !== null && $search !== '') {
+            $where[]          = '(name LIKE :search OR slug LIKE :search)';
+            $params[':search'] = '%' . $search . '%';
+        }
+
+        $whereSql = !empty($where) ? ' WHERE ' . implode(' AND ', $where) : '';
+
+        // Get total count
+        $countStmt = $this->pdo->prepare("SELECT COUNT(*) FROM organizations" . $whereSql);
+        $countStmt->execute($params);
+        $total = (int) $countStmt->fetchColumn();
+
+        // Get items
+        $sql = "SELECT id, name, slug, active, created_at, updated_at
+                FROM   organizations
+                {$whereSql}
+                ORDER  BY name ASC
+                LIMIT  :limit OFFSET :offset";
+
+        $stmt = $this->pdo->prepare($sql);
+        foreach ($params as $key => $val) {
+            $stmt->bindValue($key, $val);
+        }
+        $stmt->bindValue(':limit',  $pageSize, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset,   PDO::PARAM_INT);
+        $stmt->execute();
 
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $items = array_map(fn(array $row) => Organization::fromRow($row), $rows);
 
-        return array_map(fn(array $row) => Organization::fromRow($row), $rows);
+        return [
+            'items'     => $items,
+            'total'     => $total,
+            'page'      => $page,
+            'per_page'  => $pageSize,
+            'last_page' => (int) ceil($total / $pageSize),
+        ];
     }
 
     public function findById(int $id): Organization

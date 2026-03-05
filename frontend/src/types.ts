@@ -22,6 +22,14 @@ export interface Organization {
   updated_at: string;
 }
 
+export interface PaginatedResult<T> {
+  items: T[];
+  total: number;
+  page: number;
+  per_page: number;
+  last_page: number;
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   data: T;

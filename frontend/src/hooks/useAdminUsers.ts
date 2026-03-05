@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '../services/api'
-import { ApiResponse, User } from '../types'
+import { ApiResponse, User, PaginatedResult } from '../types'
 
 const USERS_KEY  = ['admin-users']
 const ROLES_KEY  = ['roles']
@@ -8,6 +8,8 @@ const ROLES_KEY  = ['roles']
 interface Filters {
   role?: string;
   organization_id?: string | number;
+  q?: string;
+  page?: number;
 }
 
 interface RoleData {
@@ -19,12 +21,14 @@ export function useAdminUsers(filters: Filters = {}) {
   const params = new URLSearchParams()
   if (filters.role)            params.set('role',            filters.role)
   if (filters.organization_id) params.set('organization_id', String(filters.organization_id))
+  if (filters.q)               params.set('q',               filters.q)
+  if (filters.page)            params.set('page',            String(filters.page))
   const qs = params.toString() ? `?${params}` : ''
 
   return useQuery({
     queryKey: [...USERS_KEY, filters],
     queryFn: async () => {
-      const res = await api.get<ApiResponse<User[]>>(`/admin/users${qs}`)
+      const res = await api.get<ApiResponse<PaginatedResult<User>>>(`/admin/users${qs}`)
       return res.data
     },
   })

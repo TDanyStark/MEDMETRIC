@@ -1,14 +1,24 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '../services/api'
-import { ApiResponse, Organization } from '../types'
+import { ApiResponse, Organization, PaginatedResult } from '../types'
 
 const QUERY_KEY = ['organizations']
 
-export function useOrganizations() {
+interface OrgFilters {
+  q?: string;
+  page?: number;
+}
+
+export function useOrganizations(filters: OrgFilters = {}) {
+  const params = new URLSearchParams()
+  if (filters.q)    params.set('q',    filters.q)
+  if (filters.page) params.set('page', String(filters.page))
+  const qs = params.toString() ? `?${params}` : ''
+
   return useQuery({
-    queryKey: QUERY_KEY,
+    queryKey: [...QUERY_KEY, filters],
     queryFn: async () => {
-      const res = await api.get<ApiResponse<Organization[]>>('/admin/organizations')
+      const res = await api.get<ApiResponse<PaginatedResult<Organization>>>(`/admin/organizations${qs}`)
       return res.data
     },
   })

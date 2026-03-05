@@ -7,11 +7,11 @@ namespace App\Domain\Organization;
 interface OrganizationRepositoryInterface
 {
     /**
-     * Return all organizations (optionally with user count).
+     * Return all organizations with optional filtering and pagination.
      *
-     * @return Organization[]
+     * @return array{items: Organization[], total: int, page: int, per_page: int, last_page: int}
      */
-    public function findAll(): array;
+    public function findAll(?string $search = null, int $page = 1): array;
 
     /**
      * Find a single organization by ID.

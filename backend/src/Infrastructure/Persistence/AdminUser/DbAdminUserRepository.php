@@ -37,8 +37,11 @@ class DbAdminUserRepository implements AdminUserRepositoryInterface
                 JOIN   roles r         ON r.id = u.role_id';
     }
 
-    public function findAll(?string $role = null, ?int $organizationId = null): array
+    public function findAll(?string $role = null, ?int $organizationId = null, ?string $search = null, int $page = 1): array
     {
+        $pageSize = \App\Infrastructure\Config\PaginationConfig::PAGE_SIZE;
+        $offset   = ($page - 1) * $pageSize;
+
         $where  = [];
         $params = [];
 
@@ -52,19 +55,46 @@ class DbAdminUserRepository implements AdminUserRepositoryInterface
             $params[':org_id']   = $organizationId;
         }
 
-        $sql = $this->baseSelect();
-
-        if (!empty($where)) {
-            $sql .= ' WHERE ' . implode(' AND ', $where);
+        if ($search !== null && $search !== '') {
+            $where[]          = '(u.name LIKE :search OR u.email LIKE :search)';
+            $params[':search'] = '%' . $search . '%';
         }
 
-        $sql .= ' ORDER BY u.name ASC';
+        $whereSql = !empty($where) ? ' WHERE ' . implode(' AND ', $where) : '';
+
+        // Get total count
+        $countSql = 'SELECT COUNT(*)
+                     FROM   users u
+                     JOIN   roles r ON r.id = u.role_id
+                     ' . $whereSql;
+        $countStmt = $this->pdo->prepare($countSql);
+        foreach ($params as $key => $val) {
+            $countStmt->bindValue($key, $val);
+        }
+        $countStmt->execute();
+        $total = (int) $countStmt->fetchColumn();
+
+        // Get items
+        $sql = $this->baseSelect() . $whereSql . ' ORDER BY u.name ASC LIMIT :limit OFFSET :offset';
 
         $stmt = $this->pdo->prepare($sql);
-        $stmt->execute($params);
-        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($params as $key => $val) {
+            $stmt->bindValue($key, $val);
+        }
+        $stmt->bindValue(':limit',  $pageSize, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset,   PDO::PARAM_INT);
+        $stmt->execute();
 
-        return array_map(fn(array $row) => AdminUser::fromRow($row), $rows);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $items = array_map(fn(array $row) => AdminUser::fromRow($row), $rows);
+
+        return [
+            'items'     => $items,
+            'total'     => $total,
+            'page'      => $page,
+            'per_page'  => $pageSize,
+            'last_page' => (int) ceil($total / $pageSize),
+        ];
     }
 
     public function findById(int $id): AdminUser

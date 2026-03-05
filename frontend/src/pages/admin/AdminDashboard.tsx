@@ -32,7 +32,7 @@ function StatCard({ icon: Icon, label, value, to, color = 'teal' }: StatCardProp
         <Icon className="h-5 w-5" />
       </div>
       <div>
-        <p className="text-2xl font-semibold text-slate-900 leading-none">{value ?? '—'}</p>
+        <p className="text-2xl font-semibold text-slate-900 leading-none">{value !== undefined ? value : '—'}</p>
         <p className="text-xs text-slate-500 mt-1">{label}</p>
       </div>
     </Link>
@@ -40,13 +40,18 @@ function StatCard({ icon: Icon, label, value, to, color = 'teal' }: StatCardProp
 }
 
 export default function AdminDashboard() {
-  const { data: orgs }     = useOrganizations()
-  const { data: allUsers } = useAdminUsers()
+  const { data: orgsResult } = useOrganizations()
+  const { data: usersResult } = useAdminUsers()
 
-  const managers = (allUsers ?? []).filter(u => u.role === 'manager')
-  const reps     = (allUsers ?? []).filter(u => u.role === 'rep')
-
-  const recentUsers = [...(allUsers ?? [])].sort((a, b) =>
+  const orgsTotal  = orgsResult?.total
+  const usersTotal = usersResult?.total
+  
+  // Note: These counts are only for the current page (max 20)
+  // For a real dashboard we might want a specific metrics endpoint (Phase 10)
+  // But for now we show the totals from the first page metadata
+  const items = usersResult?.items ?? []
+  
+  const recentUsers = [...items].sort((a, b) =>
     new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
   ).slice(0, 5)
 
@@ -59,16 +64,18 @@ export default function AdminDashboard() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3 mb-8 sm:grid-cols-4">
-        <StatCard icon={Building2} label="Organizaciones" value={orgs?.length}      to="/admin/organizations" color="teal"   />
-        <StatCard icon={Users}     label="Total usuarios"  value={allUsers?.length}  to="/admin/users"         color="blue"   />
-        <StatCard icon={Briefcase} label="Gerentes"        value={managers.length}   to="/admin/users"         color="violet" />
-        <StatCard icon={UserCheck} label="Visitadores"     value={reps.length}       to="/admin/users"         color="amber"  />
+        <StatCard icon={Building2} label="Organizaciones" value={orgsTotal}  to="/admin/organizations" color="teal"   />
+        <StatCard icon={Users}     label="Total usuarios"  value={usersTotal} to="/admin/users"         color="blue"   />
+        
+        {/* These specific role counts aren't in metadata yet, showing first-page only for now */}
+        <StatCard icon={Briefcase} label="Gerentes (p.1)"  value={items.filter(u => u.role === 'manager').length}   to="/admin/users?role=manager" color="violet" />
+        <StatCard icon={UserCheck} label="Visitadores (p.1)" value={items.filter(u => u.role === 'rep').length}       to="/admin/users?role=rep"     color="amber"  />
       </div>
 
       {/* Recent users */}
       <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
         <div className="border-b border-slate-100 px-5 py-3.5">
-          <h2 className="text-sm font-medium text-slate-900">Usuarios recientes</h2>
+          <h2 className="text-sm font-medium text-slate-900">Usuarios recientes (página 1)</h2>
         </div>
         {recentUsers.length === 0 ? (
           <div className="py-10 text-center text-sm text-slate-400">Sin usuarios aún.</div>

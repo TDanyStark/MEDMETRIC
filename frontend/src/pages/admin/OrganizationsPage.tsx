@@ -1,4 +1,5 @@
-import { useState, FormEvent } from 'react'
+import { useState, FormEvent, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Plus, Pencil, Building2, Search } from 'lucide-react'
 import { useOrganizations, useCreateOrganization, useUpdateOrganization } from '@/hooks/useOrganizations'
 import { Button } from '@/components/ui/Button'
@@ -6,6 +7,7 @@ import { Input } from '@/components/ui/Input'
 import { Badge } from '@/components/ui/Badge'
 import { Modal } from '@/components/ui/Modal'
 import { Table, Thead, Th, Tbody, Tr, Td } from '@/components/ui/Table'
+import { Pagination } from '@/components/ui/Pagination'
 import { useToast } from '@/components/ui/useToast'
 import { formatDate } from '@/lib/utils'
 import { Organization } from '@/types'
@@ -92,18 +94,39 @@ function OrgForm({ initial, onSubmit, loading }: OrgFormProps) {
 
 export default function OrganizationsPage() {
   const toast = useToast()
-  const { data: orgs, isLoading, error } = useOrganizations()
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  const q    = searchParams.get('q')    || ''
+  const page = Number(searchParams.get('page')) || 1
+
+  const { data, isLoading, error, isPlaceholderData } = useOrganizations({ q, page })
   const createMutation = useCreateOrganization()
   const updateMutation = useUpdateOrganization()
 
-  const [search, setSearch]   = useState('')
+  const [searchInput, setSearchInput] = useState(q)
   const [creating, setCreating] = useState(false)
   const [editing, setEditing]   = useState<Organization | null>(null)
 
-  const filtered = (orgs ?? []).filter(o =>
-    o.name.toLowerCase().includes(search.toLowerCase()) ||
-    o.slug.toLowerCase().includes(search.toLowerCase()),
-  )
+  useEffect(() => {
+    setSearchInput(q)
+  }, [q])
+
+  const updateFilters = (newFilters: Record<string, string | number | null>) => {
+    const next = new URLSearchParams(searchParams)
+    Object.entries(newFilters).forEach(([key, val]) => {
+      if (val === null || val === '') next.delete(key)
+      else next.set(key, String(val))
+    })
+    if (!('page' in newFilters)) {
+      next.delete('page')
+    }
+    setSearchParams(next)
+  }
+
+  const handleSearch = (e: FormEvent) => {
+    e.preventDefault()
+    updateFilters({ q: searchInput })
+  }
 
   const handleCreate = async (form: OrgData) => {
     try {
@@ -126,6 +149,9 @@ export default function OrganizationsPage() {
     }
   }
 
+  const result = data
+  const items  = result?.items ?? []
+
   return (
     <div className="p-6 max-w-5xl mx-auto">
       {/* Page header */}
@@ -137,7 +163,7 @@ export default function OrganizationsPage() {
           <div>
             <h1 className="text-base font-semibold text-slate-900">Organizaciones</h1>
             <p className="text-xs text-slate-500">
-              {isLoading ? '...' : `${orgs?.length ?? 0} organizaciones registradas`}
+              {isLoading ? '...' : `${result?.total ?? 0} organizaciones registradas`}
             </p>
           </div>
         </div>
@@ -148,16 +174,16 @@ export default function OrganizationsPage() {
       </div>
 
       {/* Search */}
-      <div className="mb-4 relative max-w-sm">
+      <form onSubmit={handleSearch} className="mb-4 relative max-w-sm">
         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
         <input
           type="text"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
+          value={searchInput}
+          onChange={e => setSearchInput(e.target.value)}
           placeholder="Buscar organización..."
           className="h-8 w-full rounded-md border border-slate-200 bg-white pl-8 pr-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
         />
-      </div>
+      </form>
 
       {/* Table */}
       <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
@@ -169,50 +195,59 @@ export default function OrganizationsPage() {
           <div className="flex items-center justify-center py-16 text-sm text-red-500">
             Error al cargar organizaciones.
           </div>
-        ) : filtered.length === 0 ? (
+        ) : items.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-2 py-16 text-sm text-slate-400">
             <Building2 className="h-8 w-8 opacity-30" />
-            {search ? 'Sin resultados para tu búsqueda.' : 'Aún no hay organizaciones.'}
+            {q ? 'Sin resultados para tu búsqueda.' : 'Aún no hay organizaciones.'}
           </div>
         ) : (
-          <Table>
-            <Thead>
-              <Tr>
-                <Th>Nombre</Th>
-                <Th>Slug</Th>
-                <Th>Estado</Th>
-                <Th>Creada</Th>
-                <Th className="w-12" />
-              </Tr>
-            </Thead>
-            <Tbody>
-              {filtered.map(org => (
-                <Tr key={org.id}>
-                  <Td>
-                    <span className="font-medium text-slate-900">{org.name}</span>
-                  </Td>
-                  <Td>
-                    <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-600">{org.slug}</code>
-                  </Td>
-                  <Td>
-                    <Badge variant={org.active ? 'active' : 'inactive'}>
-                      {org.active ? 'Activa' : 'Inactiva'}
-                    </Badge>
-                  </Td>
-                  <Td className="text-xs text-slate-500">{formatDate(org.created_at)}</Td>
-                  <Td>
-                    <button
-                      onClick={() => setEditing(org)}
-                      className="rounded p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
-                      title="Editar"
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </button>
-                  </Td>
+          <>
+            <Table>
+              <Thead>
+                <Tr>
+                  <Th>Nombre</Th>
+                  <Th>Slug</Th>
+                  <Th>Estado</Th>
+                  <Th>Creada</Th>
+                  <Th className="w-12" />
                 </Tr>
-              ))}
-            </Tbody>
-          </Table>
+              </Thead>
+              <Tbody>
+                {items.map(org => (
+                  <Tr key={org.id}>
+                    <Td>
+                      <span className="font-medium text-slate-900">{org.name}</span>
+                    </Td>
+                    <Td>
+                      <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-600">{org.slug}</code>
+                    </Td>
+                    <Td>
+                      <Badge variant={org.active ? 'active' : 'inactive'}>
+                        {org.active ? 'Activa' : 'Inactiva'}
+                      </Badge>
+                    </Td>
+                    <Td className="text-xs text-slate-500">{formatDate(org.created_at)}</Td>
+                    <Td>
+                      <button
+                        onClick={() => setEditing(org)}
+                        className="rounded p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                        title="Editar"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                    </Td>
+                  </Tr>
+                ))}
+              </Tbody>
+            </Table>
+            <Pagination
+              page={result!.page}
+              lastPage={result!.last_page}
+              total={result!.total}
+              onPageChange={(p) => updateFilters({ page: p })}
+              isLoading={isPlaceholderData}
+            />
+          </>
         )}
       </div>
 

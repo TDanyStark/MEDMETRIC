@@ -20,8 +20,16 @@ class ListOrganizationsAction extends Action
 
     protected function action(): Response
     {
-        $organizations = $this->organizationRepository->findAll();
+        $queryParams = $this->request->getQueryParams();
+        
+        $search      = $queryParams['q'] ?? null;
+        if ($search === '') $search = null;
 
-        return $this->respondWithData($organizations);
+        $page        = (int) ($queryParams['page'] ?? 1);
+        if ($page < 1) $page = 1;
+
+        $result = $this->organizationRepository->findAll($search, $page);
+
+        return $this->respondWithData($result);
     }
 }
