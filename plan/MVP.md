@@ -87,7 +87,7 @@ Crear el esquema minimo para multi-organizacion, materiales, sesiones y metricas
 
 ---
 
-## Fase 2 - Autenticacion y RBAC (Backend)
+## [x] Fase 2 - Autenticacion y RBAC (Backend)
 
 ### Objetivo
 

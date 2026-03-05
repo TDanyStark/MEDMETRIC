@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-use App\Application\Actions\ActionError;
+use App\Application\Actions\Auth\LoginAction;
+use App\Application\Actions\Auth\MeAction;
+use App\Application\Middleware\JwtMiddleware;
 use App\Infrastructure\Database\Connection;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -17,6 +19,10 @@ return function (App $app) {
 
     // API v1 route group
     $app->group('/v1', function (RouteCollectorProxy $group) {
+
+        // -------------------------------------------------------------------------
+        // Health check
+        // -------------------------------------------------------------------------
         $group->get('/health', function (Request $request, Response $response) {
             $dbStatus = Connection::testConnection();
 
@@ -39,5 +45,19 @@ return function (App $app) {
                 ->withStatus($dbStatus['status'] === 'ok' ? 200 : 503)
                 ->withHeader('Content-Type', 'application/json');
         });
+
+        // -------------------------------------------------------------------------
+        // Auth routes (public — no JWT required)
+        // -------------------------------------------------------------------------
+        $group->group('/auth', function (RouteCollectorProxy $auth) {
+            $auth->post('/login', LoginAction::class);
+        });
+
+        // -------------------------------------------------------------------------
+        // Auth routes (protected — JWT required)
+        // -------------------------------------------------------------------------
+        $group->group('/auth', function (RouteCollectorProxy $auth) {
+            $auth->get('/me', MeAction::class);
+        })->add(JwtMiddleware::class);
     });
 };
