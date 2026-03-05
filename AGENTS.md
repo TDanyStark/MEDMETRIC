@@ -137,6 +137,7 @@ Puede haber múltiples administradores por organización.
 - importante que siempre pienses en la mejor UX, que sea facil de manejar, que requiera de pocos clics hacer cosas
 - todos los filtros y parametros de busqueda en el frontend deben persistirse en la URL (query params), para que el estado sea navegable, compartible y sobreviva a recargas de pagina
 - los diseños hazlos con la skill interface-design
+- No crees multiples componentes en un solo archivo, crea un archivo por componente para que el codigo sea mas ordenado.
 
 ### Base de Datos (MySQL)
 

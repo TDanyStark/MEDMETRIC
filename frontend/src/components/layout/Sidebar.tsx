@@ -73,7 +73,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             <p className="mt-2 text-xs uppercase tracking-[0.28em] text-muted-foreground">Medical briefing system</p>
           </div>
           <div className="rounded-2xl border border-primary/20 bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">
-            Fase 8
+            Fase 9
           </div>
         </div>
 
@@ -92,7 +92,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             <p className="text-[0.7rem] uppercase tracking-[0.22em] text-muted-foreground">Navegacion</p>
             <p className="mt-1 text-sm font-medium text-foreground">{activeItem?.label ?? 'Modulo'}</p>
           </div>
-          <Badge variant="outline">Base lista</Badge>
+          <Badge variant="accent">Operacion</Badge>
         </div>
         <nav className="space-y-2">
           {items.map(item => (

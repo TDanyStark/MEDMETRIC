@@ -49,9 +49,9 @@ export const ROLE_BLUEPRINTS: Record<Role, RoleBlueprint> = {
     signature: 'Panel de cobertura con foco en organizaciones activas y responsables asignados.',
     navigation: [
       { to: '/superadmin', label: 'Panorama', description: 'Entrada principal con prioridades y accesos rapidos del rol.', phase: 'Base lista en Fase 8', icon: LayoutDashboard },
-      { to: '/superadmin/organizations', label: 'Organizaciones', description: 'Gestion de clientes, alta, edicion y estado operativo.', phase: 'Conexion operativa en Fase 9', icon: Building2 },
-      { to: '/superadmin/org-admins', label: 'Admins de organizacion', description: 'Asignacion y seguimiento de administradores responsables.', phase: 'Conexion operativa en Fase 9', icon: ShieldCheck },
-      { to: '/superadmin/metrics', label: 'Metricas globales', description: 'Vista transversal de adopcion y actividad por cliente.', phase: 'Conexion operativa en Fase 11', icon: Activity },
+      { to: '/superadmin/organizations', label: 'Organizaciones', description: 'Gestion de clientes, alta, edicion y estado operativo.', phase: 'Operativo en Fase 9', icon: Building2 },
+      { to: '/superadmin/org-admins', label: 'Admins de organizacion', description: 'Asignacion y seguimiento de administradores responsables.', phase: 'Operativo en Fase 9', icon: ShieldCheck },
+      { to: '/superadmin/metrics', label: 'Metricas globales', description: 'Vista transversal de cobertura interna por cliente.', phase: 'Operativo en Fase 9', icon: Activity },
     ],
   },
   org_admin: {
@@ -62,9 +62,10 @@ export const ROLE_BLUEPRINTS: Record<Role, RoleBlueprint> = {
     signature: 'Bloques operativos que agrupan personas, marcas y relacion con gerentes.',
     navigation: [
       { to: '/org-admin', label: 'Panorama', description: 'Resumen del espacio operativo de la organizacion.', phase: 'Base lista en Fase 8', icon: LayoutDashboard },
-      { to: '/org-admin/users', label: 'Usuarios', description: 'Gestion de gerentes y visitadores dentro de la organizacion.', phase: 'Conexion operativa en Fase 9', icon: Users },
-      { to: '/org-admin/brands', label: 'Marcas', description: 'Catalogo maestro de marcas sin duplicados por cliente.', phase: 'Conexion operativa en Fase 9', icon: BadgeCheck },
-      { to: '/org-admin/assignments', label: 'Asignaciones', description: 'Relacion entre marcas y gerentes para ordenar la operacion.', phase: 'Conexion operativa en Fase 9', icon: Network },
+      { to: '/org-admin/users', label: 'Usuarios', description: 'Gestion de gerentes y visitadores dentro de la organizacion.', phase: 'Operativo en Fase 9', icon: Users },
+      { to: '/org-admin/brands', label: 'Marcas', description: 'Catalogo maestro de marcas sin duplicados por cliente.', phase: 'Operativo en Fase 9', icon: BadgeCheck },
+      { to: '/org-admin/assignments', label: 'Asignaciones', description: 'Relacion entre marcas y gerentes para ordenar la operacion.', phase: 'Operativo en Fase 9', icon: Network },
+      { to: '/org-admin/metrics', label: 'Metricas', description: 'Lectura operativa de usuarios, marcas y estructura interna.', phase: 'Operativo en Fase 9', icon: Activity },
     ],
   },
   manager: {
@@ -75,9 +76,9 @@ export const ROLE_BLUEPRINTS: Record<Role, RoleBlueprint> = {
     signature: 'Tarjetas editoriales para marcas y materiales listas para crecer en la fase de contenido.',
     navigation: [
       { to: '/manager', label: 'Panorama', description: 'Entrada al modulo editorial del gerente.', phase: 'Base lista en Fase 8', icon: LayoutDashboard },
-      { to: '/manager/brands', label: 'Marcas asignadas', description: 'Consulta de marcas habilitadas para trabajar contenido.', phase: 'Conexion operativa en Fase 9', icon: Orbit },
-      { to: '/manager/materials', label: 'Materiales', description: 'Alta, edicion y aprobacion de piezas PDF, video y link.', phase: 'Conexion operativa en Fase 9', icon: FileStack },
-      { to: '/manager/reps', label: 'Visitadores', description: 'Gestion de suscripciones de acceso al contenido del gerente.', phase: 'Conexion operativa en Fase 9', icon: BriefcaseMedical },
+      { to: '/manager/brands', label: 'Marcas asignadas', description: 'Consulta de marcas habilitadas para trabajar contenido.', phase: 'Operativo en Fase 9', icon: Orbit },
+      { to: '/manager/materials', label: 'Materiales', description: 'Alta, edicion y aprobacion de piezas PDF, video y link.', phase: 'Operativo en Fase 9', icon: FileStack },
+      { to: '/manager/reps', label: 'Visitadores', description: 'Gestion de suscripciones de acceso al contenido del gerente.', phase: 'Operativo en Fase 9', icon: BriefcaseMedical },
     ],
   },
   rep: {

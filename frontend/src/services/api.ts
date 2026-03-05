@@ -83,8 +83,8 @@ class ApiService {
     return this.request<T>(endpoint, { method: 'PUT', body })
   }
 
-  delete<T>(endpoint: string): Promise<T> {
-    return this.request<T>(endpoint, { method: 'DELETE' })
+  delete<T>(endpoint: string, body?: RequestOptions['body']): Promise<T> {
+    return this.request<T>(endpoint, { method: 'DELETE', body })
   }
 }
 

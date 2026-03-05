@@ -8,9 +8,12 @@ import { useAuth } from './contexts/useAuth'
 import { getRoleHome } from './lib/auth'
 import LoginPage from './pages/LoginPage'
 import NotFoundPage from './pages/NotFoundPage'
+import { ManagerBrandsPage, ManagerMaterialsPage, ManagerRepsPage } from './pages/manager/ManagerPages'
+import { OrgAdminAssignmentsPage, OrgAdminBrandsPage, OrgAdminMetricsPage, OrgAdminUsersPage } from './pages/org-admin/OrgAdminPages'
 import PublicVisitPage from './pages/PublicVisitPage'
 import RoleHomePage from './pages/RoleHomePage'
 import RoleSectionPage from './pages/RoleSectionPage'
+import { SuperAdminMetricsPage, SuperAdminOrgAdminsPage, SuperAdminOrganizationsPage } from './pages/superadmin/SuperAdminPages'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -67,9 +70,9 @@ function App() {
             }
           >
             <Route index element={<RoleHomePage role="superadmin" />} />
-            <Route path="organizations" element={<RoleSectionPage role="superadmin" path="/superadmin/organizations" />} />
-            <Route path="org-admins" element={<RoleSectionPage role="superadmin" path="/superadmin/org-admins" />} />
-            <Route path="metrics" element={<RoleSectionPage role="superadmin" path="/superadmin/metrics" />} />
+            <Route path="organizations" element={<SuperAdminOrganizationsPage />} />
+            <Route path="org-admins" element={<SuperAdminOrgAdminsPage />} />
+            <Route path="metrics" element={<SuperAdminMetricsPage />} />
           </Route>
 
           <Route
@@ -81,9 +84,10 @@ function App() {
             }
           >
             <Route index element={<RoleHomePage role="org_admin" />} />
-            <Route path="users" element={<RoleSectionPage role="org_admin" path="/org-admin/users" />} />
-            <Route path="brands" element={<RoleSectionPage role="org_admin" path="/org-admin/brands" />} />
-            <Route path="assignments" element={<RoleSectionPage role="org_admin" path="/org-admin/assignments" />} />
+            <Route path="users" element={<OrgAdminUsersPage />} />
+            <Route path="brands" element={<OrgAdminBrandsPage />} />
+            <Route path="assignments" element={<OrgAdminAssignmentsPage />} />
+            <Route path="metrics" element={<OrgAdminMetricsPage />} />
           </Route>
 
           <Route
@@ -95,9 +99,9 @@ function App() {
             }
           >
             <Route index element={<RoleHomePage role="manager" />} />
-            <Route path="brands" element={<RoleSectionPage role="manager" path="/manager/brands" />} />
-            <Route path="materials" element={<RoleSectionPage role="manager" path="/manager/materials" />} />
-            <Route path="reps" element={<RoleSectionPage role="manager" path="/manager/reps" />} />
+            <Route path="brands" element={<ManagerBrandsPage />} />
+            <Route path="materials" element={<ManagerMaterialsPage />} />
+            <Route path="reps" element={<ManagerRepsPage />} />
           </Route>
 
           <Route

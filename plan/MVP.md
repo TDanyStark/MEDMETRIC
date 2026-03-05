@@ -314,7 +314,7 @@ Definir base visual y tecnica del frontend con rutas por rol.
 
 ---
 
-## Fase 9 - Frontend Super Admin + Org Admin + Manager
+## [x] Fase 9 - Frontend Super Admin + Org Admin + Manager
 
 ### Objetivo
 

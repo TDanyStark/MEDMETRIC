@@ -42,9 +42,9 @@ export default function RoleHomePage({ role }: RoleHomePageProps) {
               {blueprint.label} listo para crecer sin rehacer la base.
             </h1>
             <p className="mt-4 max-w-3xl text-base leading-8 text-muted-foreground">{blueprint.intro}</p>
-            <p className="mt-4 max-w-3xl text-sm leading-7 text-muted-foreground">
-              La Fase 8 deja el marco tecnico y visual preparado. Desde aqui cada modulo suma logica sin cambiar rutas, estructura ni experiencia principal.
-            </p>
+              <p className="mt-4 max-w-3xl text-sm leading-7 text-muted-foreground">
+               La base visual ya sostiene la operacion interna principal. Desde aqui el backoffice de Super Admin, Org Admin y Gerente trabaja con datos reales sin rehacer la experiencia.
+              </p>
 
             <div className="mt-8 flex flex-wrap gap-3">
               <Button asChild>
@@ -66,9 +66,9 @@ export default function RoleHomePage({ role }: RoleHomePageProps) {
             <Separator className="my-5" />
             <div className="flex items-start gap-3 rounded-3xl border border-border/70 bg-card/80 p-4 text-sm leading-6 text-muted-foreground">
               <Sparkles className="mt-0.5 h-4 w-4 text-primary" />
-              <p>
-                El layout, la navegacion y los estados base ya responden al rol. La proxima fase solo conecta pantallas operativas y datos reales.
-              </p>
+                <p>
+                 El layout y la navegacion ya responden al rol. En esta etapa los modulos internos principales quedan conectados a datos reales y listos para operar.
+                </p>
             </div>
           </div>
         </CardContent>
