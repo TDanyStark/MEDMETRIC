@@ -10,9 +10,11 @@ use App\Application\Settings\SettingsInterface;
 use App\Domain\Brand\BrandRepositoryInterface;
 use App\Domain\Material\MaterialRepositoryInterface;
 use App\Domain\RepAccess\RepAccessRepositoryInterface;
+use App\Domain\VisitSession\VisitSessionRepositoryInterface;
 use App\Infrastructure\Persistence\Brand\DbBrandRepository;
 use App\Infrastructure\Persistence\Material\DbMaterialRepository;
 use App\Infrastructure\Persistence\RepAccess\DbRepAccessRepository;
+use App\Infrastructure\Persistence\VisitSession\DbVisitSessionRepository;
 use DI\ContainerBuilder;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
@@ -57,5 +59,6 @@ return function (ContainerBuilder $containerBuilder) {
         BrandRepositoryInterface::class => \DI\autowire(DbBrandRepository::class),
         MaterialRepositoryInterface::class => \DI\autowire(DbMaterialRepository::class),
         RepAccessRepositoryInterface::class => \DI\autowire(DbRepAccessRepository::class),
+        VisitSessionRepositoryInterface::class => \DI\autowire(DbVisitSessionRepository::class),
     ]);
 };

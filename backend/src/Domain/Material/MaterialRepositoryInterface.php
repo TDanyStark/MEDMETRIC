@@ -13,4 +13,5 @@ interface MaterialRepositoryInterface
     public function delete(int $id): void;
     public function findByManagerAndId(int $managerId, int $id): Material;
     public function approve(int $id, int $approvedBy): Material;
+    public function findAllApprovedByRep(int $repId, ?string $search = null, ?string $type = null, int $page = 1): array;
 }

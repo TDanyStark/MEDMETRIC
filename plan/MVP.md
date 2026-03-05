@@ -235,7 +235,7 @@ Permitir al gerente crear contenido y gestionar visitadores.
 
 ---
 
-## Fase 6 - Modulo Visitador (biblioteca y sesion)
+## [x] Fase 6 - Modulo Visitador (biblioteca y sesion)
 
 ### Objetivo
 

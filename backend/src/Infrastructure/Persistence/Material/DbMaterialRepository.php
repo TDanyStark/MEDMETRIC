@@ -232,4 +232,67 @@ class DbMaterialRepository implements MaterialRepositoryInterface
 
         return $this->findById($id);
     }
+
+    public function findAllApprovedByRep(int $repId, ?string $search = null, ?string $type = null, int $page = 1): array
+    {
+        $pageSize = PaginationConfig::PAGE_SIZE;
+        $offset   = ($page - 1) * $pageSize;
+
+        // Join with rep_manager_access to get materials from subscribed managers
+        // Only approved materials that are active
+        $where  = ['m.status = :status', 'rma.active = 1', 'rma.rep_id = :rep_id'];
+        $params = [':rep_id' => $repId, ':status' => 'approved'];
+
+        if ($search !== null && $search !== '') {
+            $where[]           = '(m.title LIKE :search OR m.description LIKE :search)';
+            $params[':search'] = '%' . $search . '%';
+        }
+
+        if ($type !== null && $type !== '') {
+            $where[]      = 'm.type = :type';
+            $params[':type'] = $type;
+        }
+
+        $whereSql = ' WHERE ' . implode(' AND ', $where);
+
+        $countSql = "SELECT COUNT(*) 
+                     FROM materials m
+                     JOIN rep_manager_access rma ON m.manager_id = rma.manager_id
+                     {$whereSql}";
+        $countStmt = $this->pdo->prepare($countSql);
+        $countStmt->execute($params);
+        $total = (int) $countStmt->fetchColumn();
+
+        $sql = "SELECT m.id, m.organization_id, m.brand_id, m.manager_id, m.title, m.description, m.type, m.status,
+                        m.storage_driver, m.storage_path, m.external_url, m.approved_at, m.approved_by, 
+                        m.created_at, m.updated_at,
+                        b.name as brand_name,
+                        u.first_name as manager_first_name, u.last_name as manager_last_name
+                FROM   materials m
+                JOIN   rep_manager_access rma ON m.manager_id = rma.manager_id
+                JOIN   brands b ON m.brand_id = b.id
+                JOIN   users u ON m.manager_id = u.id
+                {$whereSql}
+                ORDER  BY m.approved_at DESC
+                LIMIT  :limit OFFSET :offset";
+
+        $stmt = $this->pdo->prepare($sql);
+        foreach ($params as $key => $val) {
+            $stmt->bindValue($key, $val);
+        }
+        $stmt->bindValue(':limit',  $pageSize, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset,   PDO::PARAM_INT);
+        $stmt->execute();
+
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $items = array_map(fn(array $row) => Material::fromRow($row), $rows);
+
+        return [
+            'items'     => $items,
+            'total'     => $total,
+            'page'      => $page,
+            'per_page'  => $pageSize,
+            'last_page' => (int) ceil($total / $pageSize),
+        ];
+    }
 }

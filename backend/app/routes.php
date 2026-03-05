@@ -31,6 +31,9 @@ use App\Application\Actions\Manager\Rep\AssignRepAction;
 use App\Application\Actions\Manager\Rep\GetAvailableRepsAction;
 use App\Application\Actions\Manager\Rep\ListAssignedRepsAction;
 use App\Application\Actions\Manager\Rep\RemoveRepAction;
+use App\Application\Actions\Rep\Material\ListMaterialsAction as RepListMaterialsAction;
+use App\Application\Actions\Rep\VisitSession\CreateVisitSessionAction;
+use App\Application\Actions\Rep\VisitSession\ListVisitSessionsAction;
 use App\Application\Middleware\JwtMiddleware;
 use App\Application\Middleware\RoleMiddleware;
 use App\Infrastructure\Database\Connection;
@@ -184,6 +187,25 @@ return function (App $app) {
         })->add(function ($request, $handler) use ($app) {
             $responseFactory = $app->getContainer()->get(ResponseFactoryInterface::class);
             return (new RoleMiddleware($responseFactory, ['manager']))->process($request, $handler);
+        })->add(JwtMiddleware::class);
+
+        // -------------------------------------------------------------------------
+        // Rep routes (JWT + rep role required)
+        // -------------------------------------------------------------------------
+        $group->group('/rep', function (RouteCollectorProxy $rep) {
+
+            // Materials - approved materials from subscribed managers
+            $rep->get('/materials', RepListMaterialsAction::class);
+
+            // Visit Sessions
+            $rep->group('/visit-sessions', function (RouteCollectorProxy $sessions) {
+                $sessions->get('',  ListVisitSessionsAction::class);
+                $sessions->post('', CreateVisitSessionAction::class);
+            });
+
+        })->add(function ($request, $handler) use ($app) {
+            $responseFactory = $app->getContainer()->get(ResponseFactoryInterface::class);
+            return (new RoleMiddleware($responseFactory, ['rep']))->process($request, $handler);
         })->add(JwtMiddleware::class);
 
     });
