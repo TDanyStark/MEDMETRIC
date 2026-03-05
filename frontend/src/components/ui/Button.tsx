@@ -1,5 +1,5 @@
 import { ButtonHTMLAttributes, ReactNode } from 'react'
-import { cn } from '../../lib/utils'
+import { cn } from '@/lib/utils'
 
 const variants = {
   primary:   'bg-teal-600 text-white hover:bg-teal-700 focus-visible:ring-teal-500',

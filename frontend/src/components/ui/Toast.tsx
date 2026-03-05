@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, ReactNode } from 'react'
 import { CheckCircle, XCircle, X } from 'lucide-react'
-import { cn } from '../../lib/utils'
+import { cn } from '@/lib/utils'
 import { ToastContext, ToastOptions } from './ToastContextValue'
 
 let _id = 0

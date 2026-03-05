@@ -7,17 +7,17 @@ import {
   useUpdateAdminUser,
   useRepSubscriptions,
   useUpdateRepSubscriptions,
-} from '../../hooks/useAdminUsers'
-import { useOrganizations } from '../../hooks/useOrganizations'
-import { Button } from '../../components/ui/Button'
-import { Input } from '../../components/ui/Input'
-import { Select } from '../../components/ui/Select'
-import { Badge } from '../../components/ui/Badge'
-import { Modal } from '../../components/ui/Modal'
-import { Table, Thead, Th, Tbody, Tr, Td } from '../../components/ui/Table'
-import { useToast } from '../../components/ui/useToast'
-import { formatDateTime, getInitials } from '../../lib/utils'
-import { User, Organization } from '../../types'
+} from '@/hooks/useAdminUsers'
+import { useOrganizations } from '@/hooks/useOrganizations'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
+import { Select } from '@/components/ui/Select'
+import { Badge } from '@/components/ui/Badge'
+import { Modal } from '@/components/ui/Modal'
+import { Table, Thead, Th, Tbody, Tr, Td } from '@/components/ui/Table'
+import { useToast } from '@/components/ui/useToast'
+import { formatDateTime, getInitials } from '@/lib/utils'
+import { User, Organization } from '@/types'
 
 const ROLE_BADGE: Record<string, any> = {
   admin:   'admin',

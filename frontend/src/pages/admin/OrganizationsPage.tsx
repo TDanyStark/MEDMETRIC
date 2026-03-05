@@ -1,14 +1,14 @@
 import { useState, FormEvent } from 'react'
 import { Plus, Pencil, Building2, Search } from 'lucide-react'
-import { useOrganizations, useCreateOrganization, useUpdateOrganization } from '../../hooks/useOrganizations'
-import { Button } from '../../components/ui/Button'
-import { Input } from '../../components/ui/Input'
-import { Badge } from '../../components/ui/Badge'
-import { Modal } from '../../components/ui/Modal'
-import { Table, Thead, Th, Tbody, Tr, Td } from '../../components/ui/Table'
-import { useToast } from '../../components/ui/useToast'
-import { formatDate } from '../../lib/utils'
-import { Organization } from '../../types'
+import { useOrganizations, useCreateOrganization, useUpdateOrganization } from '@/hooks/useOrganizations'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
+import { Badge } from '@/components/ui/Badge'
+import { Modal } from '@/components/ui/Modal'
+import { Table, Thead, Th, Tbody, Tr, Td } from '@/components/ui/Table'
+import { useToast } from '@/components/ui/useToast'
+import { formatDate } from '@/lib/utils'
+import { Organization } from '@/types'
 
 type OrgData = Pick<Organization, 'name' | 'slug' | 'active'>;
 

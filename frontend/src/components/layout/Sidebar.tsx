@@ -1,8 +1,8 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { Building2, Users, LogOut, LayoutDashboard, LucideIcon } from 'lucide-react'
-import { useAuth } from '../../contexts/useAuth'
-import { cn, getInitials } from '../../lib/utils'
-import { Role } from '../../types'
+import { useAuth } from '@/contexts/useAuth'
+import { cn, getInitials } from '@/lib/utils'
+import { Role } from '@/types'
 
 interface NavItemData {
   to: string;

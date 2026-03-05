@@ -1,10 +1,10 @@
 import { Building2, Users, UserCheck, Briefcase, LucideIcon } from 'lucide-react'
-import { useOrganizations } from '../../hooks/useOrganizations'
-import { useAdminUsers } from '../../hooks/useAdminUsers'
+import { useOrganizations } from '@/hooks/useOrganizations'
+import { useAdminUsers } from '@/hooks/useAdminUsers'
 import { Link } from 'react-router-dom'
-import { formatDateTime } from '../../lib/utils'
-import { Badge } from '../../components/ui/Badge'
-import { User } from '../../types'
+import { formatDateTime } from '@/lib/utils'
+import { Badge } from '@/components/ui/Badge'
+import { User } from '@/types'
 
 const ROLE_LABEL: Record<string, string> = { admin: 'Administrador', manager: 'Gerente', rep: 'Visitador' }
 const ROLE_BADGE: Record<string, any> = { admin: 'admin', manager: 'manager', rep: 'rep' }
