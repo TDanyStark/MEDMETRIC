@@ -74,7 +74,7 @@ Crear el esquema minimo para multi-organizacion, materiales, sesiones y metricas
 - `materials.status` = `draft|approved|archived`
 - `visit_sessions.doctor_token` (sin expiracion en MVP)
 - `material_views.viewer_type` = `rep|doctor`
-- `material_views.opened_at`, `material_views.closed_at`
+- `material_views.opened_at`
 
 ### Seeds iniciales
 
@@ -259,7 +259,7 @@ Permitir al visitador usar material aprobado y generar acceso para medico.
 
 ---
 
-## Fase 7 - Acceso publico medico + metrica base
+## [x] Fase 7 - Acceso publico medico + metrica base
 
 ### Objetivo
 
@@ -269,7 +269,6 @@ Permitir al medico ver contenido sin login y registrar interacciones clave.
 
 - `GET /api/v1/public/session/{token}`
 - `POST /api/v1/public/material/{id}/open`
-- `POST /api/v1/public/material/{id}/close`
 - `GET /api/v1/public/material/{id}/resource`
 
 ### Comportamiento
@@ -282,7 +281,7 @@ Permitir al medico ver contenido sin login y registrar interacciones clave.
 
 - Quién vio material: `rep` o `doctor`
 - Material visto
-- Fecha/hora de apertura y cierre
+- Fecha/hora de apertura
 - (Opcional recomendado) user-agent e IP
 
 ### Resultado esperado

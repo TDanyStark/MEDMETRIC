@@ -106,11 +106,9 @@ Puede haber múltiples administradores por organización.
 - Identificador de sesion de visita
 - Organizacion, gerente, visitador, marca y material
 - Tipo de material (pdf/video/link)
-- Timestamp de inicio y fin
-- Duracion total de visualizacion
+- Timestamp de inicio
 - Eventos:
   - apertura de material
-  - cierre
   - porcentaje visto (video/pdf)
   - clics salientes (enlaces externos)
 - Datos tecnicos basicos:

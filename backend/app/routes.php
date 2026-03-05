@@ -31,6 +31,9 @@ use App\Application\Actions\Manager\Rep\AssignRepAction;
 use App\Application\Actions\Manager\Rep\GetAvailableRepsAction;
 use App\Application\Actions\Manager\Rep\ListAssignedRepsAction;
 use App\Application\Actions\Manager\Rep\RemoveRepAction;
+use App\Application\Actions\Public\Material\GetMaterialResourceAction;
+use App\Application\Actions\Public\Material\OpenMaterialAction;
+use App\Application\Actions\Public\Session\GetPublicSessionAction;
 use App\Application\Actions\Rep\Material\ListMaterialsAction as RepListMaterialsAction;
 use App\Application\Actions\Rep\VisitSession\CreateVisitSessionAction;
 use App\Application\Actions\Rep\VisitSession\ListVisitSessionsAction;
@@ -207,6 +210,23 @@ return function (App $app) {
             $responseFactory = $app->getContainer()->get(ResponseFactoryInterface::class);
             return (new RoleMiddleware($responseFactory, ['rep']))->process($request, $handler);
         })->add(JwtMiddleware::class);
+
+        // -------------------------------------------------------------------------
+        // Public routes (no authentication required)
+        // For doctor access via token
+        // -------------------------------------------------------------------------
+        $group->group('/public', function (RouteCollectorProxy $public) {
+            
+            // Get session by doctor token
+            $public->get('/session/{token}', GetPublicSessionAction::class);
+            
+            // Material tracking endpoints
+            $public->group('/material/{id}', function (RouteCollectorProxy $material) {
+                $material->post('/open', OpenMaterialAction::class);
+                $material->get('/resource', GetMaterialResourceAction::class);
+            });
+            
+        });
 
     });
 };
