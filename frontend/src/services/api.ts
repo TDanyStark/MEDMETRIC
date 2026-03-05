@@ -2,7 +2,7 @@ import { ApiErrorPayload } from '@/types'
 
 const API_BASE = '/api/v1'
 
-interface RequestOptions extends RequestInit {
+interface RequestOptions extends Omit<RequestInit, 'body'> {
   body?: BodyInit | FormData | object | null
 }
 
@@ -34,6 +34,7 @@ function extractErrorMessage(data: ApiErrorPayload | unknown, status: number): s
 class ApiService {
   async request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
     const url = `${API_BASE}${endpoint}`
+    const { body, ...requestInitOptions } = options
     const headers = new Headers(options.headers)
     const token = getStoredToken()
 
@@ -42,15 +43,15 @@ class ApiService {
     }
 
     const config: RequestInit = {
-      ...options,
+      ...requestInitOptions,
       headers,
     }
 
-    if (options.body instanceof FormData) {
-      config.body = options.body
-    } else if (options.body !== undefined && options.body !== null) {
+    if (body instanceof FormData) {
+      config.body = body
+    } else if (body !== undefined && body !== null) {
       headers.set('Content-Type', 'application/json')
-      config.body = typeof options.body === 'string' ? options.body : JSON.stringify(options.body)
+      config.body = typeof body === 'string' ? body : JSON.stringify(body)
     }
 
     const response = await fetch(url, config)
