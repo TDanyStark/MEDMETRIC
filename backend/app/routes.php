@@ -2,6 +2,12 @@
 
 declare(strict_types=1);
 
+use App\Application\Actions\Admin\Brand\AssignBrandsToManagerAction;
+use App\Application\Actions\Admin\Brand\CreateBrandAction;
+use App\Application\Actions\Admin\Brand\GetManagerBrandsAction;
+use App\Application\Actions\Admin\Brand\ListBrandsAction as AdminListBrandsAction;
+use App\Application\Actions\Admin\Brand\RemoveBrandsFromManagerAction;
+use App\Application\Actions\Admin\Brand\UpdateBrandAction;
 use App\Application\Actions\Admin\Organization\CreateOrganizationAction;
 use App\Application\Actions\Admin\Organization\ListOrganizationsAction;
 use App\Application\Actions\Admin\Organization\UpdateOrganizationAction;
@@ -13,9 +19,7 @@ use App\Application\Actions\Admin\User\UpdateAdminUserAction;
 use App\Application\Actions\Admin\User\UpdateRepSubscriptionsAction;
 use App\Application\Actions\Auth\LoginAction;
 use App\Application\Actions\Auth\MeAction;
-use App\Application\Actions\Manager\Brand\CreateBrandAction;
 use App\Application\Actions\Manager\Brand\ListBrandsAction;
-use App\Application\Actions\Manager\Brand\UpdateBrandAction;
 use App\Application\Actions\Manager\Material\ApproveMaterialAction;
 use App\Application\Actions\Manager\Material\CreateMaterialAction;
 use App\Application\Actions\Manager\Material\ListMaterialsAction;
@@ -108,6 +112,20 @@ return function (App $app) {
                 $users->put('/{id}/subscriptions',  UpdateRepSubscriptionsAction::class);
             });
 
+            // Brands (Admin manages brands)
+            $admin->group('/brands', function (RouteCollectorProxy $brands) {
+                $brands->get('',       AdminListBrandsAction::class);
+                $brands->post('',      CreateBrandAction::class);
+                $brands->put('/{id}',  UpdateBrandAction::class);
+            });
+
+            // Manager brand assignments
+            $admin->group('/managers/{managerId}/brands', function (RouteCollectorProxy $mb) {
+                $mb->get('',  GetManagerBrandsAction::class);
+                $mb->post('', AssignBrandsToManagerAction::class);
+                $mb->delete('', RemoveBrandsFromManagerAction::class);
+            });
+
         })->add(function ($request, $handler) use ($app) {
             $responseFactory = $app->getContainer()->get(ResponseFactoryInterface::class);
             return (new RoleMiddleware($responseFactory, ['admin']))->process($request, $handler);
@@ -118,12 +136,8 @@ return function (App $app) {
         // -------------------------------------------------------------------------
         $group->group('/manager', function (RouteCollectorProxy $manager) {
 
-            // Brands
-            $manager->group('/brands', function (RouteCollectorProxy $brands) {
-                $brands->get('',       ListBrandsAction::class);
-                $brands->post('',      CreateBrandAction::class);
-                $brands->put('/{id}',  UpdateBrandAction::class);
-            });
+            // Brands (manager only sees assigned brands - no create/update)
+            $manager->get('/brands', ListBrandsAction::class);
 
             // Materials
             $manager->group('/materials', function (RouteCollectorProxy $materials) {

@@ -11,7 +11,6 @@ class Brand implements JsonSerializable
     public function __construct(
         private int     $id,
         private int     $organizationId,
-        private int     $managerId,
         private string  $name,
         private ?string $description,
         private bool    $active,
@@ -21,7 +20,6 @@ class Brand implements JsonSerializable
 
     public function getId(): int           { return $this->id; }
     public function getOrganizationId(): int { return $this->organizationId; }
-    public function getManagerId(): int    { return $this->managerId; }
     public function getName(): string     { return $this->name; }
     public function getDescription(): ?string { return $this->description; }
     public function isActive(): bool      { return $this->active; }
@@ -33,7 +31,6 @@ class Brand implements JsonSerializable
         return [
             'id'              => $this->id,
             'organization_id' => $this->organizationId,
-            'manager_id'      => $this->managerId,
             'name'            => $this->name,
             'description'     => $this->description,
             'active'          => $this->active,
@@ -47,7 +44,6 @@ class Brand implements JsonSerializable
         return new self(
             id:             (int) $row['id'],
             organizationId: (int) $row['organization_id'],
-            managerId:      (int) $row['manager_id'],
             name:           $row['name'],
             description:    $row['description'] ?? null,
             active:         (bool) $row['active'],

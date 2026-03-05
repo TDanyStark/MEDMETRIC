@@ -25,36 +25,42 @@ class DbMaterialRepository implements MaterialRepositoryInterface
         $pageSize = PaginationConfig::PAGE_SIZE;
         $offset   = ($page - 1) * $pageSize;
 
-        $where  = ['manager_id = :manager_id'];
+        // Join with manager_brands to verify brand access
+        $where  = ['m.manager_id = :manager_id', 'mb.active = 1'];
         $params = [':manager_id' => $managerId];
 
         if ($search !== null && $search !== '') {
-            $where[]           = '(title LIKE :search OR description LIKE :search)';
+            $where[]           = '(m.title LIKE :search OR m.description LIKE :search)';
             $params[':search'] = '%' . $search . '%';
         }
 
         if ($status !== null && $status !== '') {
-            $where[]         = 'status = :status';
+            $where[]         = 'm.status = :status';
             $params[':status'] = $status;
         }
 
         if ($type !== null && $type !== '') {
-            $where[]      = 'type = :type';
+            $where[]      = 'm.type = :type';
             $params[':type'] = $type;
         }
 
         $whereSql = ' WHERE ' . implode(' AND ', $where);
 
-        $countStmt = $this->pdo->prepare("SELECT COUNT(*) FROM materials" . $whereSql);
+        $countSql = "SELECT COUNT(*) 
+                     FROM materials m
+                     JOIN manager_brands mb ON m.brand_id = mb.brand_id AND mb.manager_id = :manager_id
+                     {$whereSql}";
+        $countStmt = $this->pdo->prepare($countSql);
         $countStmt->execute($params);
         $total = (int) $countStmt->fetchColumn();
 
-        $sql = "SELECT id, organization_id, brand_id, manager_id, title, description, type, status,
-                       storage_driver, storage_path, external_url, approved_at, approved_by, 
-                       created_at, updated_at
-                FROM   materials
+        $sql = "SELECT m.id, m.organization_id, m.brand_id, m.manager_id, m.title, m.description, m.type, m.status,
+                       m.storage_driver, m.storage_path, m.external_url, m.approved_at, m.approved_by, 
+                       m.created_at, m.updated_at
+                FROM   materials m
+                JOIN   manager_brands mb ON m.brand_id = mb.brand_id AND mb.manager_id = :manager_id
                 {$whereSql}
-                ORDER  BY created_at DESC
+                ORDER  BY m.created_at DESC
                 LIMIT  :limit OFFSET :offset";
 
         $stmt = $this->pdo->prepare($sql);
@@ -101,11 +107,12 @@ class DbMaterialRepository implements MaterialRepositoryInterface
     public function findByManagerAndId(int $managerId, int $id): Material
     {
         $stmt = $this->pdo->prepare(
-            'SELECT id, organization_id, brand_id, manager_id, title, description, type, status,
-                    storage_driver, storage_path, external_url, approved_at, approved_by, 
-                    created_at, updated_at
-             FROM   materials
-             WHERE  id = :id AND manager_id = :manager_id
+            'SELECT m.id, m.organization_id, m.brand_id, m.manager_id, m.title, m.description, m.type, m.status,
+                    m.storage_driver, m.storage_path, m.external_url, m.approved_at, m.approved_by, 
+                    m.created_at, m.updated_at
+             FROM   materials m
+             JOIN   manager_brands mb ON m.brand_id = mb.brand_id AND mb.manager_id = :manager_id
+             WHERE  m.id = :id AND m.manager_id = :manager_id AND mb.active = 1
              LIMIT  1'
         );
 

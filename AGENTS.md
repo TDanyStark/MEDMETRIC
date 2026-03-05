@@ -46,28 +46,36 @@ Ejemplos:
   - cada gerente con 3 visitadores medicos
 
 El administrador debe poder crear y gestionar estas estructuras.
+Puede haber múltiples administradores por organización.
 
 ## Roles y Permisos
 
-### 1) Administrador
+### 1) Super Admin
 
 - Acceso total a la plataforma
 - Crea organizaciones/clientes
-- Gestiona usuarios (gerentes y visitadores)
-- Crea y gestiona marcas (catalog maestro por organizacion, sin duplicados)
-- Asigna marcas a gerentes
-- Supervisa y audita metricas globales
-- Configura reglas y catalogos maestros
+- Gestiona administradores de organización (asigna/quita admins a organizaciones)
+- Supervisa y audita metricas globales de todas las organizaciones
+- Configura reglas y catalogos maestros del sistema
 
-### 2) Gerente
+### 2) Administrador de Organización
 
-- Pertenece a una organizacion
-- Gestiona las marcas que le fueron asignadas por el administrador
+- Pertenece a una organización específica
+- Acceso total dentro de su organización (scope limitado)
+- Crea y gestiona usuarios (gerentes y visitadores) dentro de su organización
+- Crea y gestiona marcas (catálogo maestro de la organización, sin duplicados)
+- Asigna marcas a gerentes de su organización
+- Supervisa métricas de su organización
+
+### 3) Gerente
+
+- Pertenece a una organización
+- Gestiona las marcas que le fueron asignadas por el administrador de organización
 - Crea y gestiona materiales (PDF, video, link externo) asociados a sus marcas
 - Gestiona la suscripcion de visitadores medicos de su organizacion a su contenido
 - Publica o solicita aprobacion de contenido segun flujo definido
 
-### 3) Visitador Medico
+### 4) Visitador Medico
 
 - Pertenece a una organizacion
 - Puede estar suscrito a uno o varios gerentes para acceder a su contenido
@@ -75,7 +83,7 @@ El administrador debe poder crear y gestionar estas estructuras.
 - Usa el contenido durante la visita medica
 - Crea sesiones seleccionando materiales especificos y genera links para el medico
 
-### 4) Medico (sin login)
+### 5) Medico (sin login)
 
 - No se autentica
 - Accede al contenido por URL firmada/tokenizada
@@ -152,6 +160,8 @@ Entidades sugeridas para el arranque:
 - material_views
 - material_events
 
+Nota: Los usuarios con rol `org_admin` se asocian a una organización mediante `users.organization_id`.
+
 ## Seguridad y Cumplimiento
 
 - Principio de minimo privilegio por rol
@@ -182,9 +192,9 @@ Entidades sugeridas para el arranque:
 
 ## Roadmap Sugerido (MVP)
 
-1. Auth + RBAC (admin/gerente/visitador)
+1. Auth + RBAC (superadmin/org_admin/gerente/visitador)
 2. Organizaciones y jerarquia de usuarios
-3. Marcas (creadas por admin, asignadas a gerentes) y carga de materiales
+3. Marcas (creadas por admin de organización, asignadas a gerentes) y carga de materiales
 4. Flujo de aprobacion/publicacion
 5. Sesion de visita + URL publica para medico
 6. Recoleccion y dashboard inicial de metricas

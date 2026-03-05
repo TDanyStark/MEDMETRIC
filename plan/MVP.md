@@ -78,7 +78,7 @@ Crear el esquema minimo para multi-organizacion, materiales, sesiones y metricas
 
 ### Seeds iniciales
 
-- Roles: `admin`, `manager`, `rep`
+- Roles: `superadmin`, `org_admin`, `manager`, `rep`
 - Organizaciones demo: `Abbott`, `Addion`
 - Usuarios demo por rol
 
@@ -100,7 +100,7 @@ Autenticar usuarios internos y proteger endpoints por rol.
 2. Implementar `GET /api/v1/auth/me`
 3. Generar JWT con expiracion de 24h
 4. Middleware JWT (`Authorization: Bearer`)
-5. Middleware de roles (admin/manager/rep)
+5. Middleware de roles (superadmin/org_admin/manager/rep)
 6. Registrar `last_login_at` en login exitoso
 
 ### Reglas
@@ -115,11 +115,11 @@ Autenticar usuarios internos y proteger endpoints por rol.
 
 ---
 
-## [x] Fase 3 - Modulo Admin (organizaciones, usuarios y marcas)
+## [x] Fase 3 - Modulo Super Admin (organizaciones y administradores de organización)
 
 ### Objetivo
 
-Permitir al administrador crear y gestionar estructura organizacional y marcas.
+Permitir al Super Admin crear y gestionar organizaciones y asignar administradores de organización.
 
 ### Reglas de marcas
 
@@ -130,31 +130,66 @@ Permitir al administrador crear y gestionar estructura organizacional y marcas.
 
 ### Endpoints MVP
 
-- `GET /api/v1/admin/organizations`
-- `POST /api/v1/admin/organizations`
-- `PUT /api/v1/admin/organizations/{id}`
-- `GET /api/v1/admin/users`
-- `POST /api/v1/admin/users`
-- `PUT /api/v1/admin/users/{id}`
-- `GET /api/v1/admin/brands`
-- `POST /api/v1/admin/brands`
-- `PUT /api/v1/admin/brands/{id}`
-- `GET /api/v1/admin/managers/{id}/brands`
-- `PUT /api/v1/admin/managers/{id}/brands`
+- `GET /api/v1/superadmin/organizations`
+- `POST /api/v1/superadmin/organizations`
+- `PUT /api/v1/superadmin/organizations/{id}`
+- `GET /api/v1/superadmin/org-admins`
+- `POST /api/v1/superadmin/org-admins` (crear y asignar a organización)
+- `PUT /api/v1/superadmin/org-admins/{id}`
+- `DELETE /api/v1/superadmin/org-admins/{id}` (quitar de organización)
 
 ### Reglas
 
-- Admin puede crear gerentes y visitadores
-- Usuario siempre pertenece a una organizacion
-- Un visitador puede estar suscrito a multiples gerentes
+- Super Admin crea organizaciones
+- Super Admin crea administradores de organización y los asigna a una organización específica
+- Un administrador de organización solo puede estar asignado a una organización
+- Super Admin puede ver métricas globales de todas las organizaciones
 
 ### Resultado esperado
 
-- Jerarquia organizacional operativa.
+- Jerarquía de Super Admin -> Org Admin -> Organización operativa.
 
 ---
 
-## [x] Fase 4 - Modulo Gerente (materiales y visitadores)
+## [x] Fase 4 - Modulo Admin de Organización (usuarios y marcas)
+
+### Objetivo
+
+Permitir al administrador de organización gestionar todo lo relacionado a su organización: usuarios, marcas y asignaciones.
+
+### Reglas de marcas
+
+- Las marcas son únicas por organización (no puede haber 2 "Bellaface" en Abbott)
+- Una marca puede ser asignada a múltiples gerentes
+- Un gerente puede tener muchas marcas asignadas
+- El admin de organización crea las marcas y luego las asigna a los gerentes
+- El admin de organización solo ve y gestiona usuarios de su propia organización
+
+### Endpoints MVP
+
+- `GET /api/v1/org-admin/users`
+- `POST /api/v1/org-admin/users` (crear gerentes y visitadores)
+- `PUT /api/v1/org-admin/users/{id}`
+- `GET /api/v1/org-admin/brands`
+- `POST /api/v1/org-admin/brands`
+- `PUT /api/v1/org-admin/brands/{id}`
+- `GET /api/v1/org-admin/managers/{id}/brands`
+- `PUT /api/v1/org-admin/managers/{id}/brands`
+
+### Reglas
+
+- Org Admin solo puede crear usuarios dentro de su propia organización
+- Org Admin asigna marcas a gerentes de su organización
+- Un visitador puede estar suscrito a múltiples gerentes
+- Todos los endpoints filtran automáticamente por la organización del admin
+
+### Resultado esperado
+
+- Administración completa de organización por su admin asignado.
+
+---
+
+## [x] Fase 5 - Modulo Gerente (materiales y visitadores)
 
 ### Objetivo
 
@@ -162,7 +197,7 @@ Permitir al gerente crear contenido y gestionar visitadores.
 
 ### Reglas
 
-- El gerente NO crea marcas, las usa de las que le fueron asignadas por el admin
+- El gerente NO crea marcas, las usa de las que le fueron asignadas por el admin de organización
 - El gerente ve solo las marcas que tiene asignadas
 - Crea materiales asociados a sus marcas
 
@@ -200,7 +235,7 @@ Permitir al gerente crear contenido y gestionar visitadores.
 
 ---
 
-## Fase 5 - Modulo Visitador (biblioteca y sesion)
+## Fase 6 - Modulo Visitador (biblioteca y sesion)
 
 ### Objetivo
 
@@ -224,7 +259,7 @@ Permitir al visitador usar material aprobado y generar acceso para medico.
 
 ---
 
-## Fase 6 - Acceso publico medico + metrica base
+## Fase 7 - Acceso publico medico + metrica base
 
 ### Objetivo
 
@@ -256,7 +291,7 @@ Permitir al medico ver contenido sin login y registrar interacciones clave.
 
 ---
 
-## Fase 7 - Frontend base (React + TS + Tailwind + shadcn/ui )
+## Fase 8 - Frontend base (React + TS + Tailwind + shadcn/ui )
 
 ### Objetivo
 
@@ -269,7 +304,8 @@ Definir base visual y tecnica del frontend con rutas por rol.
 3. Crear layout base y sistema de navegacion por rol
 4. Implementar rutas protegidas:
    - `/login`
-   - `/admin/*`
+   - `/superadmin/*`
+   - `/org-admin/*`
    - `/manager/*`
    - `/rep/*`
    - `/public/visit/:token`
@@ -280,7 +316,7 @@ Definir base visual y tecnica del frontend con rutas por rol.
 
 ---
 
-## Fase 8 - Frontend Admin + Manager
+## Fase 9 - Frontend Super Admin + Org Admin + Manager
 
 ### Objetivo
 
@@ -288,11 +324,16 @@ Completar operacion interna principal.
 
 ### Pantallas
 
-- Admin:
+- Super Admin:
   - Organizaciones (listar/crear/editar)
-  - Usuarios (listar/crear/editar)
+  - Administradores de organización (listar/crear/editar/asignar)
+  - Métricas globales (vista de todas las organizaciones)
+- Org Admin:
+  - Usuarios (listar/crear/editar - gerentes y visitadores)
+  - Marcas (crear y asignar a gerentes)
+  - Métricas de su organización
 - Manager:
-  - Marcas
+  - Marcas asignadas
   - Materiales (crear PDF/video/link, aprobar)
 
 ### Resultado esperado
@@ -301,7 +342,7 @@ Completar operacion interna principal.
 
 ---
 
-## Fase 9 - Frontend Visitador + vista medico
+## Fase 10 - Frontend Visitador + vista medico
 
 ### Objetivo
 
@@ -325,7 +366,7 @@ Completar flujo de campo y experiencia publica.
 
 ---
 
-## Fase 10 - Insights MVP
+## Fase 11 - Insights MVP
 
 ### Objetivo
 
@@ -345,7 +386,7 @@ Mostrar indicadores simples para validar adopcion del contenido.
 
 ### Resultado esperado
 
-- Admin y gerente pueden medir uso real del contenido.
+- Org Admin y gerente pueden medir uso real del contenido.
 
 ---
 
@@ -394,8 +435,9 @@ Para avanzar entre fases, validar siempre:
 
 El MVP se considera completo cuando:
 
-- Admin crea organizaciones, usuarios y marcas
-- Admin asigna marcas a gerentes
+- Super Admin crea organizaciones y asigna administradores de organización
+- Org Admin crea gerentes, visitadores y marcas dentro de su organización
+- Org Admin asigna marcas a gerentes
 - Gerente crea materiales en sus marcas asignadas y los aprueba
 - Visitador inicia sesion diaria (JWT 24h), accede biblioteca y comparte link
 - Medico accede sin login mediante token y consume contenido
