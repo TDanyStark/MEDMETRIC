@@ -114,7 +114,7 @@ Autenticar usuarios internos y proteger endpoints por rol.
 
 ---
 
-## Fase 3 - Modulo Admin (organizaciones y usuarios)
+## [x] Fase 3 - Modulo Admin (organizaciones y usuarios)
 
 ### Objetivo
 
@@ -326,6 +326,20 @@ Mostrar indicadores simples para validar adopcion del contenido.
 
 ---
 
+## Lineamientos de Frontend
+
+- Usar TypeScript en todo el frontend (.tsx / .ts), sin archivos .js ni .jsx
+- Todos los filtros y parametros de busqueda deben persistirse en la URL como query params, para que el estado sea navegable, compartible y sobreviva a recargas de pagina.
+- Ejemplo: `/admin/users?role=manager&organization_id=2&q=garcia&page=2`
+
+## Lineamientos de Backend
+
+- Todos los endpoints de listado deben aceptar los mismos filtros que se exponen en el frontend como query params (ej. `role`, `organization_id`, `q`).
+- Todos los listados deben estar paginados: maximo de items por pagina definido en una sola constante global (`PaginationConfig::PAGE_SIZE`), inicialmente en 20; ese numero debe poder cambiarse desde un unico lugar sin tocar los repositorios ni las acciones.
+- La respuesta paginada debe incluir siempre metadatos: `total`, `page`, `per_page`, `last_page`.
+
+---
+
 ## Checklist de definicion por fase
 
 Para avanzar entre fases, validar siempre:
@@ -336,6 +350,7 @@ Para avanzar entre fases, validar siempre:
 4. Seguridad minima (auth/rol/input)
 5. Pruebas de smoke (`/api/v1/health` + endpoints nuevos)
 6. UI conectada a API real
+7. Filtros de listados persistidos en URL (query params)
 
 ---
 

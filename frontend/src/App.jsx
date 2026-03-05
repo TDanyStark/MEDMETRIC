@@ -1,72 +1,82 @@
-import { useState, useEffect } from 'react'
-import api from './services/api'
-import './App.css'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { AuthProvider } from './contexts/AuthContext'
+import { ToastProvider } from './components/ui/Toast'
+import { ProtectedRoute } from './components/auth/ProtectedRoute'
+import { AppLayout } from './components/layout/AppLayout'
+
+import LoginPage         from './pages/LoginPage'
+import AdminDashboard    from './pages/admin/AdminDashboard'
+import OrganizationsPage from './pages/admin/OrganizationsPage'
+import UsersPage         from './pages/admin/UsersPage'
+import NotFoundPage      from './pages/NotFoundPage'
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      staleTime: 30_000,
+    },
+  },
+})
 
 function App() {
-  const [health, setHealth] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-
-  useEffect(() => {
-    const checkHealth = async () => {
-      try {
-        const data = await api.get('/health')
-        setHealth(data)
-      } catch (err) {
-        setError(err.message)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    checkHealth()
-  }, [])
-
   return (
-    <div className="app">
-      <header className="app-header">
-        <h1>MEDMETRIC</h1>
-        <p className="subtitle">Sistema de Gestión Médica</p>
-      </header>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <ToastProvider>
+          <BrowserRouter>
+            <Routes>
+              {/* Public */}
+              <Route path="/login" element={<LoginPage />} />
 
-      <main className="app-main">
-        {loading && <p>Cargando...</p>}
-        
-        {error && (
-          <div className="error">
-            <h2>Error de conexión</h2>
-            <p>{error}</p>
-            <p>Asegurate de que el backend este ejecutandose en el puerto 8081</p>
-          </div>
-        )}
+              {/* Admin routes */}
+              <Route
+                element={
+                  <ProtectedRoute roles={['admin']}>
+                    <AppLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route path="/admin"               element={<AdminDashboard />} />
+                <Route path="/admin/organizations" element={<OrganizationsPage />} />
+                <Route path="/admin/users"         element={<UsersPage />} />
+              </Route>
 
-        {health && (
-          <div className="health-status">
-            <h2>Estado del Sistema</h2>
-            
-            <div className="status-card">
-              <h3>API</h3>
-              <p><strong>Nombre:</strong> {health.api?.name}</p>
-              <p><strong>Versión:</strong> {health.api?.version}</p>
-              <p><strong>Entorno:</strong> {health.api?.environment}</p>
-              <p className={`status ${health.api?.status}`}>
-                Estado: {health.api?.status}
-              </p>
-            </div>
+              {/* Manager routes (placeholder for Phase 4) */}
+              <Route
+                path="/manager/*"
+                element={
+                  <ProtectedRoute roles={['manager']}>
+                    <div className="flex items-center justify-center h-screen text-sm text-slate-500">
+                      Módulo Gerente — próximamente (Fase 4)
+                    </div>
+                  </ProtectedRoute>
+                }
+              />
 
-            <div className="status-card">
-              <h3>Base de Datos</h3>
-              <p className={`status ${health.database?.status}`}>
-                Estado: {health.database?.status}
-              </p>
-              {health.database?.message && (
-                <p>{health.database.message}</p>
-              )}
-            </div>
-          </div>
-        )}
-      </main>
-    </div>
+              {/* Rep routes (placeholder for Phase 5) */}
+              <Route
+                path="/rep/*"
+                element={
+                  <ProtectedRoute roles={['rep']}>
+                    <div className="flex items-center justify-center h-screen text-sm text-slate-500">
+                      Módulo Visitador — próximamente (Fase 5)
+                    </div>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Root redirect */}
+              <Route path="/" element={<Navigate to="/login" replace />} />
+
+              {/* 404 */}
+              <Route path="*" element={<NotFoundPage />} />
+            </Routes>
+          </BrowserRouter>
+        </ToastProvider>
+      </AuthProvider>
+    </QueryClientProvider>
   )
 }
 

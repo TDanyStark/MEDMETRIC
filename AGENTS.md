@@ -118,9 +118,12 @@ El administrador debe poder crear y gestionar estas estructuras.
 - Validacion robusta de input
 - Logging estructurado y manejo de errores consistente
 - Capas sugeridas: rutas, servicios, repositorios, dominio
+- Todos los endpoints de listado deben aceptar los mismos filtros que se exponen en el frontend como query params (ej. `role`, `organization_id`, `q`)
+- Todos los listados deben estar paginados: maximo de items por pagina definido en una sola constante global (`PaginationConfig::PAGE_SIZE`), inicialmente en 20; la respuesta debe incluir metadatos de paginacion (`total`, `page`, `per_page`, `last_page`)
 
 ### Frontend (React)
 
+- Usar TypeScript en todo el frontend (.tsx / .ts), sin archivos .js ni .jsx
 - SPA con rutas protegidas por rol
 - Modulo de administracion (organizaciones y usuarios)
 - Modulo de contenido (carga, aprobacion, biblioteca)
@@ -128,6 +131,8 @@ El administrador debe poder crear y gestionar estas estructuras.
 - Vista publica de medico optimizada para acceso inmediato
 - Usa librerias para todo, para evitar crear cosas de 0, no reinventes la rueda, por ejemplo para querys, puedes usar tanckstack query, y asi para todo.
 - importante que siempre pienses en la mejor UX, que sea facil de manejar, que requiera de pocos clics hacer cosas
+- todos los filtros y parametros de busqueda en el frontend deben persistirse en la URL (query params), para que el estado sea navegable, compartible y sobreviva a recargas de pagina
+- los diseños hazlos con la skill interface-design
 
 ### Base de Datos (MySQL)
 
