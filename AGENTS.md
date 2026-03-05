@@ -190,16 +190,11 @@ Nota: Los usuarios con rol `org_admin` se asocian a una organización mediante `
   - `/` SPA
   - `/api/health` API
 
-## Roadmap Sugerido (MVP)
-
-1. Auth + RBAC (superadmin/org_admin/gerente/visitador)
-2. Organizaciones y jerarquia de usuarios
-3. Marcas (creadas por admin de organización, asignadas a gerentes) y carga de materiales
-4. Flujo de aprobacion/publicacion
-5. Sesion de visita + URL publica para medico
-6. Recoleccion y dashboard inicial de metricas
-
 ## Buenas practicas
 
 1. No repitas codigo, si ves que algo se puede repetir crea los metodos o funciones o componentes en un lugar especifico donde sea facil de compartir
 2. Siempre ten en cuenta esos lugares de funciones, metodos y componentes, para que cuando estes implementando un feature o un ajuste busques si ya existe algo que te pueda servir y no repetir codigo
+
+## Cuando estes implementando el plan MVP.md
+
+- Como se implementan por fases, quiero que tengas en cuenta las demas fases para que no te adelantes a hacer algo que se hara en el futuro, y en todas las fases analiza que se ha hecho antes para que sincronices con las fases nuevas
