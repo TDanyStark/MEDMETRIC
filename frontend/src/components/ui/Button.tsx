@@ -35,10 +35,16 @@ export interface ButtonProps
 }
 
 export function Button({ className, variant, size, asChild = false, loading, children, disabled, ...props }: ButtonProps) {
-  const Comp = asChild ? Slot : 'button'
+  if (asChild) {
+    return (
+      <Slot className={cn(buttonVariants({ variant, size, className }))} {...props}>
+        {children}
+      </Slot>
+    )
+  }
 
   return (
-    <Comp className={cn(buttonVariants({ variant, size, className }))} disabled={disabled || loading} {...props}>
+    <button className={cn(buttonVariants({ variant, size, className }))} disabled={disabled || loading} {...props}>
       {loading && (
         <svg className="h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
           <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
@@ -46,6 +52,6 @@ export function Button({ className, variant, size, asChild = false, loading, chi
         </svg>
       )}
       {children}
-    </Comp>
+    </button>
   )
 }

@@ -59,12 +59,12 @@ export default function RoleHomePage({ role }: RoleHomePageProps) {
             </div>
           </div>
 
-          <div className="rounded-[32px] border border-border/70 bg-background/85 p-6">
+          <div className="rounded-4xl border border-border/70 bg-background/85 p-6">
             <p className="text-[0.72rem] uppercase tracking-[0.24em] text-muted-foreground">Sesion actual</p>
             <h2 className="mt-3 font-display text-3xl text-foreground">{user?.name}</h2>
             <p className="mt-2 text-sm leading-7 text-muted-foreground">{user?.email}</p>
             <Separator className="my-5" />
-            <div className="flex items-start gap-3 rounded-[24px] border border-border/70 bg-card/80 p-4 text-sm leading-6 text-muted-foreground">
+            <div className="flex items-start gap-3 rounded-3xl border border-border/70 bg-card/80 p-4 text-sm leading-6 text-muted-foreground">
               <Sparkles className="mt-0.5 h-4 w-4 text-primary" />
               <p>
                 El layout, la navegacion y los estados base ya responden al rol. La proxima fase solo conecta pantallas operativas y datos reales.
