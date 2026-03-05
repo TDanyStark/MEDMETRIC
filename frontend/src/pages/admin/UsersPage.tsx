@@ -345,20 +345,20 @@ export default function UsersPage() {
       {/* Filters bar */}
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <form onSubmit={handleSearch} className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <input
             type="text"
             value={searchInput}
             onChange={e => setSearchInput(e.target.value)}
             placeholder="Buscar usuario…"
-            className="h-8 w-52 rounded-md border border-slate-200 bg-white pl-8 pr-3 text-sm placeholder:text-slate-400 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+            className="h-10 w-64 rounded-md border border-slate-200 bg-white pl-10 pr-4 text-sm placeholder:text-slate-400 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition-all shadow-sm"
           />
         </form>
 
         <select
           value={role}
           onChange={e => updateFilters({ role: e.target.value })}
-          className="h-8 rounded-md border border-slate-200 bg-white px-2.5 text-sm text-slate-700 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+          className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition-all shadow-sm min-w-[140px]"
         >
           <option value="">Todos los roles</option>
           {roles.map(r => (
@@ -369,7 +369,7 @@ export default function UsersPage() {
         <select
           value={organizationId}
           onChange={e => updateFilters({ organization_id: e.target.value })}
-          className="h-8 rounded-md border border-slate-200 bg-white px-2.5 text-sm text-slate-700 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+          className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition-all shadow-sm min-w-[200px]"
         >
           <option value="">Todas las organizaciones</option>
           {organizations.map(o => (
@@ -407,12 +407,12 @@ export default function UsersPage() {
                   <Tr key={u.id}>
                     <Td>
                       <div className="flex items-center gap-2.5">
-                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm font-semibold text-slate-600">
                           {getInitials(u.name)}
                         </div>
                         <div>
-                          <p className="font-medium text-slate-900 leading-none">{u.name}</p>
-                          <p className="text-xs text-slate-400 mt-0.5">{u.email}</p>
+                          <p className="font-semibold text-slate-900 leading-tight">{u.name}</p>
+                          <p className="text-xs text-slate-500 mt-0.5">{u.email}</p>
                         </div>
                       </div>
                     </Td>
