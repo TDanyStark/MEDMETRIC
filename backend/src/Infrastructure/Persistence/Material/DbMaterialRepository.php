@@ -1,0 +1,228 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Infrastructure\Persistence\Material;
+
+use App\Domain\Material\Material;
+use App\Domain\Material\MaterialNotFoundException;
+use App\Domain\Material\MaterialRepositoryInterface;
+use App\Infrastructure\Database\Connection;
+use App\Infrastructure\Config\PaginationConfig;
+use PDO;
+
+class DbMaterialRepository implements MaterialRepositoryInterface
+{
+    private PDO $pdo;
+
+    public function __construct()
+    {
+        $this->pdo = Connection::getConnection();
+    }
+
+    public function findAllByManager(int $managerId, ?string $search = null, ?string $status = null, ?string $type = null, int $page = 1): array
+    {
+        $pageSize = PaginationConfig::PAGE_SIZE;
+        $offset   = ($page - 1) * $pageSize;
+
+        $where  = ['manager_id = :manager_id'];
+        $params = [':manager_id' => $managerId];
+
+        if ($search !== null && $search !== '') {
+            $where[]           = '(title LIKE :search OR description LIKE :search)';
+            $params[':search'] = '%' . $search . '%';
+        }
+
+        if ($status !== null && $status !== '') {
+            $where[]         = 'status = :status';
+            $params[':status'] = $status;
+        }
+
+        if ($type !== null && $type !== '') {
+            $where[]      = 'type = :type';
+            $params[':type'] = $type;
+        }
+
+        $whereSql = ' WHERE ' . implode(' AND ', $where);
+
+        $countStmt = $this->pdo->prepare("SELECT COUNT(*) FROM materials" . $whereSql);
+        $countStmt->execute($params);
+        $total = (int) $countStmt->fetchColumn();
+
+        $sql = "SELECT id, organization_id, brand_id, manager_id, title, description, type, status,
+                       storage_driver, storage_path, external_url, approved_at, approved_by, 
+                       created_at, updated_at
+                FROM   materials
+                {$whereSql}
+                ORDER  BY created_at DESC
+                LIMIT  :limit OFFSET :offset";
+
+        $stmt = $this->pdo->prepare($sql);
+        foreach ($params as $key => $val) {
+            $stmt->bindValue($key, $val);
+        }
+        $stmt->bindValue(':limit',  $pageSize, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset,   PDO::PARAM_INT);
+        $stmt->execute();
+
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $items = array_map(fn(array $row) => Material::fromRow($row), $rows);
+
+        return [
+            'items'     => $items,
+            'total'     => $total,
+            'page'      => $page,
+            'per_page'  => $pageSize,
+            'last_page' => (int) ceil($total / $pageSize),
+        ];
+    }
+
+    public function findById(int $id): Material
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT id, organization_id, brand_id, manager_id, title, description, type, status,
+                    storage_driver, storage_path, external_url, approved_at, approved_by, 
+                    created_at, updated_at
+             FROM   materials
+             WHERE  id = :id
+             LIMIT  1'
+        );
+
+        $stmt->execute([':id' => $id]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$row) {
+            throw new MaterialNotFoundException($id);
+        }
+
+        return Material::fromRow($row);
+    }
+
+    public function findByManagerAndId(int $managerId, int $id): Material
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT id, organization_id, brand_id, manager_id, title, description, type, status,
+                    storage_driver, storage_path, external_url, approved_at, approved_by, 
+                    created_at, updated_at
+             FROM   materials
+             WHERE  id = :id AND manager_id = :manager_id
+             LIMIT  1'
+        );
+
+        $stmt->execute([':id' => $id, ':manager_id' => $managerId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$row) {
+            throw new MaterialNotFoundException($id);
+        }
+
+        return Material::fromRow($row);
+    }
+
+    public function create(array $data): Material
+    {
+        $stmt = $this->pdo->prepare(
+            'INSERT INTO materials (organization_id, brand_id, manager_id, title, description, type, status, storage_driver, storage_path, external_url) 
+             VALUES (:organization_id, :brand_id, :manager_id, :title, :description, :type, :status, :storage_driver, :storage_path, :external_url)'
+        );
+
+        $stmt->execute([
+            ':organization_id' => $data['organization_id'],
+            ':brand_id'        => $data['brand_id'],
+            ':manager_id'      => $data['manager_id'],
+            ':title'           => $data['title'],
+            ':description'     => $data['description'] ?? null,
+            ':type'            => $data['type'],
+            ':status'          => $data['status'] ?? 'draft',
+            ':storage_driver'  => $data['storage_driver'] ?? 'local',
+            ':storage_path'    => $data['storage_path'] ?? null,
+            ':external_url'    => $data['external_url'] ?? null,
+        ]);
+
+        $id = (int) $this->pdo->lastInsertId();
+
+        return $this->findById($id);
+    }
+
+    public function update(int $id, array $data): Material
+    {
+        $this->findById($id);
+
+        $fields = [];
+        $params = [':id' => $id];
+
+        if (isset($data['title'])) {
+            $fields[] = 'title = :title';
+            $params[':title'] = $data['title'];
+        }
+
+        if (isset($data['description'])) {
+            $fields[] = 'description = :description';
+            $params[':description'] = $data['description'];
+        }
+
+        if (isset($data['brand_id'])) {
+            $fields[] = 'brand_id = :brand_id';
+            $params[':brand_id'] = $data['brand_id'];
+        }
+
+        if (isset($data['type'])) {
+            $fields[] = 'type = :type';
+            $params[':type'] = $data['type'];
+        }
+
+        if (isset($data['status'])) {
+            $fields[] = 'status = :status';
+            $params[':status'] = $data['status'];
+        }
+
+        if (isset($data['storage_driver'])) {
+            $fields[] = 'storage_driver = :storage_driver';
+            $params[':storage_driver'] = $data['storage_driver'];
+        }
+
+        if (isset($data['storage_path'])) {
+            $fields[] = 'storage_path = :storage_path';
+            $params[':storage_path'] = $data['storage_path'];
+        }
+
+        if (isset($data['external_url'])) {
+            $fields[] = 'external_url = :external_url';
+            $params[':external_url'] = $data['external_url'];
+        }
+
+        if (!empty($fields)) {
+            $stmt = $this->pdo->prepare(
+                'UPDATE materials SET ' . implode(', ', $fields) . ' WHERE id = :id'
+            );
+            $stmt->execute($params);
+        }
+
+        return $this->findById($id);
+    }
+
+    public function delete(int $id): void
+    {
+        $this->findById($id);
+
+        $stmt = $this->pdo->prepare('DELETE FROM materials WHERE id = :id');
+        $stmt->execute([':id' => $id]);
+    }
+
+    public function approve(int $id, int $approvedBy): Material
+    {
+        $this->findById($id);
+
+        $stmt = $this->pdo->prepare(
+            'UPDATE materials SET status = :status, approved_at = NOW(), approved_by = :approved_by WHERE id = :id'
+        );
+
+        $stmt->execute([
+            ':id'          => $id,
+            ':status'      => 'approved',
+            ':approved_by' => $approvedBy,
+        ]);
+
+        return $this->findById($id);
+    }
+}

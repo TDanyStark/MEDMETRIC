@@ -13,6 +13,17 @@ use App\Application\Actions\Admin\User\UpdateAdminUserAction;
 use App\Application\Actions\Admin\User\UpdateRepSubscriptionsAction;
 use App\Application\Actions\Auth\LoginAction;
 use App\Application\Actions\Auth\MeAction;
+use App\Application\Actions\Manager\Brand\CreateBrandAction;
+use App\Application\Actions\Manager\Brand\ListBrandsAction;
+use App\Application\Actions\Manager\Brand\UpdateBrandAction;
+use App\Application\Actions\Manager\Material\ApproveMaterialAction;
+use App\Application\Actions\Manager\Material\CreateMaterialAction;
+use App\Application\Actions\Manager\Material\ListMaterialsAction;
+use App\Application\Actions\Manager\Material\UpdateMaterialAction;
+use App\Application\Actions\Manager\Rep\AssignRepAction;
+use App\Application\Actions\Manager\Rep\GetAvailableRepsAction;
+use App\Application\Actions\Manager\Rep\ListAssignedRepsAction;
+use App\Application\Actions\Manager\Rep\RemoveRepAction;
 use App\Application\Middleware\JwtMiddleware;
 use App\Application\Middleware\RoleMiddleware;
 use App\Infrastructure\Database\Connection;
@@ -100,6 +111,39 @@ return function (App $app) {
         })->add(function ($request, $handler) use ($app) {
             $responseFactory = $app->getContainer()->get(ResponseFactoryInterface::class);
             return (new RoleMiddleware($responseFactory, ['admin']))->process($request, $handler);
+        })->add(JwtMiddleware::class);
+
+        // -------------------------------------------------------------------------
+        // Manager routes (JWT + manager role required)
+        // -------------------------------------------------------------------------
+        $group->group('/manager', function (RouteCollectorProxy $manager) {
+
+            // Brands
+            $manager->group('/brands', function (RouteCollectorProxy $brands) {
+                $brands->get('',       ListBrandsAction::class);
+                $brands->post('',      CreateBrandAction::class);
+                $brands->put('/{id}',  UpdateBrandAction::class);
+            });
+
+            // Materials
+            $manager->group('/materials', function (RouteCollectorProxy $materials) {
+                $materials->get('',            ListMaterialsAction::class);
+                $materials->post('',           CreateMaterialAction::class);
+                $materials->put('/{id}',       UpdateMaterialAction::class);
+                $materials->post('/{id}/approve', ApproveMaterialAction::class);
+            });
+
+            // Reps (visitadores médicos)
+            $manager->group('/reps', function (RouteCollectorProxy $reps) {
+                $reps->get('',                 ListAssignedRepsAction::class);
+                $reps->get('/available',      GetAvailableRepsAction::class);
+                $reps->post('',               AssignRepAction::class);
+                $reps->delete('/{repId}',     RemoveRepAction::class);
+            });
+
+        })->add(function ($request, $handler) use ($app) {
+            $responseFactory = $app->getContainer()->get(ResponseFactoryInterface::class);
+            return (new RoleMiddleware($responseFactory, ['manager']))->process($request, $handler);
         })->add(JwtMiddleware::class);
 
     });

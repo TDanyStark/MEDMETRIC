@@ -54,14 +54,16 @@ El administrador debe poder crear y gestionar estas estructuras.
 - Acceso total a la plataforma
 - Crea organizaciones/clientes
 - Gestiona usuarios (gerentes y visitadores)
+- Crea y gestiona marcas (catalog maestro por organizacion, sin duplicados)
+- Asigna marcas a gerentes
 - Supervisa y audita metricas globales
 - Configura reglas y catalogos maestros
 
 ### 2) Gerente
 
 - Pertenece a una organizacion
-- Crea y gestiona marcas
-- Crea y gestiona materiales (PDF, video, link externo)
+- Gestiona las marcas que le fueron asignadas por el administrador
+- Crea y gestiona materiales (PDF, video, link externo) asociados a sus marcas
 - Gestiona la suscripcion de visitadores medicos de su organizacion a su contenido
 - Publica o solicita aprobacion de contenido segun flujo definido
 
@@ -140,6 +142,7 @@ Entidades sugeridas para el arranque:
 
 - organizations
 - brands
+- manager_brands (asignacion marca -> gerente)
 - users
 - roles
 - rep_manager_access (suscripciones)
@@ -181,7 +184,7 @@ Entidades sugeridas para el arranque:
 
 1. Auth + RBAC (admin/gerente/visitador)
 2. Organizaciones y jerarquia de usuarios
-3. Marcas y carga de materiales
+3. Marcas (creadas por admin, asignadas a gerentes) y carga de materiales
 4. Flujo de aprobacion/publicacion
 5. Sesion de visita + URL publica para medico
 6. Recoleccion y dashboard inicial de metricas

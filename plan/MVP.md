@@ -57,13 +57,14 @@ Crear el esquema minimo para multi-organizacion, materiales, sesiones y metricas
 1. `organizations`
 2. `roles`
 3. `users`
-4. `brands`
-5. `materials`
-6. `rep_manager_access` (suscripcion rep -> gerente)
-7. `visit_sessions`
-8. `visit_session_materials` (materiales elegidos para la sesion)
-9. `material_views`
-10. `material_events` (opcional MVP temprano, recomendado)
+4. `brands` (catalogo maestro, unico por organizacion, sin manager_id)
+5. `manager_brands` (asignacion marca -> gerente, una marca puede tener muchos gerentes)
+6. `materials`
+7. `rep_manager_access` (suscripcion rep -> gerente)
+8. `visit_sessions`
+9. `visit_session_materials` (materiales elegidos para la sesion)
+10. `material_views`
+11. `material_events` (opcional MVP temprano, recomendado)
 
 ### Campos clave
 
@@ -114,11 +115,18 @@ Autenticar usuarios internos y proteger endpoints por rol.
 
 ---
 
-## [x] Fase 3 - Modulo Admin (organizaciones y usuarios)
+## [x] Fase 3 - Modulo Admin (organizaciones, usuarios y marcas)
 
 ### Objetivo
 
-Permitir al administrador crear y gestionar estructura organizacional.
+Permitir al administrador crear y gestionar estructura organizacional y marcas.
+
+### Reglas de marcas
+
+- Las marcas son unicas por organizacion (no puede haber 2 "Bellaface" en Abbott)
+- Una marca puede ser asignada a multiples gerentes
+- Un gerente puede tener muchas marcas asignadas
+- El admin crea las marcas y luego las asigna a los gerentes
 
 ### Endpoints MVP
 
@@ -128,6 +136,11 @@ Permitir al administrador crear y gestionar estructura organizacional.
 - `GET /api/v1/admin/users`
 - `POST /api/v1/admin/users`
 - `PUT /api/v1/admin/users/{id}`
+- `GET /api/v1/admin/brands`
+- `POST /api/v1/admin/brands`
+- `PUT /api/v1/admin/brands/{id}`
+- `GET /api/v1/admin/managers/{id}/brands`
+- `PUT /api/v1/admin/managers/{id}/brands`
 
 ### Reglas
 
@@ -141,19 +154,29 @@ Permitir al administrador crear y gestionar estructura organizacional.
 
 ---
 
-## Fase 4 - Modulo Gerente (marcas y materiales)
+## [x] Fase 4 - Modulo Gerente (materiales y visitadores)
 
 ### Objetivo
 
-Permitir al gerente crear marcas y contenido.
+Permitir al gerente crear contenido y gestionar visitadores.
+
+### Reglas
+
+- El gerente NO crea marcas, las usa de las que le fueron asignadas por el admin
+- El gerente ve solo las marcas que tiene asignadas
+- Crea materiales asociados a sus marcas
 
 ### Endpoints MVP
 
-- `GET/POST/PUT /api/v1/manager/brands`
+- `GET /api/v1/manager/brands` (marcas asignadas al gerente)
 - `GET /api/v1/manager/materials`
 - `POST /api/v1/manager/materials`
 - `PUT /api/v1/manager/materials/{id}`
 - `POST /api/v1/manager/materials/{id}/approve`
+- `GET /api/v1/manager/reps` (visitadores asignados)
+- `GET /api/v1/manager/reps/available`
+- `POST /api/v1/manager/reps` (asignar visitadores)
+- `DELETE /api/v1/manager/reps` (quitar visitadores)
 
 ### Manejo por tipo de material
 
@@ -233,7 +256,7 @@ Permitir al medico ver contenido sin login y registrar interacciones clave.
 
 ---
 
-## Fase 7 - Frontend base (React + Tailwind + shadcn/ui)
+## Fase 7 - Frontend base (React + TS + Tailwind + shadcn/ui )
 
 ### Objetivo
 
@@ -371,8 +394,9 @@ Para avanzar entre fases, validar siempre:
 
 El MVP se considera completo cuando:
 
-- Admin crea organizaciones y usuarios
-- Gerente crea marca y materiales, y los aprueba
+- Admin crea organizaciones, usuarios y marcas
+- Admin asigna marcas a gerentes
+- Gerente crea materiales en sus marcas asignadas y los aprueba
 - Visitador inicia sesion diaria (JWT 24h), accede biblioteca y comparte link
 - Medico accede sin login mediante token y consume contenido
 - Sistema registra quién vio el material y a que hora

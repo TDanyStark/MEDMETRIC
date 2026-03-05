@@ -4,7 +4,15 @@ declare(strict_types=1);
 
 use App\Application\Middleware\JwtMiddleware;
 use App\Application\Services\JwtService;
+use App\Application\Services\Storage\StorageServiceInterface;
+use App\Application\Services\Storage\LocalStorageService;
 use App\Application\Settings\SettingsInterface;
+use App\Domain\Brand\BrandRepositoryInterface;
+use App\Domain\Material\MaterialRepositoryInterface;
+use App\Domain\RepAccess\RepAccessRepositoryInterface;
+use App\Infrastructure\Persistence\Brand\DbBrandRepository;
+use App\Infrastructure\Persistence\Material\DbMaterialRepository;
+use App\Infrastructure\Persistence\RepAccess\DbRepAccessRepository;
 use DI\ContainerBuilder;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
@@ -41,5 +49,13 @@ return function (ContainerBuilder $containerBuilder) {
 
         // JWT Middleware (auto-wired: JwtService + ResponseFactoryInterface)
         JwtMiddleware::class => \DI\autowire(JwtMiddleware::class),
+
+        // Storage Services
+        StorageServiceInterface::class => \DI\autowire(LocalStorageService::class),
+
+        // Repositories
+        BrandRepositoryInterface::class => \DI\autowire(DbBrandRepository::class),
+        MaterialRepositoryInterface::class => \DI\autowire(DbMaterialRepository::class),
+        RepAccessRepositoryInterface::class => \DI\autowire(DbRepAccessRepository::class),
     ]);
 };
