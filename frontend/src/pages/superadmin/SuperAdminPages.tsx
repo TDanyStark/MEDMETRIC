@@ -547,7 +547,7 @@ export function SuperAdminMetricsPage() {
 
             {!orgAdminsQuery.isLoading && !orgAdminsQuery.isError && (
               <div className="space-y-3">
-                <div className="rounded-[24px] border border-border/80 bg-background/75 p-4">
+                <div className="rounded-3xl border border-border/80 bg-background/75 p-4">
                   <div className="flex items-center gap-3 text-foreground">
                     <Building2 className="h-4 w-4 text-primary" />
                     <p className="font-semibold">Clientes visibles</p>
@@ -557,7 +557,7 @@ export function SuperAdminMetricsPage() {
                   </p>
                 </div>
 
-                <div className="rounded-[24px] border border-border/80 bg-background/75 p-4">
+                <div className="rounded-3xl border border-border/80 bg-background/75 p-4">
                   <div className="flex items-center gap-3 text-foreground">
                     <ShieldCheck className="h-4 w-4 text-primary" />
                     <p className="font-semibold">Cobertura administrativa</p>
@@ -567,7 +567,7 @@ export function SuperAdminMetricsPage() {
                   </p>
                 </div>
 
-                <div className="rounded-[24px] border border-border/80 bg-background/75 p-4 text-sm leading-6 text-muted-foreground">
+                <div className="rounded-3xl border border-border/80 bg-background/75 p-4 text-sm leading-6 text-muted-foreground">
                   Esta vista usa datos operativos existentes. Las metricas de adopcion y consumo de contenido se reservan para la Fase 11, como pide el plan.
                 </div>
               </div>

@@ -28,8 +28,9 @@ class DbOrganizationRepository implements OrganizationRepositoryInterface
         $params = [];
 
         if ($search !== null && $search !== '') {
-            $where[]          = '(name LIKE :search OR slug LIKE :search)';
-            $params[':search'] = '%' . $search . '%';
+            $where[]                = '(name LIKE :search_name OR slug LIKE :search_slug)';
+            $params[':search_name'] = '%' . $search . '%';
+            $params[':search_slug'] = '%' . $search . '%';
         }
 
         $whereSql = !empty($where) ? ' WHERE ' . implode(' AND ', $where) : '';

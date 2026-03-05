@@ -35,8 +35,9 @@ class DbBrandRepository implements BrandRepositoryInterface
         }
 
         if ($search !== null && $search !== '') {
-            $where[]           = '(name LIKE :search OR description LIKE :search)';
-            $params[':search'] = '%' . $search . '%';
+            $where[]                        = '(name LIKE :search_name OR description LIKE :search_description)';
+            $params[':search_name']         = '%' . $search . '%';
+            $params[':search_description']  = '%' . $search . '%';
         }
 
         $whereSql = !empty($where) ? ' WHERE ' . implode(' AND ', $where) : '';
@@ -102,8 +103,9 @@ class DbBrandRepository implements BrandRepositoryInterface
         $params = [':manager_id' => $managerId];
 
         if ($search !== null && $search !== '') {
-            $where[]           = '(b.name LIKE :search OR b.description LIKE :search)';
-            $params[':search'] = '%' . $search . '%';
+            $where[]                        = '(b.name LIKE :search_name OR b.description LIKE :search_description)';
+            $params[':search_name']         = '%' . $search . '%';
+            $params[':search_description']  = '%' . $search . '%';
         }
 
         $whereSql = ' WHERE ' . implode(' AND ', $where);

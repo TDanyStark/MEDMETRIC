@@ -30,8 +30,9 @@ class DbMaterialRepository implements MaterialRepositoryInterface
         $params = [':manager_id' => $managerId];
 
         if ($search !== null && $search !== '') {
-            $where[]           = '(m.title LIKE :search OR m.description LIKE :search)';
-            $params[':search'] = '%' . $search . '%';
+            $where[]                  = '(m.title LIKE :search_title OR m.description LIKE :search_description)';
+            $params[':search_title']  = '%' . $search . '%';
+            $params[':search_description'] = '%' . $search . '%';
         }
 
         if ($status !== null && $status !== '') {
@@ -244,8 +245,9 @@ class DbMaterialRepository implements MaterialRepositoryInterface
         $params = [':rep_id' => $repId, ':status' => 'approved'];
 
         if ($search !== null && $search !== '') {
-            $where[]           = '(m.title LIKE :search OR m.description LIKE :search)';
-            $params[':search'] = '%' . $search . '%';
+            $where[]                  = '(m.title LIKE :search_title OR m.description LIKE :search_description)';
+            $params[':search_title']  = '%' . $search . '%';
+            $params[':search_description'] = '%' . $search . '%';
         }
 
         if ($type !== null && $type !== '') {

@@ -56,8 +56,9 @@ class DbAdminUserRepository implements AdminUserRepositoryInterface
         }
 
         if ($search !== null && $search !== '') {
-            $where[]          = '(u.name LIKE :search OR u.email LIKE :search)';
-            $params[':search'] = '%' . $search . '%';
+            $where[]                = '(u.name LIKE :search_name OR u.email LIKE :search_email)';
+            $params[':search_name'] = '%' . $search . '%';
+            $params[':search_email'] = '%' . $search . '%';
         }
 
         $whereSql = !empty($where) ? ' WHERE ' . implode(' AND ', $where) : '';
