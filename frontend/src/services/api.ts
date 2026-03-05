@@ -1,18 +1,22 @@
 const API_BASE = '/api/v1'
 
+interface RequestOptions extends RequestInit {
+  body?: any;
+}
+
 class ApiService {
-  async request(endpoint, options = {}) {
+  async request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
     const url = `${API_BASE}${endpoint}`
 
     const token = localStorage.getItem('auth_token')
 
-    const headers = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options.headers,
+      ...(options.headers as Record<string, string>),
     }
 
-    const config = {
+    const config: RequestInit = {
       ...options,
       headers,
     }
@@ -26,29 +30,29 @@ class ApiService {
 
     if (!response.ok) {
       const message = data?.error?.description || data?.message || `HTTP error ${response.status}`
-      const err = new Error(message)
+      const err = new Error(message) as any
       err.status = response.status
       err.data = data
       throw err
     }
 
-    return data
+    return data as T
   }
 
-  get(endpoint) {
-    return this.request(endpoint, { method: 'GET' })
+  get<T>(endpoint: string): Promise<T> {
+    return this.request<T>(endpoint, { method: 'GET' })
   }
 
-  post(endpoint, body) {
-    return this.request(endpoint, { method: 'POST', body })
+  post<T>(endpoint: string, body?: any): Promise<T> {
+    return this.request<T>(endpoint, { method: 'POST', body })
   }
 
-  put(endpoint, body) {
-    return this.request(endpoint, { method: 'PUT', body })
+  put<T>(endpoint: string, body?: any): Promise<T> {
+    return this.request<T>(endpoint, { method: 'PUT', body })
   }
 
-  delete(endpoint) {
-    return this.request(endpoint, { method: 'DELETE' })
+  delete<T>(endpoint: string): Promise<T> {
+    return this.request<T>(endpoint, { method: 'DELETE' })
   }
 }
 

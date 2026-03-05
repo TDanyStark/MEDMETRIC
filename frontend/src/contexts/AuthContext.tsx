@@ -1,8 +1,9 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, ReactNode } from 'react'
 import api from '../services/api'
 import { AuthContext } from './AuthContextValue'
+import { ApiResponse, User } from '../types'
 
-function readStoredUser() {
+function readStoredUser(): User | null {
   try {
     const token = localStorage.getItem('auth_token')
     const stored = localStorage.getItem('auth_user')
@@ -14,11 +15,15 @@ function readStoredUser() {
   return null
 }
 
-export function AuthProvider({ children }) {
-  const [user, setUser] = useState(readStoredUser)
+interface AuthProviderProps {
+  children: ReactNode;
+}
 
-  const login = useCallback(async (email, password) => {
-    const res = await api.post('/auth/login', { email, password })
+export function AuthProvider({ children }: AuthProviderProps) {
+  const [user, setUser] = useState<User | null>(readStoredUser)
+
+  const login = useCallback(async (email: string, password: string): Promise<User> => {
+    const res = await api.post<ApiResponse<{ token: string; user: User }>>('/auth/login', { email, password })
     const { token, user: userData } = res.data
 
     localStorage.setItem('auth_token', token)

@@ -1,20 +1,30 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, ReactNode } from 'react'
 import { CheckCircle, XCircle, X } from 'lucide-react'
 import { cn } from '../../lib/utils'
-import { ToastContext } from './ToastContextValue'
+import { ToastContext, ToastOptions } from './ToastContextValue'
 
 let _id = 0
 
-export function ToastProvider({ children }) {
-  const [toasts, setToasts] = useState([])
-  const timers = useRef({})
+interface ToastItem {
+  id: number;
+  message: string;
+  type: 'success' | 'error';
+}
 
-  const dismiss = useCallback((id) => {
+interface ToastProviderProps {
+  children: ReactNode;
+}
+
+export function ToastProvider({ children }: ToastProviderProps) {
+  const [toasts, setToasts] = useState<ToastItem[]>([])
+  const timers = useRef<Record<number, any>>({})
+
+  const dismiss = useCallback((id: number) => {
     clearTimeout(timers.current[id])
     setToasts(prev => prev.filter(t => t.id !== id))
   }, [])
 
-  const toast = useCallback(({ message, type = 'success', duration = 4000 }) => {
+  const toast = useCallback(({ message, type = 'success', duration = 4000 }: ToastOptions) => {
     const id = ++_id
     setToasts(prev => [...prev, { id, message, type }])
     timers.current[id] = setTimeout(() => dismiss(id), duration)
@@ -23,7 +33,7 @@ export function ToastProvider({ children }) {
   return (
     <ToastContext.Provider value={toast}>
       {children}
-      <div className="fixed bottom-4 right-4 z-100 flex flex-col gap-2 w-80">
+      <div className="fixed bottom-4 right-4 z-[100] flex flex-col gap-2 w-80">
         {toasts.map(t => (
           <div
             key={t.id}
@@ -48,5 +58,3 @@ export function ToastProvider({ children }) {
     </ToastContext.Provider>
   )
 }
-
-

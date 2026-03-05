@@ -1,14 +1,14 @@
-import { clsx } from 'clsx'
+import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 
-export function cn(...inputs) {
+export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
 /**
  * Format a date string into a localized short date.
  */
-export function formatDate(dateStr) {
+export function formatDate(dateStr: string | null | undefined): string {
   if (!dateStr) return '—'
   return new Date(dateStr).toLocaleDateString('es-MX', {
     year: 'numeric', month: 'short', day: 'numeric',
@@ -18,7 +18,7 @@ export function formatDate(dateStr) {
 /**
  * Format a date string into a localized datetime.
  */
-export function formatDateTime(dateStr) {
+export function formatDateTime(dateStr: string | null | undefined): string {
   if (!dateStr) return '—'
   return new Date(dateStr).toLocaleString('es-MX', {
     year: 'numeric', month: 'short', day: 'numeric',
@@ -29,7 +29,7 @@ export function formatDateTime(dateStr) {
 /**
  * Get the initials (max 2 chars) from a full name.
  */
-export function getInitials(name = '') {
+export function getInitials(name: string = ''): string {
   return name
     .split(' ')
     .filter(Boolean)
