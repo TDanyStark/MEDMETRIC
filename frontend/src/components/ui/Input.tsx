@@ -2,33 +2,24 @@ import { InputHTMLAttributes, forwardRef } from 'react'
 import { cn } from '@/lib/utils'
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
-  label?: string;
-  error?: string;
+  label?: string
+  error?: string
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(function Input({ label, error, className, ...props }, ref) {
   return (
-    <div className="flex flex-col gap-1">
-      {label && (
-        <label className="text-xs font-medium text-slate-600 uppercase tracking-wide">
-          {label}
-        </label>
-      )}
+    <div className="flex flex-col gap-2">
+      {label && <label className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{label}</label>}
       <input
         ref={ref}
         className={cn(
-          'h-10 w-full rounded-md border bg-slate-50 px-3 text-sm text-slate-900',
-          'placeholder:text-slate-400',
-          'border-slate-200 focus:border-teal-500 focus:bg-white',
-          'focus:outline-none focus:ring-2 focus:ring-teal-500/20',
-          'transition-colors duration-150',
-          'disabled:opacity-50 disabled:cursor-not-allowed',
-          error && 'border-red-400 focus:border-red-500 focus:ring-red-500/20',
+          'flex h-12 w-full rounded-[20px] border border-input bg-background/85 px-4 text-sm text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.32)] transition outline-none placeholder:text-muted-foreground/70 focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-ring/25 disabled:cursor-not-allowed disabled:opacity-50',
+          error && 'border-destructive/40 focus-visible:ring-destructive/20',
           className,
         )}
         {...props}
       />
-      {error && <p className="text-xs text-red-500">{error}</p>}
+      {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
   )
 })

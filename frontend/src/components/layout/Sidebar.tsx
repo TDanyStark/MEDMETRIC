@@ -1,46 +1,47 @@
-import { NavLink, useLocation, useNavigate } from 'react-router-dom'
-import { Building2, Users, LogOut, LayoutDashboard, LucideIcon, X } from 'lucide-react'
 import { useEffect } from 'react'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { LogOut, PanelLeftClose } from 'lucide-react'
 import { useAuth } from '@/contexts/useAuth'
+import { Avatar, AvatarFallback } from '@/components/ui/Avatar'
+import { Badge } from '@/components/ui/Badge'
+import { Sheet, SheetContent } from '@/components/ui/Sheet'
+import { getNavItem, getNavItems, ROLE_BLUEPRINTS } from '@/lib/auth'
 import { cn, getInitials } from '@/lib/utils'
-import { Role } from '@/types'
-
-interface NavItemData {
-  to: string;
-  label: string;
-  icon: LucideIcon;
-  end?: boolean;
-}
 
 interface SidebarProps {
-  isOpen: boolean;
-  onClose: () => void;
+  isOpen: boolean
+  onClose: () => void
 }
 
-const NAV_ITEMS: Record<Role, NavItemData[]> = {
-  admin: [
-    { to: '/admin',              label: 'Dashboard',      icon: LayoutDashboard, end: true },
-    { to: '/admin/organizations', label: 'Organizaciones', icon: Building2 },
-    { to: '/admin/users',         label: 'Usuarios',       icon: Users },
-  ],
-  manager: [],
-  rep: [],
-}
-
-function NavItem({ to, label, icon: Icon, end }: NavItemData) {
+function NavItem({ to, label, description, icon: Icon }: ReturnType<typeof getNavItems>[number]) {
   return (
     <NavLink
       to={to}
-      end={end}
       className={({ isActive }) => cn(
-        'group flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-all',
+        'group flex items-start gap-3 rounded-3xl border px-4 py-3.5 transition-all',
         isActive
-          ? 'bg-teal-600 text-white shadow-md shadow-teal-600/20'
-          : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100/80',
+          ? 'border-primary/20 bg-primary text-primary-foreground shadow-[0_18px_40px_rgba(24,90,86,0.22)]'
+          : 'border-transparent bg-transparent text-muted-foreground hover:border-border/80 hover:bg-card/85 hover:text-foreground',
       )}
     >
-      <Icon className={cn("h-5 w-5 shrink-0 transition-colors", "group-hover:text-slate-900")} />
-      <span>{label}</span>
+      {({ isActive }) => (
+        <>
+          <div className={cn(
+            'mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border transition-colors',
+            isActive
+              ? 'border-white/15 bg-white/10 text-primary-foreground'
+              : 'border-border/80 bg-background/70 text-foreground',
+          )}>
+            <Icon className="h-4.5 w-4.5" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold leading-none">{label}</p>
+            <p className={cn('mt-1 text-xs leading-5', isActive ? 'text-primary-foreground/80' : 'text-muted-foreground')}>
+              {description}
+            </p>
+          </div>
+        </>
+      )}
     </NavLink>
   )
 }
@@ -50,9 +51,10 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const navigate = useNavigate()
   const location = useLocation()
 
-  const items = user ? (NAV_ITEMS[user.role] ?? []) : []
+  const items = user ? getNavItems(user.role) : []
+  const activeItem = user ? getNavItem(user.role, location.pathname) : null
+  const blueprint = user ? ROLE_BLUEPRINTS[user.role] : null
 
-  // Close mobile drawer when route changes.
   useEffect(() => {
     onClose()
   }, [location.pathname, onClose])
@@ -62,73 +64,87 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     navigate('/login')
   }
 
-  return (
-    <>
-      {/* Mobile backdrop */}
-      <button
-        type="button"
-        aria-label="Cerrar menu"
-        onClick={onClose}
-        className={cn(
-          'fixed inset-0 z-40 bg-slate-900/40 transition-opacity md:hidden',
-          isOpen ? 'opacity-100' : 'pointer-events-none opacity-0',
-        )}
-      />
-
-      <aside
-        className={cn(
-          'fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-slate-200 bg-white shadow-sm transition-transform duration-300',
-          isOpen ? 'translate-x-0' : '-translate-x-full',
-          'md:static md:h-full md:translate-x-0',
-        )}
-      >
-        {/* Logo */}
-        <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-6 py-6">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-600 shadow-sm">
-              <span className="text-sm font-bold text-white">M</span>
-            </div>
-            <span className="text-lg font-bold tracking-tight text-slate-900">MedMetric</span>
+  const content = (
+    <div className="flex h-full flex-col bg-sidebar/90 px-4 py-4 backdrop-blur">
+      <div className="rounded-[28px] border border-border/80 bg-card/90 p-5 shadow-[0_18px_60px_rgba(16,41,39,0.08)]">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="font-display text-[1.35rem] leading-none tracking-tight text-foreground">MedMetric</p>
+            <p className="mt-2 text-xs uppercase tracking-[0.28em] text-muted-foreground">Medical briefing system</p>
           </div>
-
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg p-2 text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-700 md:hidden"
-            title="Cerrar menu"
-            aria-label="Cerrar menu"
-          >
-            <X className="h-5 w-5" />
-          </button>
+          <div className="rounded-2xl border border-primary/20 bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">
+            Fase 8
+          </div>
         </div>
 
-        {/* Nav */}
-        <nav className="flex-1 space-y-1 px-4 py-6">
+        {blueprint && (
+          <div className="mt-5 rounded-[24px] border border-border/80 bg-background/85 p-4">
+            <p className="text-[0.7rem] uppercase tracking-[0.22em] text-muted-foreground">{blueprint.eyebrow}</p>
+            <h2 className="mt-2 font-display text-xl text-foreground">{blueprint.label}</h2>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">{blueprint.deck}</p>
+          </div>
+        )}
+      </div>
+
+      <div className="mt-4 rounded-[28px] border border-border/80 bg-card/85 p-3 shadow-[0_18px_60px_rgba(16,41,39,0.08)]">
+        <div className="mb-2 flex items-center justify-between px-2 py-2">
+          <div>
+            <p className="text-[0.7rem] uppercase tracking-[0.22em] text-muted-foreground">Navegacion</p>
+            <p className="mt-1 text-sm font-medium text-foreground">{activeItem?.label ?? 'Modulo'}</p>
+          </div>
+          <Badge variant="outline">Base lista</Badge>
+        </div>
+        <nav className="space-y-2">
           {items.map(item => (
             <NavItem key={item.to} {...item} />
           ))}
         </nav>
+      </div>
 
-        {/* User footer */}
-        <div className="border-t border-slate-100 bg-slate-50/50 px-4 py-4">
-          <div className="flex items-center gap-3 rounded-xl px-3 py-2.5">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-teal-100 text-sm font-bold text-teal-700">
-              {getInitials(user?.name)}
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold leading-tight text-slate-900">{user?.name}</p>
-              <p className="mt-0.5 truncate text-xs font-medium capitalize text-slate-500">{user?.role}</p>
-            </div>
+      <div className="mt-auto rounded-[28px] border border-border/80 bg-card/90 p-4 shadow-[0_18px_60px_rgba(16,41,39,0.08)]">
+        <div className="flex items-center gap-3 rounded-[22px] border border-border/70 bg-background/75 p-3">
+          <Avatar className="h-11 w-11 border border-border/70 bg-primary/10 text-primary">
+            <AvatarFallback>{getInitials(user?.name)}</AvatarFallback>
+          </Avatar>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold text-foreground">{user?.name}</p>
+            <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
+          </div>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-border/70 bg-background/75 text-muted-foreground transition hover:border-primary/30 hover:bg-primary hover:text-primary-foreground"
+            title="Cerrar sesion"
+            aria-label="Cerrar sesion"
+          >
+            <LogOut className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+
+  return (
+    <>
+      <aside className="hidden h-screen w-[22rem] shrink-0 border-r border-border/60 bg-sidebar/55 md:block">
+        {content}
+      </aside>
+
+      <Sheet open={isOpen} onOpenChange={open => (!open ? onClose() : undefined)}>
+        <SheetContent side="left" className="w-[22rem] border-r border-border/60 bg-sidebar p-0">
+          <div className="flex items-center justify-end border-b border-border/70 px-4 py-3">
             <button
-              onClick={handleLogout}
-              title="Cerrar sesión"
-              className="rounded-lg p-2 text-slate-400 transition-all hover:bg-red-50 hover:text-red-600"
+              type="button"
+              onClick={onClose}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-border/70 bg-background/80 text-muted-foreground transition hover:text-foreground"
+              aria-label="Cerrar menu"
             >
-              <LogOut className="h-4 w-4" />
+              <PanelLeftClose className="h-4 w-4" />
             </button>
           </div>
-        </div>
-      </aside>
+          {content}
+        </SheetContent>
+      </Sheet>
     </>
   )
 }

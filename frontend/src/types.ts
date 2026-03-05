@@ -1,45 +1,54 @@
-export type Role = 'admin' | 'manager' | 'rep';
+export type Role = 'superadmin' | 'org_admin' | 'manager' | 'rep'
 
 export interface User {
-  id: number;
-  email: string;
-  name: string;
-  role: Role;
-  role_id: number;
-  organization_id: number;
-  organization_name?: string;
-  active: boolean;
-  last_login_at: string | null;
-  created_at: string;
-}
-
-export interface Organization {
-  id: number;
-  name: string;
-  slug: string;
-  active: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface PaginatedResult<T> {
-  items: T[];
-  total: number;
-  page: number;
-  per_page: number;
-  last_page: number;
+  id: number
+  email: string
+  name: string
+  role: Role
+  organization_id: number | null
 }
 
 export interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  message?: string;
+  success: boolean
+  data: T
+  message?: string
 }
 
-export interface ApiError {
-  error: {
-    type: string;
-    description: string;
-  };
-  message?: string;
+export interface ApiErrorPayload {
+  error?: {
+    type?: string
+    description?: string
+  }
+  message?: string
+}
+
+export interface PublicSession {
+  id: number
+  doctor_token: string
+  doctor_name: string | null
+  notes: string | null
+  created_at: string
+}
+
+export interface PublicMaterial {
+  id: number
+  title: string
+  description: string | null
+  type: 'pdf' | 'video' | 'link'
+  status: 'draft' | 'approved' | 'archived'
+}
+
+export interface PublicVisitPayload {
+  session: PublicSession
+  materials: PublicMaterial[]
+  material_count: number
+}
+
+export interface MaterialResource {
+  type: 'pdf' | 'video' | 'link'
+  url?: string
+  embed_url?: string | null
+  title?: string
+  description?: string | null
+  redirect?: boolean
 }

@@ -133,7 +133,7 @@ Puede haber múltiples administradores por organización.
 - Modulo de contenido (carga, aprobacion, biblioteca)
 - Vista de reproduccion/lectura para visita medica
 - Vista publica de medico optimizada para acceso inmediato
-- Usa librerias para todo, para evitar crear cosas de 0, no reinventes la rueda, por ejemplo para querys, puedes usar tanckstack query, y asi para todo.
+- Usa librerias para todo, para evitar crear cosas de 0, no reinventes la rueda, por ejemplo para querys, puedes usar tanckstack query, y asi para todo, haz que tenga cosas modernas como sonners y animaciones entre componentes para que parezca muy moderna.
 - importante que siempre pienses en la mejor UX, que sea facil de manejar, que requiera de pocos clics hacer cosas
 - todos los filtros y parametros de busqueda en el frontend deben persistirse en la URL (query params), para que el estado sea navegable, compartible y sobreviva a recargas de pagina
 - los diseños hazlos con la skill interface-design

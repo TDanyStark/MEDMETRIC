@@ -289,7 +289,7 @@ Permitir al medico ver contenido sin login y registrar interacciones clave.
 
 ---
 
-## Fase 8 - Frontend base (React + TS + Tailwind + shadcn/ui )
+## [x] Fase 8 - Frontend base (React + TS + Tailwind + shadcn/ui )
 
 ### Objetivo
 

@@ -1,12 +1,26 @@
+import { ArrowLeft } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { Button } from '@/components/ui/Button'
+import { Card, CardContent } from '@/components/ui/Card'
 
 export default function NotFoundPage() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-4 text-center">
-      <p className="text-6xl font-bold text-slate-200">404</p>
-      <h1 className="text-lg font-semibold text-slate-900">Página no encontrada</h1>
-      <p className="text-sm text-slate-500">La ruta que buscas no existe.</p>
-      <Link to="/" className="text-sm text-teal-600 hover:underline">Ir al inicio</Link>
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <Card className="w-full max-w-xl text-center">
+        <CardContent className="p-8 sm:p-10">
+          <p className="font-display text-7xl text-primary/25">404</p>
+          <h1 className="mt-4 font-display text-4xl text-foreground">Ruta no encontrada</h1>
+          <p className="mx-auto mt-4 max-w-md text-sm leading-7 text-muted-foreground">
+            Esta direccion no forma parte del recorrido actual. Vuelve al inicio para entrar al modulo correcto.
+          </p>
+          <Button asChild className="mt-8">
+            <Link to="/">
+              <ArrowLeft className="h-4 w-4" />
+              Ir al inicio
+            </Link>
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   )
 }

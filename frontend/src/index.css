@@ -1,2 +1,92 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap");
 @import "tailwindcss";
+@import "tw-animate-css";
 
+@theme inline {
+  --font-display: "Fraunces", serif;
+  --font-sans: "Manrope", sans-serif;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+}
+
+:root {
+  --radius: 1rem;
+  --parchment: #f6f1e8;
+  --bone: #fbf8f2;
+  --paper: #fffdf8;
+  --sage-mist: #dde8e2;
+  --teal-dose: #2e7770;
+  --teal-dose-deep: #185a56;
+  --copper-seal: #c6954c;
+  --rose-alert: #b25b53;
+  --ink: #1d3432;
+  --ink-soft: #58706c;
+  --line: rgba(34, 71, 67, 0.14);
+  --background: var(--parchment);
+  --foreground: var(--ink);
+  --card: rgba(255, 252, 246, 0.88);
+  --card-foreground: var(--ink);
+  --popover: #fffdf9;
+  --popover-foreground: var(--ink);
+  --primary: var(--teal-dose-deep);
+  --primary-foreground: #f7faf9;
+  --secondary: rgba(220, 232, 226, 0.6);
+  --secondary-foreground: var(--ink);
+  --muted: rgba(226, 234, 229, 0.7);
+  --muted-foreground: var(--ink-soft);
+  --accent: rgba(236, 227, 210, 0.7);
+  --accent-foreground: var(--ink);
+  --destructive: var(--rose-alert);
+  --border: var(--line);
+  --input: rgba(255, 253, 249, 0.9);
+  --ring: rgba(46, 119, 112, 0.28);
+  --sidebar: rgba(246, 241, 232, 0.94);
+  --sidebar-foreground: var(--ink);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    min-height: 100vh;
+    background:
+      radial-gradient(circle at top left, rgba(46, 119, 112, 0.08), transparent 28%),
+      radial-gradient(circle at bottom right, rgba(198, 149, 76, 0.1), transparent 22%),
+      linear-gradient(180deg, rgba(255, 253, 248, 0.72), rgba(246, 241, 232, 0.92));
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    text-rendering: optimizeLegibility;
+  }
+
+  #root {
+    min-height: 100vh;
+  }
+
+  ::selection {
+    background: rgba(46, 119, 112, 0.18);
+  }
+}

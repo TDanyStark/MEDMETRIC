@@ -1,14 +1,16 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { useEffect } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { ToastProvider } from './components/ui/Toast'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { Toaster } from 'sonner'
 import { ProtectedRoute } from './components/auth/ProtectedRoute'
 import { AppLayout } from './components/layout/AppLayout'
-
-import LoginPage         from './pages/LoginPage'
-import AdminDashboard    from './pages/admin/AdminDashboard'
-import OrganizationsPage from './pages/admin/OrganizationsPage'
-import UsersPage         from './pages/admin/UsersPage'
-import NotFoundPage      from './pages/NotFoundPage'
+import { useAuth } from './contexts/useAuth'
+import { getRoleHome } from './lib/auth'
+import LoginPage from './pages/LoginPage'
+import NotFoundPage from './pages/NotFoundPage'
+import PublicVisitPage from './pages/PublicVisitPage'
+import RoleHomePage from './pages/RoleHomePage'
+import RoleSectionPage from './pages/RoleSectionPage'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -19,60 +21,102 @@ const queryClient = new QueryClient({
   },
 })
 
+function SessionBootstrap() {
+  const { syncSession } = useAuth()
+
+  useEffect(() => {
+    if (window.localStorage.getItem('auth_token')) {
+      void syncSession()
+    }
+  }, [syncSession])
+
+  return null
+}
+
+function HomeRedirect() {
+  const { user, isBootstrapping } = useAuth()
+
+  if (isBootstrapping) {
+    return null
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />
+  }
+
+  return <Navigate to={getRoleHome(user.role)} replace />
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ToastProvider>
-        <BrowserRouter>
-          <Routes>
-              {/* Public */}
-              <Route path="/login" element={<LoginPage />} />
+      <Toaster position="top-right" richColors closeButton />
+      <BrowserRouter>
+        <SessionBootstrap />
+        <Routes>
+          <Route path="/" element={<HomeRedirect />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/public/visit/:token" element={<PublicVisitPage />} />
 
-              {/* Admin routes */}
-              <Route
-                element={
-                  <ProtectedRoute roles={['admin']}>
-                    <AppLayout />
-                  </ProtectedRoute>
-                }
-              >
-                <Route path="/admin"               element={<AdminDashboard />} />
-                <Route path="/admin/organizations" element={<OrganizationsPage />} />
-                <Route path="/admin/users"         element={<UsersPage />} />
-              </Route>
+          <Route
+            path="/superadmin"
+            element={
+              <ProtectedRoute roles={['superadmin']}>
+                <AppLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<RoleHomePage role="superadmin" />} />
+            <Route path="organizations" element={<RoleSectionPage role="superadmin" path="/superadmin/organizations" />} />
+            <Route path="org-admins" element={<RoleSectionPage role="superadmin" path="/superadmin/org-admins" />} />
+            <Route path="metrics" element={<RoleSectionPage role="superadmin" path="/superadmin/metrics" />} />
+          </Route>
 
-              {/* Manager routes (placeholder for Phase 4) */}
-              <Route
-                path="/manager/*"
-                element={
-                  <ProtectedRoute roles={['manager']}>
-                    <div className="flex items-center justify-center h-screen text-sm text-slate-500">
-                      Módulo Gerente — próximamente (Fase 4)
-                    </div>
-                  </ProtectedRoute>
-                }
-              />
+          <Route
+            path="/org-admin"
+            element={
+              <ProtectedRoute roles={['org_admin']}>
+                <AppLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<RoleHomePage role="org_admin" />} />
+            <Route path="users" element={<RoleSectionPage role="org_admin" path="/org-admin/users" />} />
+            <Route path="brands" element={<RoleSectionPage role="org_admin" path="/org-admin/brands" />} />
+            <Route path="assignments" element={<RoleSectionPage role="org_admin" path="/org-admin/assignments" />} />
+          </Route>
 
-              {/* Rep routes (placeholder for Phase 5) */}
-              <Route
-                path="/rep/*"
-                element={
-                  <ProtectedRoute roles={['rep']}>
-                    <div className="flex items-center justify-center h-screen text-sm text-slate-500">
-                      Módulo Visitador — próximamente (Fase 5)
-                    </div>
-                  </ProtectedRoute>
-                }
-              />
+          <Route
+            path="/manager"
+            element={
+              <ProtectedRoute roles={['manager']}>
+                <AppLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<RoleHomePage role="manager" />} />
+            <Route path="brands" element={<RoleSectionPage role="manager" path="/manager/brands" />} />
+            <Route path="materials" element={<RoleSectionPage role="manager" path="/manager/materials" />} />
+            <Route path="reps" element={<RoleSectionPage role="manager" path="/manager/reps" />} />
+          </Route>
 
-              {/* Root redirect */}
-              <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route
+            path="/rep"
+            element={
+              <ProtectedRoute roles={['rep']}>
+                <AppLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<RoleHomePage role="rep" />} />
+            <Route path="library" element={<RoleSectionPage role="rep" path="/rep/library" />} />
+            <Route path="sessions" element={<RoleSectionPage role="rep" path="/rep/sessions" />} />
+            <Route path="history" element={<RoleSectionPage role="rep" path="/rep/history" />} />
+          </Route>
 
-              {/* 404 */}
-              <Route path="*" element={<NotFoundPage />} />
-          </Routes>
-        </BrowserRouter>
-      </ToastProvider>
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </BrowserRouter>
     </QueryClientProvider>
   )
 }
