@@ -17,7 +17,7 @@ import { Modal } from '../../components/ui/Modal'
 import { Table, Thead, Th, Tbody, Tr, Td } from '../../components/ui/Table'
 import { useToast } from '../../components/ui/useToast'
 import { formatDateTime, getInitials } from '../../lib/utils'
-import { Role, User, Organization } from '../../types'
+import { User, Organization } from '../../types'
 
 const ROLE_BADGE: Record<string, any> = {
   admin:   'admin',
