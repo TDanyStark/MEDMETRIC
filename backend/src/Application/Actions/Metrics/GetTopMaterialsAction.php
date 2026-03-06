@@ -13,13 +13,13 @@ class GetTopMaterialsAction extends MetricsAction
      */
     protected function action(): Response
     {
-        $authUser = $this->request->getAttribute('auth_user');
-        $organizationId = (int) ($authUser['organization_id'] ?? 0);
-        $role = $authUser['role'] ?? null;
+        $authUser = $this->getAuthUser();
+        $organizationId = $authUser ? $authUser->getOrganizationId() : 0;
+        $role = $authUser ? $authUser->getRole() : null;
         
         $managerId = null;
         if ($role === 'manager') {
-            $managerId = (int) ($authUser['id'] ?? 0);
+            $managerId = $authUser ? $authUser->getId() : 0;
         }
 
         $limit = (int) ($this->request->getQueryParams()['limit'] ?? 10);

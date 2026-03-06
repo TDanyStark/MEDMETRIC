@@ -58,6 +58,19 @@ abstract class Action
     }
 
     /**
+     * @return \App\Domain\Auth\AuthUser|null
+     */
+    protected function getAuthUser(): ?\App\Domain\Auth\AuthUser
+    {
+        $authUser = $this->request->getAttribute('auth_user');
+        if (!is_array($authUser)) {
+            return null;
+        }
+
+        return \App\Domain\Auth\AuthUser::fromArray($authUser);
+    }
+
+    /**
      * @return mixed
      * @throws HttpBadRequestException
      */

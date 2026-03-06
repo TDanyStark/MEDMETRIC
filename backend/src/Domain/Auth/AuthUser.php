@@ -62,6 +62,21 @@ class AuthUser implements JsonSerializable
         ];
     }
 
+    /**
+     * @param array<string, mixed> $data
+     */
+    public static function fromArray(array $data): self
+    {
+        return new self(
+            (int) ($data['id'] ?? 0),
+            (string) ($data['email'] ?? ''),
+            (string) ($data['name'] ?? ''),
+            (string) ($data['role'] ?? ''),
+            isset($data['organization_id']) ? (int) $data['organization_id'] : null,
+            (bool) ($data['active'] ?? true)
+        );
+    }
+
     #[\ReturnTypeWillChange]
     public function jsonSerialize(): array
     {
