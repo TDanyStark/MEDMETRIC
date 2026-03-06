@@ -57,6 +57,7 @@ class CreateMaterialAction extends Action
             'manager_id'     => $managerId,
             'title'          => $data['title'],
             'description'    => $data['description'] ?? null,
+            'cover_path'     => null,
             'type'           => $data['type'],
             'status'         => 'draft',
             'storage_driver' => 'local',
@@ -64,9 +65,22 @@ class CreateMaterialAction extends Action
             'external_url'   => null,
         ];
 
+        $uploadedFiles = $this->request->getUploadedFiles();
+
+        // Handle cover image if provided
+        if (!empty($uploadedFiles['cover_image'])) {
+            $coverFile = $uploadedFiles['cover_image'];
+            if ($coverFile->getError() === UPLOAD_ERR_OK) {
+                // Simple check for image
+                $type = $coverFile->getClientMediaType();
+                if (str_starts_with($type, 'image/')) {
+                    $path = $managerId . '/materialsCover/' . date('Y-m');
+                    $materialData['cover_path'] = $this->storageService->store($coverFile, $path);
+                }
+            }
+        }
+
         if ($data['type'] === 'pdf') {
-            $uploadedFiles = $this->request->getUploadedFiles();
-            
             if (empty($uploadedFiles['file'])) {
                 return $this->respondWithData(['error' => 'PDF file is required'], 422);
             }

@@ -56,6 +56,7 @@ export interface Material {
   manager_id: number
   title: string
   description: string | null
+  cover_path: string | null
   type: MaterialType
   status: MaterialStatus
   storage_driver: string

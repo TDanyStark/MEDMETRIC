@@ -15,6 +15,7 @@ class Material implements JsonSerializable
         private int      $managerId,
         private string   $title,
         private ?string  $description,
+        private ?string  $coverPath,
         private string   $type,
         private string   $status,
         private string   $storageDriver,
@@ -32,6 +33,7 @@ class Material implements JsonSerializable
     public function getManagerId(): int    { return $this->managerId; }
     public function getTitle(): string     { return $this->title; }
     public function getDescription(): ?string { return $this->description; }
+    public function getCoverPath(): ?string   { return $this->coverPath; }
     public function getType(): string      { return $this->type; }
     public function getStatus(): string    { return $this->status; }
     public function getStorageDriver(): string { return $this->storageDriver; }
@@ -57,6 +59,7 @@ class Material implements JsonSerializable
             'manager_id'      => $this->managerId,
             'title'           => $this->title,
             'description'     => $this->description,
+            'cover_path'      => $this->coverPath,
             'type'            => $this->type,
             'status'          => $this->status,
             'storage_driver'  => $this->storageDriver,
@@ -78,6 +81,7 @@ class Material implements JsonSerializable
             managerId:       (int) $row['manager_id'],
             title:           $row['title'],
             description:     $row['description'] ?? null,
+            coverPath:       $row['cover_path'] ?? null,
             type:            $row['type'],
             status:          $row['status'],
             storageDriver:   $row['storage_driver'],

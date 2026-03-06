@@ -224,6 +224,7 @@ return function (App $app) {
             $public->group('/material/{id}', function (RouteCollectorProxy $material) {
                 $material->post('/open', OpenMaterialAction::class);
                 $material->get('/resource', GetMaterialResourceAction::class);
+                $material->get('/cover', \App\Application\Actions\Public\Material\GetMaterialCoverAction::class);
             });
             
         });

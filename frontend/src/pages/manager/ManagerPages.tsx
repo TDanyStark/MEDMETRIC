@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
-import { FileStack, Orbit, UsersRound, Plus, Pencil, Trash2 } from 'lucide-react'
+import { FileStack, UsersRound, Plus, Pencil, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useSearchParams } from 'react-router-dom'
 
@@ -10,7 +10,6 @@ import {
   PaginationBar,
   SearchToolbar,
   SegmentedControl,
-  ToggleField,
 } from '@/components/backoffice/Workbench'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
@@ -20,7 +19,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table'
 
 import { getBooleanParam, getNumberParam, getStringParam, updateSearchParams } from '@/lib/search'
-import { formatDate, formatDateTime } from '@/lib/utils'
+import { formatDate } from '@/lib/utils'
 import {
   approveManagerMaterial,
   assignManagerReps,
@@ -32,7 +31,7 @@ import {
   removeManagerRep,
   updateManagerMaterial,
 } from '@/services/backoffice'
-import { Material, MaterialType, RepAccess } from '@/types/backoffice'
+import { Material, MaterialType } from '@/types/backoffice'
 
 function LoadingState({ message }: { message: string }) {
   return <div className="rounded-2xl border border-border/50 bg-background/50 px-4 py-8 text-center text-sm text-muted-foreground">{message}</div>
@@ -127,6 +126,7 @@ interface MaterialFormState {
   type: MaterialType
   external_url: string
   file: File | null
+  cover_file: File | null
 }
 
 const emptyMaterialForm: MaterialFormState = {
@@ -136,25 +136,27 @@ const emptyMaterialForm: MaterialFormState = {
   type: 'pdf',
   external_url: '',
   file: null,
+  cover_file: null,
 }
 
 function buildMaterialPayload(form: MaterialFormState, editingMaterial: Material | null) {
-  if (form.type === 'pdf') {
-    const payload = new FormData()
-    payload.append('title', form.title)
-    payload.append('description', form.description)
-    payload.append('brand_id', String(form.brand_id ?? ''))
-    if (!editingMaterial) payload.append('type', form.type)
-    if (form.file) payload.append('file', form.file)
-    return payload
+  const payload = new FormData()
+  payload.append('title', form.title)
+  payload.append('description', form.description)
+  payload.append('brand_id', String(form.brand_id ?? ''))
+  
+  if (!editingMaterial) {
+    payload.append('type', form.type)
   }
 
-  const payload: any = {
-    title: form.title,
-    description: form.description,
-    brand_id: form.brand_id ?? 0,
-    external_url: form.external_url,
-    ...(editingMaterial ? {} : { type: form.type }),
+  if (form.type === 'pdf' && form.file) {
+    payload.append('file', form.file)
+  } else if (form.type !== 'pdf') {
+    payload.append('external_url', form.external_url)
+  }
+
+  if (form.cover_file) {
+    payload.append('cover_image', form.cover_file)
   }
 
   return payload
@@ -205,6 +207,7 @@ export function ManagerMaterialsPage() {
       type: editingMaterial.type,
       external_url: editingMaterial.external_url ?? '',
       file: null,
+      cover_file: null,
     })
     setIsDialogOpen(true)
   }, [editingMaterial])
@@ -311,8 +314,23 @@ export function ManagerMaterialsPage() {
                 {materialsQuery.data?.items.map(item => (
                   <TableRow key={item.id} className="group transition-colors hover:bg-muted/20">
                     <TableCell className="font-medium text-foreground">
-                      {item.title}
-                      <p className="text-xs text-muted-foreground truncate max-w-[200px]" title={item.description || ''}>{item.description}</p>
+                      <div className="flex items-center gap-3">
+                        {item.cover_path ? (
+                          <img 
+                            src={`/api/v1/public/material/${item.id}/cover`} 
+                            className="h-10 w-10 shrink-0 rounded-lg object-cover bg-muted" 
+                            alt="" 
+                          />
+                        ) : (
+                          <div className="h-10 w-10 shrink-0 rounded-lg bg-muted flex items-center justify-center">
+                            <FileStack className="h-5 w-5 opacity-20" />
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <p className="font-semibold truncate">{item.title}</p>
+                          <p className="text-xs text-muted-foreground truncate max-w-[200px]" title={item.description || ''}>{item.description}</p>
+                        </div>
+                      </div>
                     </TableCell>
                     <TableCell className="text-muted-foreground">{brandMap.get(item.brand_id) ?? `ID ${item.brand_id}`}</TableCell>
                     <TableCell>
@@ -382,6 +400,25 @@ export function ManagerMaterialsPage() {
                   <option key={item.id} value={item.id}>{item.name}</option>
                 ))}
               </select>
+            </div>
+
+            <div className="rounded-2xl border border-border/50 bg-muted/20 p-4">
+              <label className="text-sm font-semibold text-foreground mb-2 block">Imagen de Portada (Feed)</label>
+              <div className="flex items-center gap-4">
+                {editingMaterial?.cover_path && !form.cover_file && (
+                   <img 
+                    src={`/api/v1/public/material/${editingMaterial.id}/cover`} 
+                    className="h-16 w-16 rounded-xl object-cover bg-background border border-border" 
+                    alt="Current cover" 
+                  />
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="block w-full text-sm text-foreground file:mr-4 file:rounded-full file:border-0 file:bg-primary/10 file:text-primary file:px-4 file:py-2 file:font-semibold hover:file:bg-primary/20 transition-colors"
+                  onChange={event => setForm(current => ({ ...current, cover_file: event.target.files?.[0] ?? null }))}
+                />
+              </div>
             </div>
 
             {!editingMaterial && (
@@ -462,9 +499,8 @@ export function ManagerRepsPage() {
       setSelectedRepIds([])
       void queryClient.invalidateQueries({ queryKey: ['manager', 'reps'] })
     },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : 'Error al asignar.'
-      toast.error(message)
+    onError: () => {
+      toast.error('Error al asignar.')
     },
   })
 

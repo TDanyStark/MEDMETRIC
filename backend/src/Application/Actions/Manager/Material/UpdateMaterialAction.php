@@ -70,29 +70,26 @@ class UpdateMaterialAction extends Action
             $updateData['status'] = $data['status'];
         }
 
-        if (!empty($_FILES) && !empty($_FILES['file'])) {
-            $file = $_FILES['file'];
-            
-            if ($file['error'] === UPLOAD_ERR_OK && $material->isPdf()) {
+        $uploadedFiles = $this->request->getUploadedFiles();
+
+        // Handle cover image
+        if (!empty($uploadedFiles['cover_image'])) {
+            $coverFile = $uploadedFiles['cover_image'];
+            if ($coverFile->getError() === UPLOAD_ERR_OK) {
+                $type = $coverFile->getClientMediaType();
+                if (str_starts_with($type, 'image/')) {
+                    $path = $managerId . '/materialsCover/' . date('Y-m');
+                    $updateData['cover_path'] = $this->storageService->store($coverFile, $path);
+                }
+            }
+        }
+
+        // Handle PDF file
+        if (!empty($uploadedFiles['file'])) {
+            $file = $uploadedFiles['file'];
+            if ($file->getError() === UPLOAD_ERR_OK && $material->isPdf()) {
                 $path = $managerId . '/materials/' . date('Y-m');
-                $updateData['storage_path'] = $this->storageService->store(
-                    new class($file) implements \Psr\Http\Message\UploadedFileInterface {
-                        private array $file;
-                        public function __construct(array $file) { $this->file = $file; }
-                        public function getStream(): \Psr\Http\Message\StreamInterface {
-                            return new \Slim\Psr7\Stream(fopen($this->file['tmp_name'], 'r'));
-                        }
-                        public function getClientFilename(): ?string { return $this->file['name']; }
-                        public function getClientMediaType(): ?string { return $this->file['type']; }
-                        public function getSize(): ?int { return $this->file['size']; }
-                        public function moveTo(string $targetPath): void {
-                            copy($this->file['tmp_name'], $targetPath);
-                            unlink($this->file['tmp_name']);
-                        }
-                        public function getError(): int { return $this->file['error']; }
-                    },
-                    $path
-                );
+                $updateData['storage_path'] = $this->storageService->store($file, $path);
             }
         }
 
