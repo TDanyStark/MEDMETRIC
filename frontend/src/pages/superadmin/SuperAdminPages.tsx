@@ -30,11 +30,11 @@ import { AdminUser, Organization } from '@/types/backoffice'
 import { useSearchParams } from 'react-router-dom'
 
 function LoadingState({ message }: { message: string }) {
-  return <div className="rounded-[24px] border border-border/80 bg-background/70 px-4 py-5 text-sm text-muted-foreground">{message}</div>
+  return <div className="rounded-3xl border border-border/80 bg-background/70 px-4 py-5 text-sm text-muted-foreground">{message}</div>
 }
 
 function ErrorState({ message }: { message: string }) {
-  return <div className="rounded-[24px] border border-destructive/20 bg-destructive/5 px-4 py-5 text-sm text-destructive">{message}</div>
+  return <div className="rounded-3xl border border-destructive/20 bg-destructive/5 px-4 py-5 text-sm text-destructive">{message}</div>
 }
 
 interface OrganizationFormState {

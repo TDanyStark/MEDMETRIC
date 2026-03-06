@@ -196,7 +196,7 @@ export function ToggleField({ checked, onChange, label, hint }: ToggleFieldProps
     <button
       type="button"
       onClick={() => onChange(!checked)}
-      className="flex w-full items-center justify-between rounded-[24px] border border-border/80 bg-background/80 px-4 py-3 text-left transition hover:border-primary/20"
+      className="flex w-full items-center justify-between rounded-3xl border border-border/80 bg-background/80 px-4 py-3 text-left transition hover:border-primary/20"
     >
       <div>
         <p className="text-sm font-semibold text-foreground">{label}</p>
@@ -236,7 +236,7 @@ export function PaginationBar({ page, lastPage, total, onPageChange }: Paginatio
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-[24px] border border-border/80 bg-background/75 px-4 py-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-3 rounded-3xl border border-border/80 bg-background/75 px-4 py-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
       <p>{total} registros disponibles</p>
       <div className="flex items-center gap-2">
         <Button type="button" variant="outline" size="sm" disabled={page <= 1} onClick={() => onPageChange(page - 1)}>
