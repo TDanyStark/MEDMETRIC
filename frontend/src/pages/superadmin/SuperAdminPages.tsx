@@ -146,8 +146,7 @@ export function SuperAdminOrganizationsPage() {
       <PageIntro
         eyebrow="Cobertura multi-organizacion"
         title="Organizaciones listas para crecer sin salir del tablero."
-        description="La consola prioriza alta, edicion y estado operativo en una misma vista para que el super admin mantenga el mapa de clientes siempre visible."
-        badge="Fase 9 operativa"
+        badge="Operativo"
         actions={<Button type="button" variant="outline" onClick={resetForm}>Nueva organizacion</Button>}
       />
 
@@ -155,7 +154,7 @@ export function SuperAdminOrganizationsPage() {
 
       <Workspace
         primary={(
-          <WorkPanel title="Directorio de organizaciones" description="Cada tarjeta funciona como ficha viva del cliente y conserva filtros en la URL.">
+          <WorkPanel title="Directorio de organizaciones">
             <SearchToolbar value={q} onChange={handleSearchChange} placeholder="Buscar por nombre o slug" />
 
             {organizationsQuery.isLoading && <LoadingState message="Cargando organizaciones..." />}
@@ -182,7 +181,6 @@ export function SuperAdminOrganizationsPage() {
         secondary={(
           <WorkPanel
             title={editingOrganization ? 'Editar organizacion' : 'Crear organizacion'}
-            description="Nombre, slug y estado quedan juntos para resolver alta o ajuste en pocos clics."
             aside={editingOrganization ? <Badge variant="warm">Edicion</Badge> : <Badge variant="outline">Alta</Badge>}
           >
             <form
@@ -356,7 +354,6 @@ export function SuperAdminOrgAdminsPage() {
       <PageIntro
         eyebrow="Responsables por cliente"
         title="Admins de organizacion alineados con su cliente desde una sola mesa."
-        description="La vista cruza busqueda, organizacion y alta rapida para mantener la jerarquia Super Admin -> Org Admin siempre ordenada."
         badge="Gobernanza interna"
         actions={<Button type="button" variant="outline" onClick={resetForm}>Nuevo admin</Button>}
       />
@@ -365,7 +362,7 @@ export function SuperAdminOrgAdminsPage() {
 
       <Workspace
         primary={(
-          <WorkPanel title="Roster de admins" description="Cada registro deja visible su organizacion y ultimo acceso para detectar cobertura o huecos rapidamente.">
+          <WorkPanel title="Roster de admins">
             <SearchToolbar
               value={q}
               onChange={value => setSearchParams(current => updateSearchParams(current, { q: value || null, page: 1 }))}
@@ -406,7 +403,6 @@ export function SuperAdminOrgAdminsPage() {
         secondary={(
           <WorkPanel
             title={editingAdmin ? 'Editar admin de organizacion' : 'Crear admin de organizacion'}
-            description="La asignacion a cliente queda dentro del mismo panel para evitar pasos extra."
             aside={editingAdmin ? <Badge variant="warm">Edicion</Badge> : <Badge variant="outline">Alta</Badge>}
           >
             <form
@@ -496,7 +492,6 @@ export function SuperAdminMetricsPage() {
       <PageIntro
         eyebrow="Senales globales"
         title="Una lectura rapida del mapa operativo antes de abrir cada cliente."
-        description="Esta vista resume cobertura de organizaciones y responsables con datos ya disponibles en la plataforma, sin adelantar los dashboards de consumo de la Fase 11."
         badge="Vista ejecutiva"
       />
 
@@ -504,7 +499,7 @@ export function SuperAdminMetricsPage() {
 
       <Workspace
         primary={(
-          <WorkPanel title="Cobertura por organizacion" description="Cada fila deja ver si el cliente ya tiene responsable asignado y cuando fue movido por ultima vez.">
+          <WorkPanel title="Cobertura por organizacion">
             <SegmentedControl
               value={organizationId ? String(organizationId) : 'all'}
               onChange={value => setSearchParams(current => updateSearchParams(current, { organization_id: value === 'all' ? null : Number(value) }))}
@@ -541,7 +536,7 @@ export function SuperAdminMetricsPage() {
           </WorkPanel>
         )}
         secondary={(
-          <WorkPanel title="Lectura operativa" description="Senales utiles para detectar rapido huecos de setup antes de pasar a la gestion puntual.">
+          <WorkPanel title="Lectura operativa">
             {orgAdminsQuery.isLoading && <LoadingState message="Calculando senales..." />}
             {orgAdminsQuery.isError && <ErrorState message="No se pudieron preparar las senales operativas." />}
 
@@ -565,10 +560,6 @@ export function SuperAdminMetricsPage() {
                   <p className="mt-2 text-sm leading-6 text-muted-foreground">
                     {(orgAdminsQuery.data?.items ?? []).filter(item => item.active).length} administradores activos visibles para responder sobre clientes.
                   </p>
-                </div>
-
-                <div className="rounded-3xl border border-border/80 bg-background/75 p-4 text-sm leading-6 text-muted-foreground">
-                  Esta vista usa datos operativos existentes. Las metricas de adopcion y consumo de contenido se reservan para la Fase 11, como pide el plan.
                 </div>
               </div>
             )}

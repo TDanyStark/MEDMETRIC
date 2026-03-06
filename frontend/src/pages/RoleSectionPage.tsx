@@ -29,7 +29,7 @@ export default function RoleSectionPage({ role, path }: RoleSectionPageProps) {
             <p className="mt-4 max-w-3xl text-base leading-8 text-muted-foreground">{section.description}</p>
           </div>
 
-          <div className="rounded-[32px] border border-border/70 bg-background/80 p-6">
+          <div className="rounded-[32px] border border-border bg-background p-6">
             <div className="flex items-center gap-3 text-sm text-muted-foreground">
               <Clock3 className="h-4 w-4 text-primary" />
               {section.phase}

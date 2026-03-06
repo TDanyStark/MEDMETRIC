@@ -85,7 +85,7 @@ export default function LoginPage() {
                 const Icon = item.icon
 
                 return (
-                  <div key={item.title} className="rounded-[28px] border border-border/70 bg-background/85 p-5">
+                  <div key={item.title} className="rounded-[28px] border border-border bg-background p-5">
                     <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 text-primary">
                       <Icon className="h-5 w-5" />
                     </div>
@@ -142,7 +142,7 @@ export default function LoginPage() {
                 </Button>
               </form>
 
-              <div className="mt-8 rounded-[24px] border border-border/70 bg-background/75 p-4 text-sm leading-6 text-muted-foreground">
+              <div className="mt-8 rounded-[24px] border border-border bg-background p-4 text-sm leading-6 text-muted-foreground">
                 Toda llamada del frontend usa rutas relativas sobre <code className="rounded bg-secondary px-1.5 py-0.5 text-foreground">/api</code>, lista para Vite local y deploy en Hostinger.
               </div>
             </CardContent>

@@ -35,14 +35,14 @@ export function SheetContent({ side = 'right', className, children, ...props }: 
       <SheetOverlay />
       <DialogPrimitive.Content
         className={cn(
-          'fixed z-50 bg-card shadow-[0_28px_80px_rgba(16,41,39,0.18)] duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out',
+          'fixed z-50 bg-card shadow-sm duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out',
           sheetVariants[side],
           className,
         )}
         {...props}
       >
         {children}
-        <DialogPrimitive.Close className="absolute right-4 top-4 rounded-full border border-border/70 bg-background/85 p-2 text-muted-foreground transition hover:text-foreground">
+        <DialogPrimitive.Close className="absolute right-4 top-4 rounded-full border border-border bg-background p-2 text-muted-foreground transition hover:text-foreground">
           <X className="h-4 w-4" />
           <span className="sr-only">Cerrar</span>
         </DialogPrimitive.Close>

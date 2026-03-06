@@ -13,7 +13,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input({ l
       <input
         ref={ref}
         className={cn(
-          'flex h-12 w-full rounded-[20px] border border-input bg-background/85 px-4 text-sm text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.32)] transition outline-none placeholder:text-muted-foreground/70 focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-ring/25 disabled:cursor-not-allowed disabled:opacity-50',
+          'flex h-12 w-full rounded-[20px] border border-input bg-background px-4 text-sm text-foreground shadow-sm transition outline-none placeholder:text-muted-foreground focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-ring/25 disabled:cursor-not-allowed disabled:opacity-50',
           error && 'border-destructive/40 focus-visible:ring-destructive/20',
           className,
         )}

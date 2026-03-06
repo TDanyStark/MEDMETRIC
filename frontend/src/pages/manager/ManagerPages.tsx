@@ -84,13 +84,12 @@ export function ManagerBrandsPage() {
       <PageIntro
         eyebrow="Base editorial"
         title="Tus marcas asignadas quedan visibles como materia prima del contenido."
-        description="El gerente ve solo lo que el admin le habilito. La pantalla funciona como estante editorial antes de crear materiales."
         badge="Marcas del gerente"
       />
 
       <MetricGrid items={metrics} />
 
-      <WorkPanel title="Marcas habilitadas" description="Cada ficha resume el contexto con el que podras crear materiales y aprobarlos.">
+      <WorkPanel title="Marcas habilitadas">
         <SearchToolbar
           value={q}
           onChange={value => setSearchParams(current => updateSearchParams(current, { q: value || null, page: 1 }))}
@@ -326,7 +325,6 @@ export function ManagerMaterialsPage() {
       <PageIntro
         eyebrow="Mesa editorial"
         title="Crea, ajusta y aprueba materiales sin perder el contexto de marca."
-        description="La experiencia sigue el flujo real del gerente: elegir marca, preparar pieza, revisar estado y aprobar cuando queda lista."
         badge="PDF + video + link"
         actions={<Button type="button" variant="outline" onClick={resetForm}>Nuevo material</Button>}
       />
@@ -335,7 +333,7 @@ export function ManagerMaterialsPage() {
 
       <Workspace
         primary={(
-          <WorkPanel title="Biblioteca del gerente" description="La lista cruza tipo, estado y marca para seguir el pipeline editorial en la misma pantalla.">
+          <WorkPanel title="Biblioteca del gerente">
             <SearchToolbar
               value={q}
               onChange={value => setSearchParams(current => updateSearchParams(current, { q: value || null, page: 1 }))}
@@ -397,7 +395,6 @@ export function ManagerMaterialsPage() {
         secondary={(
           <WorkPanel
             title={editingMaterial ? 'Editar material' : 'Crear material'}
-            description="El formulario se adapta al tipo de pieza para mantener la carga directa y sin campos sobrantes."
             aside={editingMaterial ? <Badge variant="warm">Edicion</Badge> : <Badge variant="outline">Alta</Badge>}
           >
             <form
@@ -558,7 +555,6 @@ export function ManagerRepsPage() {
       <PageIntro
         eyebrow="Distribucion a campo"
         title="Conecta visitadores al contenido del gerente sin perder visibilidad del roster."
-        description="La pantalla separa lo ya asignado de lo disponible para que sumar o quitar acceso requiera muy pocos clics."
         badge="Suscripciones del gerente"
       />
 
@@ -566,7 +562,7 @@ export function ManagerRepsPage() {
 
       <Workspace
         primary={(
-          <WorkPanel title="Visitadores asignados" description="La lista muestra el roster conectado al contenido del gerente y deja quitar acceso al instante.">
+          <WorkPanel title="Visitadores asignados">
             <SearchToolbar
               value={q}
               onChange={value => setSearchParams(current => updateSearchParams(current, { q: value || null, page: 1 }))}
@@ -611,7 +607,7 @@ export function ManagerRepsPage() {
           </WorkPanel>
         )}
         secondary={(
-          <WorkPanel title="Agregar visitadores" description="Busca candidatos disponibles, selecciona uno o varios y confirma la asignacion desde aqui mismo.">
+          <WorkPanel title="Agregar visitadores">
             <SearchToolbar
               value={availableQ}
               onChange={value => setSearchParams(current => updateSearchParams(current, { available_q: value || null }))}

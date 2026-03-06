@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils'
 interface PageIntroProps {
   eyebrow: string
   title: string
-  description: string
+  description?: string
   badge?: string
   actions?: ReactNode
 }
@@ -21,19 +21,12 @@ export function PageIntro({ eyebrow, title, description, badge, actions }: PageI
         <div>
           <p className="text-[0.72rem] font-semibold uppercase tracking-[0.26em] text-muted-foreground">{eyebrow}</p>
           <h1 className="mt-4 font-display text-4xl leading-tight text-foreground lg:text-5xl">{title}</h1>
-          <p className="mt-4 max-w-3xl text-sm leading-7 text-muted-foreground">{description}</p>
+          {description && <p className="mt-4 max-w-3xl text-sm leading-7 text-muted-foreground">{description}</p>}
         </div>
 
-        <div className="rounded-[30px] border border-border/80 bg-background/85 p-5">
+        <div className="flex flex-col items-start justify-center gap-4">
           {badge && <Badge variant="accent">{badge}</Badge>}
-          <div className="mt-4 flex items-start gap-3 text-sm leading-6 text-muted-foreground">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 text-primary">
-              <Sparkles className="h-4 w-4" />
-            </div>
-            <p>La interfaz reduce pasos: filtros visibles, panel operativo y acciones inmediatas dentro de la misma pantalla.</p>
-          </div>
-
-          {actions && <div className="mt-5 flex flex-wrap gap-3">{actions}</div>}
+          {actions && <div className="flex flex-wrap gap-3">{actions}</div>}
         </div>
       </CardContent>
     </Card>
@@ -73,7 +66,7 @@ export function Workspace({ primary, secondary }: WorkspaceProps) {
 
 interface WorkPanelProps {
   title: string
-  description: string
+  description?: string
   aside?: ReactNode
   children: ReactNode
   className?: string
@@ -85,7 +78,7 @@ export function WorkPanel({ title, description, aside, children, className }: Wo
       <CardHeader className="flex flex-row items-start justify-between gap-4">
         <div>
           <CardTitle className="text-[1.75rem]">{title}</CardTitle>
-          <CardDescription className="mt-2">{description}</CardDescription>
+          {description && <CardDescription className="mt-2">{description}</CardDescription>}
         </div>
         {aside}
       </CardHeader>
@@ -138,8 +131,8 @@ export function SegmentedControl({ value, onChange, options }: SegmentedControlP
             className={cn(
               'rounded-full border px-4 py-2 text-sm font-semibold transition',
               isActive
-                ? 'border-primary bg-primary text-primary-foreground shadow-[0_16px_35px_rgba(24,90,86,0.2)]'
-                : 'border-border bg-background/80 text-muted-foreground hover:border-primary/20 hover:text-foreground',
+                ? 'border-primary bg-primary text-primary-foreground shadow-sm'
+                : 'border-border bg-background text-muted-foreground hover:border-primary/20 hover:text-foreground',
             )}
           >
             {option.label}
@@ -171,8 +164,8 @@ export function ChoicePills<T extends string | number>({ value, options, onToggl
             className={cn(
               'rounded-[22px] border px-4 py-3 text-left text-sm transition disabled:cursor-not-allowed disabled:opacity-50',
               isActive
-                ? 'border-primary/20 bg-primary text-primary-foreground shadow-[0_16px_35px_rgba(24,90,86,0.2)]'
-                : 'border-border bg-background/80 text-foreground hover:border-primary/20',
+                ? 'border-primary/20 bg-primary text-primary-foreground shadow-sm'
+                : 'border-border bg-background text-foreground hover:border-primary/20',
             )}
           >
             <span className="block font-semibold">{option.label}</span>
@@ -196,7 +189,7 @@ export function ToggleField({ checked, onChange, label, hint }: ToggleFieldProps
     <button
       type="button"
       onClick={() => onChange(!checked)}
-      className="flex w-full items-center justify-between rounded-3xl border border-border/80 bg-background/80 px-4 py-3 text-left transition hover:border-primary/20"
+      className="flex w-full items-center justify-between rounded-3xl border border-border bg-background px-4 py-3 text-left transition hover:border-primary/20"
     >
       <div>
         <p className="text-sm font-semibold text-foreground">{label}</p>
@@ -216,7 +209,7 @@ interface EmptyStateProps {
 
 export function EmptyState({ title, description }: EmptyStateProps) {
   return (
-    <div className="rounded-[28px] border border-dashed border-border bg-background/60 p-6 text-center">
+    <div className="rounded-[28px] border border-dashed border-border bg-background p-6 text-center">
       <p className="font-semibold text-foreground">{title}</p>
       <p className="mt-2 text-sm leading-6 text-muted-foreground">{description}</p>
     </div>
@@ -236,7 +229,7 @@ export function PaginationBar({ page, lastPage, total, onPageChange }: Paginatio
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-3xl border border-border/80 bg-background/75 px-4 py-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-3 rounded-3xl border border-border bg-background px-4 py-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
       <p>{total} registros disponibles</p>
       <div className="flex items-center gap-2">
         <Button type="button" variant="outline" size="sm" disabled={page <= 1} onClick={() => onPageChange(page - 1)}>

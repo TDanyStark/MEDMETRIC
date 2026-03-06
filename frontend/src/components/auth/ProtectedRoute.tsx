@@ -16,7 +16,7 @@ export function ProtectedRoute({ children, roles }: ProtectedRouteProps) {
   if (isBootstrapping) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background px-6">
-        <div className="rounded-3xl border border-border/70 bg-card/90 px-6 py-5 text-sm text-muted-foreground shadow-[0_18px_60px_rgba(16,41,39,0.08)]">
+        <div className="rounded-3xl border border-border bg-card px-6 py-5 text-sm text-muted-foreground shadow-sm">
           Restaurando tu espacio de trabajo...
         </div>
       </div>

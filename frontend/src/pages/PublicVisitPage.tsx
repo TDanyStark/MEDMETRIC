@@ -128,7 +128,7 @@ export default function PublicVisitPage() {
               </p>
             </div>
 
-            <div className="rounded-[32px] border border-border/70 bg-background/80 p-6">
+            <div className="rounded-[32px] border border-border bg-background p-6">
               <div className="flex items-center gap-3 text-sm text-muted-foreground">
                 <Stethoscope className="h-4 w-4 text-primary" />
                 Sesion creada el {formatDateTime(sessionQuery.data.session.created_at)}
@@ -152,12 +152,12 @@ export default function PublicVisitPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               {sessionQuery.data.materials.length === 0 ? (
-                <div className="rounded-[28px] border border-dashed border-border bg-background/80 p-6 text-sm leading-7 text-muted-foreground">
+                <div className="rounded-[28px] border border-dashed border-border bg-background p-6 text-sm leading-7 text-muted-foreground">
                   Esta sesion no tiene materiales aprobados disponibles.
                 </div>
               ) : (
                 sessionQuery.data.materials.map(material => (
-                  <div key={material.id} className="rounded-[28px] border border-border/70 bg-background/82 p-5">
+                  <div key={material.id} className="rounded-[28px] border border-border bg-background p-5">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <MaterialTypeBadge type={material.type} />
                       <Button
@@ -186,7 +186,7 @@ export default function PublicVisitPage() {
             </CardHeader>
             <CardContent>
               {!activeMaterial && (
-                <div className="flex min-h-[28rem] flex-col items-center justify-center rounded-[28px] border border-dashed border-border bg-background/80 px-6 text-center">
+                <div className="flex min-h-[28rem] flex-col items-center justify-center rounded-[28px] border border-dashed border-border bg-background px-6 text-center">
                   <Share2 className="h-8 w-8 text-primary/70" />
                   <p className="mt-4 max-w-md text-sm leading-7 text-muted-foreground">
                     Elige un material del panel izquierdo para iniciar la experiencia de la visita.
@@ -195,7 +195,7 @@ export default function PublicVisitPage() {
               )}
 
               {activeMaterial && resource?.type === 'pdf' && (
-                <div className="flex min-h-[28rem] flex-col items-center justify-center rounded-[28px] border border-border/70 bg-background/80 px-6 text-center">
+                <div className="flex min-h-[28rem] flex-col items-center justify-center rounded-[28px] border border-border bg-background px-6 text-center">
                   <FileText className="h-10 w-10 text-primary" />
                   <h3 className="mt-5 text-xl font-semibold text-foreground">{activeMaterial.title}</h3>
                   <p className="mt-3 max-w-md text-sm leading-7 text-muted-foreground">
@@ -205,7 +205,7 @@ export default function PublicVisitPage() {
               )}
 
               {activeMaterial && resource?.type === 'link' && (
-                <div className="flex min-h-[28rem] flex-col items-center justify-center rounded-[28px] border border-border/70 bg-background/80 px-6 text-center">
+                <div className="flex min-h-[28rem] flex-col items-center justify-center rounded-[28px] border border-border bg-background px-6 text-center">
                   <ExternalLink className="h-10 w-10 text-primary" />
                   <h3 className="mt-5 text-xl font-semibold text-foreground">{activeMaterial.title}</h3>
                   <p className="mt-3 max-w-md text-sm leading-7 text-muted-foreground">
@@ -216,7 +216,7 @@ export default function PublicVisitPage() {
 
               {activeMaterial && resource?.type === 'video' && (
                 <div className="space-y-4">
-                  <div className="aspect-video overflow-hidden rounded-[28px] border border-border/70 bg-background/90">
+                  <div className="aspect-video overflow-hidden rounded-[28px] border border-border bg-background">
                     <iframe
                       title={resource.title || activeMaterial.title}
                       src={resource.embed_url ?? resource.url}
@@ -225,7 +225,7 @@ export default function PublicVisitPage() {
                       allowFullScreen
                     />
                   </div>
-                  <div className="rounded-[24px] border border-border/70 bg-background/80 p-4">
+                  <div className="rounded-[24px] border border-border bg-background p-4">
                     <h3 className="text-lg font-semibold text-foreground">{resource.title || activeMaterial.title}</h3>
                     <p className="mt-2 text-sm leading-7 text-muted-foreground">
                       {resource.description || activeMaterial.description || 'Video listo para reproduccion embebida.'}

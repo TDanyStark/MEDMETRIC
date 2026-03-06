@@ -20,7 +20,7 @@ function HeroMetrics({ blueprint }: { blueprint: RoleBlueprint }) {
         'Navegacion escalable para modulos futuros.',
         blueprint.signature,
       ].map(item => (
-        <div key={item} className="rounded-[28px] border border-border/70 bg-background/80 p-4 text-sm leading-6 text-muted-foreground">
+        <div key={item} className="rounded-[28px] border border-border bg-card p-4 text-sm leading-6 text-muted-foreground shadow-sm">
           {item}
         </div>
       ))}
@@ -59,12 +59,12 @@ export default function RoleHomePage({ role }: RoleHomePageProps) {
             </div>
           </div>
 
-          <div className="rounded-4xl border border-border/70 bg-background/85 p-6">
+          <div className="rounded-4xl border border-border bg-card p-6 shadow-sm">
             <p className="text-[0.72rem] uppercase tracking-[0.24em] text-muted-foreground">Sesion actual</p>
             <h2 className="mt-3 font-display text-3xl text-foreground">{user?.name}</h2>
             <p className="mt-2 text-sm leading-7 text-muted-foreground">{user?.email}</p>
             <Separator className="my-5" />
-            <div className="flex items-start gap-3 rounded-3xl border border-border/70 bg-card/80 p-4 text-sm leading-6 text-muted-foreground">
+            <div className="flex items-start gap-3 rounded-3xl border border-border bg-background p-4 text-sm leading-6 text-muted-foreground">
               <Sparkles className="mt-0.5 h-4 w-4 text-primary" />
                 <p>
                  El layout y la navegacion ya responden al rol. En esta etapa los modulos internos principales quedan conectados a datos reales y listos para operar.
@@ -87,13 +87,11 @@ export default function RoleHomePage({ role }: RoleHomePageProps) {
                   <div className="flex h-12 w-12 items-center justify-center rounded-[20px] border border-primary/20 bg-primary/10 text-primary">
                     <Icon className="h-5 w-5" />
                   </div>
-                  <Badge variant={item.phase.includes('Base lista') ? 'success' : 'outline'}>{item.phase}</Badge>
                 </div>
                 <CardTitle>{item.label}</CardTitle>
                 <CardDescription>{item.description}</CardDescription>
               </CardHeader>
               <CardContent className="flex items-center justify-between gap-3 pt-2">
-                <p className="text-sm leading-7 text-muted-foreground">Ruta preparada y enlazada dentro del shell del rol.</p>
                 <Button asChild variant="ghost">
                   <Link to={item.to}>
                     Abrir

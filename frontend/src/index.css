@@ -1,10 +1,10 @@
-@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
 @import "tw-animate-css";
 
 @theme inline {
-  --font-display: "Fraunces", serif;
-  --font-sans: "Manrope", sans-serif;
+  --font-display: "Inter", sans-serif;
+  --font-sans: "Inter", sans-serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -28,38 +28,32 @@
 }
 
 :root {
-  --radius: 1rem;
-  --parchment: #f6f1e8;
-  --bone: #fbf8f2;
-  --paper: #fffdf8;
-  --sage-mist: #dde8e2;
-  --teal-dose: #2e7770;
-  --teal-dose-deep: #185a56;
-  --copper-seal: #c6954c;
-  --rose-alert: #b25b53;
-  --ink: #1d3432;
-  --ink-soft: #58706c;
-  --line: rgba(34, 71, 67, 0.14);
-  --background: var(--parchment);
-  --foreground: var(--ink);
-  --card: rgba(255, 252, 246, 0.88);
-  --card-foreground: var(--ink);
-  --popover: #fffdf9;
-  --popover-foreground: var(--ink);
-  --primary: var(--teal-dose-deep);
-  --primary-foreground: #f7faf9;
-  --secondary: rgba(220, 232, 226, 0.6);
-  --secondary-foreground: var(--ink);
-  --muted: rgba(226, 234, 229, 0.7);
-  --muted-foreground: var(--ink-soft);
-  --accent: rgba(236, 227, 210, 0.7);
-  --accent-foreground: var(--ink);
-  --destructive: var(--rose-alert);
-  --border: var(--line);
-  --input: rgba(255, 253, 249, 0.9);
-  --ring: rgba(46, 119, 112, 0.28);
-  --sidebar: rgba(246, 241, 232, 0.94);
-  --sidebar-foreground: var(--ink);
+  --radius: 0.75rem;
+  --fuchsia: #9f38a4;
+  --purple: #602982;
+  
+  --background: #f3f4f6; /* Gray 100 for clear separation */
+  --foreground: #111827; /* Gray 900 */
+  --card: #ffffff;
+  --card-foreground: #111827;
+  --popover: #ffffff;
+  --popover-foreground: #111827;
+  
+  --primary: var(--purple);
+  --primary-foreground: #ffffff;
+  --secondary: #f3f4f6;
+  --secondary-foreground: #1f2937;
+  --muted: #f3f4f6;
+  --muted-foreground: #6b7280;
+  --accent: rgba(159, 56, 164, 0.1); /* Fuchsia very light */
+  --accent-foreground: var(--fuchsia);
+  --destructive: #ef4444;
+  --border: #e5e7eb;
+  --input: #ffffff;
+  --ring: rgba(96, 41, 130, 0.3); /* Purple with opacity */
+  
+  --sidebar: #ffffff;
+  --sidebar-foreground: #111827;
 }
 
 @layer base {
@@ -73,10 +67,7 @@
 
   body {
     min-height: 100vh;
-    background:
-      radial-gradient(circle at top left, rgba(46, 119, 112, 0.08), transparent 28%),
-      radial-gradient(circle at bottom right, rgba(198, 149, 76, 0.1), transparent 22%),
-      linear-gradient(180deg, rgba(255, 253, 248, 0.72), rgba(246, 241, 232, 0.92));
+    background-color: var(--background);
     color: var(--foreground);
     font-family: var(--font-sans);
     text-rendering: optimizeLegibility;
@@ -87,6 +78,6 @@
   }
 
   ::selection {
-    background: rgba(46, 119, 112, 0.18);
+    background: rgba(159, 56, 164, 0.2); /* Fuchsia selection */
   }
 }

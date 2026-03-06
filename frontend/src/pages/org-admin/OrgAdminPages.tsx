@@ -219,7 +219,6 @@ export function OrgAdminUsersPage() {
       <PageIntro
         eyebrow="Equipo interno"
         title="Gerentes y visitadores ordenados desde la mesa de coordinacion."
-        description="La vista combina alta, edicion y suscripciones para que el admin de organizacion resuelva el armado del equipo sin saltar entre pantallas."
         badge="Personas + acceso"
         actions={<Button type="button" variant="outline" onClick={resetForm}>Nuevo usuario</Button>}
       />
@@ -228,7 +227,7 @@ export function OrgAdminUsersPage() {
 
       <Workspace
         primary={(
-          <WorkPanel title="Directorio de usuarios" description="Los filtros quedan persistidos y la lista distingue rapido roles, actividad y ultimo acceso.">
+          <WorkPanel title="Directorio de usuarios">
             <SearchToolbar
               value={q}
               onChange={value => setSearchParams(current => updateSearchParams(current, { q: value || null, page: 1 }))}
@@ -270,7 +269,6 @@ export function OrgAdminUsersPage() {
         secondary={(
           <WorkPanel
             title={editingUser ? 'Editar usuario' : 'Crear usuario'}
-            description="El formulario concentra rol, estado y suscripciones del visitador dentro del mismo panel." 
             aside={editingUser ? <Badge variant="warm">Edicion</Badge> : <Badge variant="outline">Alta</Badge>}
           >
             <form
@@ -431,7 +429,6 @@ export function OrgAdminBrandsPage() {
       <PageIntro
         eyebrow="Catalogo maestro"
         title="Marcas limpias, activas y listas para asignar a gerentes."
-        description="La organizacion necesita un catalogo claro antes de producir contenido. Esta vista junta alta, ajuste y control de estado."
         badge="Marca sin duplicados"
         actions={<Button type="button" variant="outline" onClick={resetForm}>Nueva marca</Button>}
       />
@@ -440,7 +437,7 @@ export function OrgAdminBrandsPage() {
 
       <Workspace
         primary={(
-          <WorkPanel title="Listado de marcas" description="Las fichas muestran nombre, descripcion y estado para revisar rapido el catalogo operativo.">
+          <WorkPanel title="Listado de marcas">
             <SearchToolbar
               value={q}
               onChange={value => setSearchParams(current => updateSearchParams(current, { q: value || null, page: 1 }))}
@@ -471,7 +468,6 @@ export function OrgAdminBrandsPage() {
         secondary={(
           <WorkPanel
             title={editingBrand ? 'Editar marca' : 'Crear marca'}
-            description="Una ficha simple para mantener el catalogo consistente y facil de reutilizar en las fases siguientes."
             aside={editingBrand ? <Badge variant="warm">Edicion</Badge> : <Badge variant="outline">Alta</Badge>}
           >
             <form
@@ -582,7 +578,6 @@ export function OrgAdminAssignmentsPage() {
       <PageIntro
         eyebrow="Relaciones marca-gerente"
         title="Asignaciones visibles para que cada gerente vea solo sus marcas."
-        description="La pantalla se comporta como una mesa de cobertura: eliges gerente, comparas catalogo y guardas cambios sin salir del contexto."
         badge="Operacion de cartera"
       />
 
@@ -590,7 +585,7 @@ export function OrgAdminAssignmentsPage() {
 
       <Workspace
         primary={(
-          <WorkPanel title="Gerentes disponibles" description="Selecciona un gerente para ver y ajustar sus marcas en el panel lateral.">
+          <WorkPanel title="Gerentes disponibles">
             <SearchToolbar
               value={q}
               onChange={value => setSearchParams(current => updateSearchParams(current, { q: value || null, page: 1 }))}
@@ -623,7 +618,7 @@ export function OrgAdminAssignmentsPage() {
           </WorkPanel>
         )}
         secondary={(
-          <WorkPanel title="Editor de asignaciones" description="Marca lo que entra o sale del portafolio del gerente y guarda el ajuste en un solo paso.">
+          <WorkPanel title="Editor de asignaciones">
             {!managerId && <EmptyState title="Selecciona un gerente" description="La URL guardara el gerente elegido para que puedas compartir o retomar la vista." />}
             {managerId && assignedBrandsQuery.isLoading && <LoadingState message="Cargando marcas asignadas..." />}
             {managerId && assignedBrandsQuery.isError && <ErrorState message="No se pudieron cargar las marcas del gerente." />}
@@ -689,8 +684,7 @@ export function OrgAdminMetricsPage() {
     <div className="mx-auto flex min-h-full w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-10 lg:py-8">
       <PageIntro
         eyebrow="Pulso de la organizacion"
-        title="Senales operativas para revisar estructura antes de abrir contenido."
-        description="La metrica de esta fase se enfoca en salud organizativa: personas, marcas y disponibilidad. Las metricas de consumo siguen reservadas para la Fase 11."
+        title="Senales operativas para revisar estructura."
         badge="Metrica operativa"
       />
 
@@ -698,7 +692,7 @@ export function OrgAdminMetricsPage() {
 
       <Workspace
         primary={(
-          <WorkPanel title="Resumen del roster" description="Los bloques priorizan la lectura rapida del tamano de equipo y la disponibilidad interna.">
+          <WorkPanel title="Resumen del roster">
             <div className="grid gap-3 md:grid-cols-3">
               <div className="rounded-[24px] border border-border/80 bg-background/75 p-4">
                 <div className="flex items-center gap-3 text-foreground"><Users className="h-4 w-4 text-primary" /><p className="font-semibold">Equipo</p></div>
@@ -715,18 +709,7 @@ export function OrgAdminMetricsPage() {
             </div>
           </WorkPanel>
         )}
-        secondary={(
-          <WorkPanel title="Recordatorio de roadmap" description="Mantiene el alcance alineado con el plan del MVP para no adelantarse a fases futuras.">
-            <div className="space-y-3 text-sm leading-6 text-muted-foreground">
-              <div className="rounded-[24px] border border-border/80 bg-background/75 p-4">
-                Esta fase deja operativo el backoffice interno: usuarios, marcas, asignaciones y lectura organizativa.
-              </div>
-              <div className="rounded-[24px] border border-border/80 bg-background/75 p-4">
-                La lectura de vistas de materiales, top content y uso por visitador sigue definida para la Fase 11 y no se adelanta aqui.
-              </div>
-            </div>
-          </WorkPanel>
-        )}
+        secondary={null}
       />
     </div>
   )
