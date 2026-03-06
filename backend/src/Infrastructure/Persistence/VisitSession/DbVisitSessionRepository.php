@@ -32,10 +32,11 @@ class DbVisitSessionRepository implements VisitSessionRepositoryInterface
         $countStmt->execute([':rep_id' => $repId]);
         $total = (int) $countStmt->fetchColumn();
 
-        // Get sessions with material count
+        // Get sessions with material count and IDs
         $sql = 'SELECT vs.id, vs.organization_id, vs.rep_id, vs.doctor_token, 
                        vs.doctor_name, vs.notes, vs.active, vs.created_at, vs.updated_at,
-                       COUNT(vsm.id) as material_count
+                       COUNT(vsm.id) as material_count,
+                       GROUP_CONCAT(vsm.material_id) as material_ids
                 FROM visit_sessions vs
                 LEFT JOIN visit_session_materials vsm ON vs.id = vsm.visit_session_id
                 WHERE vs.rep_id = :rep_id
@@ -54,9 +55,12 @@ class DbVisitSessionRepository implements VisitSessionRepositoryInterface
         
         $items = array_map(function(array $row) {
             $session = VisitSession::fromRow($row);
-            // Add material count to the serialized data
+            // Add material count and IDs to the serialized data
             $data = $session->jsonSerialize();
             $data['material_count'] = (int) $row['material_count'];
+            $data['material_ids'] = $row['material_ids'] 
+                ? array_map('intval', explode(',', $row['material_ids'])) 
+                : [];
             return $data;
         }, $rows);
 
@@ -172,5 +176,53 @@ class DbVisitSessionRepository implements VisitSessionRepositoryInterface
         $stmt->execute([':session_id' => $sessionId]);
         
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function addMaterials(int $sessionId, int $repId, array $materialIds): array
+    {
+        // Verify session belongs to rep
+        $this->findByIdAndRep($sessionId, $repId);
+
+        // Get existing material IDs for this session to avoid duplicates
+        $existingStmt = $this->pdo->prepare(
+            'SELECT material_id FROM visit_session_materials WHERE visit_session_id = :session_id'
+        );
+        $existingStmt->execute([':session_id' => $sessionId]);
+        $existingIds = array_map('intval', $existingStmt->fetchAll(PDO::FETCH_COLUMN));
+
+        // Get current max sort_order
+        $maxOrderStmt = $this->pdo->prepare(
+            'SELECT COALESCE(MAX(sort_order), -1) FROM visit_session_materials WHERE visit_session_id = :session_id'
+        );
+        $maxOrderStmt->execute([':session_id' => $sessionId]);
+        $maxOrder = (int) $maxOrderStmt->fetchColumn();
+
+        // Filter out materials already in the session
+        $newMaterialIds = array_values(array_filter($materialIds, fn($id) => !in_array((int)$id, $existingIds, true)));
+
+        if (!empty($newMaterialIds)) {
+            $this->pdo->beginTransaction();
+            try {
+                $insertStmt = $this->pdo->prepare(
+                    'INSERT INTO visit_session_materials (visit_session_id, material_id, sort_order)
+                     VALUES (:visit_session_id, :material_id, :sort_order)'
+                );
+
+                foreach ($newMaterialIds as $index => $materialId) {
+                    $insertStmt->execute([
+                        ':visit_session_id' => $sessionId,
+                        ':material_id'      => (int) $materialId,
+                        ':sort_order'       => $maxOrder + 1 + $index,
+                    ]);
+                }
+
+                $this->pdo->commit();
+            } catch (\Exception $e) {
+                $this->pdo->rollBack();
+                throw $e;
+            }
+        }
+
+        return $this->getSessionMaterials($sessionId);
     }
 }

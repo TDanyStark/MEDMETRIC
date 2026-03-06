@@ -86,6 +86,10 @@ class ApiService {
   delete<T>(endpoint: string, body?: RequestOptions['body']): Promise<T> {
     return this.request<T>(endpoint, { method: 'DELETE', body })
   }
+
+  patch<T>(endpoint: string, body?: RequestOptions['body']): Promise<T> {
+    return this.request<T>(endpoint, { method: 'PATCH', body })
+  }
 }
 
 export const api = new ApiService()

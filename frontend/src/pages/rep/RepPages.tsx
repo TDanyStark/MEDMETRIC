@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { FileText, PlayCircle, ExternalLink, Link2, Copy, Stethoscope, ArrowRight } from 'lucide-react'
+import { FileText, PlayCircle, ExternalLink, Link2, Copy, Stethoscope, Plus, PackagePlus, CheckCircle2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useSearchParams, Link } from 'react-router-dom'
 
@@ -24,8 +24,9 @@ import {
   listRepMaterials,
   createRepSession,
   listRepSessions,
+  addMaterialsToSession,
 } from '@/services/rep'
-import { MaterialType } from '@/types/rep'
+import { Material, MaterialType, RepSession } from '@/types/rep'
 
 function LoadingState({ message }: { message: string }) {
   return <div className="rounded-2xl border border-border/50 bg-background/50 px-4 py-8 text-center text-sm text-muted-foreground">{message}</div>
@@ -46,6 +47,194 @@ function MaterialTypeLabel({ type }: { type: MaterialType }) {
   )
 }
 
+// ─── Add-Materials-to-Existing-Session dialog ───────────────────────────────
+
+interface AddMaterialsDialogProps {
+  session: RepSession
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}
+
+function AddMaterialsDialog({ session, open, onOpenChange }: AddMaterialsDialogProps) {
+  const queryClient = useQueryClient()
+  const [q, setQ] = useState('')
+  const [type, setType] = useState('all')
+  const [selected, setSelected] = useState<number[]>(session.material_ids ?? [])
+  const [done, setDone] = useState(false)
+  const [createdToken] = useState(session.doctor_token)
+
+  // Sync state when session target changes or opens
+  useEffect(() => {
+    if (open) {
+      setSelected(session.material_ids ?? [])
+    }
+  }, [open, session.material_ids])
+
+  const materialsQuery = useQuery({
+    queryKey: ['rep', 'materials-picker', q, type],
+    queryFn: () => listRepMaterials({ q: q || undefined, page: 1, type: type === 'all' ? undefined : type }),
+    enabled: open,
+  })
+
+  const existingIds = session.material_ids ?? []
+  const newSelections = selected.filter(id => !existingIds.includes(id))
+
+  const addMutation = useMutation({
+    mutationFn: () => {
+      if (newSelections.length === 0) throw new Error('No has seleccionado ningún material nuevo.')
+      return addMaterialsToSession(session.id, selected)
+    },
+    onSuccess: () => {
+      toast.success('Materiales agregados a la sesión.')
+      setDone(true)
+      setSelected([])
+      void queryClient.invalidateQueries({ queryKey: ['rep', 'sessions'] })
+    },
+    onError: (err) => {
+      const msg = err instanceof Error ? err.message : 'Error al agregar materiales.'
+      toast.error(msg)
+    },
+  })
+
+  const toggle = (id: number) => {
+    setSelected(curr => curr.includes(id) ? curr.filter(x => x !== id) : [...curr, id])
+  }
+
+  const handleClose = () => {
+    setDone(false)
+    setSelected([])
+    setQ('')
+    setType('all')
+    onOpenChange(false)
+  }
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      toast.success('Enlace copiado al portapapeles')
+    } catch {
+      toast.error('No se pudo copiar el enlace')
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Agregar materiales a la sesión</DialogTitle>
+          <DialogDescription>
+            {session.doctor_name ? `Sesión de ${session.doctor_name} — ` : ''}
+            Selecciona los materiales que deseas agregar. Los duplicados serán ignorados automáticamente.
+          </DialogDescription>
+        </DialogHeader>
+
+        {done ? (
+          <div className="mt-4 flex flex-col items-center gap-6 py-6">
+            <div className="p-4 bg-success/10 text-success rounded-full">
+              <CheckCircle2 className="h-10 w-10" />
+            </div>
+            <div className="text-center">
+              <h3 className="font-semibold text-lg text-foreground">¡Materiales agregados!</h3>
+              <p className="text-sm text-muted-foreground mt-1">El enlace de la sesión ya incluye los nuevos materiales.</p>
+            </div>
+            <div className="flex w-full items-center gap-2">
+              <Input readOnly value={`${window.location.origin}/public/visit/${createdToken}`} className="flex-1" />
+              <Button variant="secondary" onClick={() => copyToClipboard(`${window.location.origin}/public/visit/${createdToken}`)}>
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
+            <Button className="w-full" onClick={handleClose}>Cerrar</Button>
+          </div>
+        ) : (
+          <>
+            {/* Search & Filter */}
+            <div className="mt-4 flex flex-col gap-3">
+              <SearchToolbar
+                value={q}
+                onChange={setQ}
+                placeholder="Buscar material..."
+                extra={
+                  <SegmentedControl
+                    value={type}
+                    onChange={setType}
+                    options={[
+                      { label: 'Todos', value: 'all' },
+                      { label: 'PDF', value: 'pdf' },
+                      { label: 'Video', value: 'video' },
+                      { label: 'Link', value: 'link' },
+                    ]}
+                  />
+                }
+              />
+            </div>
+
+            {/* Material Grid */}
+            <div className="mt-2 max-h-[50vh] overflow-y-auto pr-1">
+              {materialsQuery.isLoading && <LoadingState message="Cargando materiales..." />}
+              {materialsQuery.isError && <ErrorState message="No se pudo cargar la biblioteca." />}
+              {!materialsQuery.isLoading && !materialsQuery.isError && (materialsQuery.data?.items.length ?? 0) === 0 && (
+                <EmptyState title="Sin materiales" description="No hay materiales disponibles." />
+              )}
+              {!materialsQuery.isLoading && !materialsQuery.isError && (materialsQuery.data?.items.length ?? 0) > 0 && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {materialsQuery.data?.items.map((item: Material) => {
+                    const isExisting = existingIds.includes(item.id)
+                    const isSel = selected.includes(item.id)
+                    
+                    return (
+                      <div
+                        key={item.id}
+                        onClick={() => {
+                          if (!isExisting) toggle(item.id)
+                        }}
+                        className={`flex items-center gap-3 rounded-2xl border p-3 transition-all ${isExisting ? 'bg-muted/50 border-muted opacity-80 cursor-default' : 'cursor-pointer'} ${!isExisting && isSel ? 'ring-2 ring-primary border-primary bg-primary/5' : 'border-border'} ${!isExisting ? 'hover:border-primary/50' : ''}`}
+                      >
+                        <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0 ${isSel || isExisting ? 'bg-primary border-primary' : 'border-muted-foreground/30'}`}>
+                          {(isSel || isExisting) && <div className="h-2 w-2 rounded-full bg-background" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium text-foreground truncate">{item.title}</p>
+                            {isExisting && (
+                              <Badge variant="outline" className="text-[10px] py-0 h-4 bg-background">En sesión</Badge>
+                            )}
+                          </div>
+                          <MaterialTypeLabel type={item.type} />
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-between gap-3 pt-4 border-t border-border mt-2">
+              <span className="text-sm text-muted-foreground">
+                {selected.length > 0 ? `${selected.length} seleccionado${selected.length > 1 ? 's' : ''}` : 'Ninguno seleccionado'}
+              </span>
+              <div className="flex gap-3">
+                <Button variant="outline" onClick={handleClose}>Cancelar</Button>
+                <Button
+                  disabled={newSelections.length === 0}
+                  loading={addMutation.isPending}
+                  onClick={() => void addMutation.mutateAsync()}
+                >
+                  <Plus className="mr-2 h-4 w-4" /> 
+                  {newSelections.length > 0 ? `Agregar ${newSelections.length} nuevo${newSelections.length > 1 ? 's' : ''}` : 'Agregar materiales'}
+                </Button>
+              </div>
+            </div>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+
+// ─── Library Page ─────────────────────────────────────────────────────────────
+
 export function RepLibraryPage() {
   const queryClient = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -58,9 +247,20 @@ export function RepLibraryPage() {
   const [sessionForm, setSessionForm] = useState({ doctor_name: '', notes: '' })
   const [createdSessionToken, setCreatedSessionToken] = useState<string | null>(null)
 
+  // For "add to existing session" flow
+  const [isAddToExistingOpen, setIsAddToExistingOpen] = useState(false)
+  const [targetSessionForAdd, setTargetSessionForAdd] = useState<RepSession | null>(null)
+  const [addDone, setAddDone] = useState(false)
+
   const materialsQuery = useQuery({
     queryKey: ['rep', 'materials', q, page, type],
     queryFn: () => listRepMaterials({ q, page, type: type === 'all' ? undefined : type }),
+  })
+
+  // Fetch recent sessions to allow "add to existing"
+  const sessionsQuery = useQuery({
+    queryKey: ['rep', 'sessions', 1],
+    queryFn: () => listRepSessions({ page: 1 }),
   })
 
   const createSessionMutation = useMutation({
@@ -85,6 +285,23 @@ export function RepLibraryPage() {
     },
   })
 
+  const addToExistingMutation = useMutation({
+    mutationFn: () => {
+      if (!targetSessionForAdd) throw new Error('No hay sesión seleccionada.')
+      return addMaterialsToSession(targetSessionForAdd.id, selectedMaterialIds)
+    },
+    onSuccess: () => {
+      toast.success('Materiales agregados a la sesión.')
+      setAddDone(true)
+      setSelectedMaterialIds([])
+      void queryClient.invalidateQueries({ queryKey: ['rep', 'sessions'] })
+    },
+    onError: (err) => {
+      const msg = err instanceof Error ? err.message : 'Error al agregar materiales.'
+      toast.error(msg)
+    },
+  })
+
   const toggleMaterial = (id: number) => {
     setSelectedMaterialIds(curr => curr.includes(id) ? curr.filter(x => x !== id) : [...curr, id])
   }
@@ -96,6 +313,17 @@ export function RepLibraryPage() {
     } catch {
       toast.error('No se pudo copiar el enlace')
     }
+  }
+
+  const handleCloseSessionDialog = () => {
+    setIsSessionDialogOpen(false)
+    setCreatedSessionToken(null)
+  }
+
+  const handleCloseAddToExisting = () => {
+    setIsAddToExistingOpen(false)
+    setTargetSessionForAdd(null)
+    setAddDone(false)
   }
 
   return (
@@ -195,9 +423,9 @@ export function RepLibraryPage() {
               <div className="p-5 border-b border-border">
                 <div className="flex items-center gap-2 mb-1">
                   <Stethoscope className="h-5 w-5 text-primary" />
-                  <h3 className="font-semibold text-lg text-foreground">Nueva Sesión</h3>
+                  <h3 className="font-semibold text-lg text-foreground">Materiales seleccionados</h3>
                 </div>
-                <p className="text-sm text-muted-foreground">{selectedMaterialIds.length} materiales seleccionados</p>
+                <p className="text-sm text-muted-foreground">{selectedMaterialIds.length} material{selectedMaterialIds.length > 1 ? 'es' : ''} listo{selectedMaterialIds.length > 1 ? 's' : ''}</p>
               </div>
               <div className="flex-1 p-5 pt-4 bg-muted/10 max-h-[40vh] overflow-y-auto">
                 <div className="space-y-3">
@@ -213,17 +441,25 @@ export function RepLibraryPage() {
                   })}
                 </div>
               </div>
-              <div className="p-5 bg-background border-t border-border">
+              <div className="p-5 bg-background border-t border-border flex flex-col gap-2">
+                {/* NEW SESSION */}
                 <Button className="w-full" onClick={() => setIsSessionDialogOpen(true)}>
-                  Preparar link <ArrowRight className="ml-2 h-4 w-4" />
+                  <Plus className="mr-2 h-4 w-4" /> Nueva sesión
                 </Button>
+                {/* ADD TO EXISTING SESSION */}
+                {(sessionsQuery.data?.items.length ?? 0) > 0 && (
+                  <Button variant="outline" className="w-full" onClick={() => setIsAddToExistingOpen(true)}>
+                    <PackagePlus className="mr-2 h-4 w-4" /> Agregar a sesión existente
+                  </Button>
+                )}
               </div>
             </div>
           </div>
         )}
       </div>
 
-      <Dialog open={isSessionDialogOpen} onOpenChange={setIsSessionDialogOpen}>
+      {/* ── Create new session dialog ───────────────────────────────── */}
+      <Dialog open={isSessionDialogOpen} onOpenChange={handleCloseSessionDialog}>
         <DialogContent>
            <DialogHeader>
              <DialogTitle>Crear Visita Médica</DialogTitle>
@@ -238,7 +474,7 @@ export function RepLibraryPage() {
                 <Textarea label="Notas de la visita (Opcional)" value={sessionForm.notes} onChange={e => setSessionForm(c => ({ ...c, notes: e.target.value }))} placeholder="Interés en cardiopatías..." />
                 
                 <div className="flex justify-end gap-3 pt-4">
-                  <Button type="button" variant="outline" onClick={() => setIsSessionDialogOpen(false)}>Cancelar</Button>
+                  <Button type="button" variant="outline" onClick={handleCloseSessionDialog}>Cancelar</Button>
                   <Button type="submit" loading={createSessionMutation.isPending}>Generar Link</Button>
                 </div>
              </form>
@@ -258,7 +494,7 @@ export function RepLibraryPage() {
                    </Button>
                 </div>
                 <div className="flex w-full gap-3 pt-4 border-t border-border mt-2">
-                   <Button variant="outline" className="flex-1" onClick={() => { setIsSessionDialogOpen(false); setCreatedSessionToken(null); }}>Cerrar</Button>
+                   <Button variant="outline" className="flex-1" onClick={handleCloseSessionDialog}>Cerrar</Button>
                    <Button className="flex-1" asChild>
                      <Link to={`/public/visit/${createdSessionToken}`} target="_blank">Abrir link</Link>
                    </Button>
@@ -267,9 +503,76 @@ export function RepLibraryPage() {
            )}
         </DialogContent>
       </Dialog>
+
+      {/* ── Add to existing session dialog ──────────────────────────── */}
+      <Dialog open={isAddToExistingOpen} onOpenChange={handleCloseAddToExisting}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Agregar a sesión existente</DialogTitle>
+            <DialogDescription>
+              Selecciona la sesión a la que deseas agregar los {selectedMaterialIds.length} materiales seleccionados.
+            </DialogDescription>
+          </DialogHeader>
+
+          {addDone ? (
+            <div className="mt-4 flex flex-col items-center gap-6 py-4">
+              <div className="p-4 bg-success/10 text-success rounded-full">
+                <CheckCircle2 className="h-10 w-10" />
+              </div>
+              <div className="text-center">
+                <h3 className="font-semibold text-lg text-foreground">¡Materiales agregados!</h3>
+                <p className="text-sm text-muted-foreground mt-1">El enlace de la sesión ya incluye los nuevos materiales.</p>
+              </div>
+              {targetSessionForAdd && (
+                <div className="flex w-full items-center gap-2">
+                  <Input readOnly value={`${window.location.origin}/public/visit/${targetSessionForAdd.doctor_token}`} className="flex-1" />
+                  <Button variant="secondary" onClick={() => copyToClipboard(`${window.location.origin}/public/visit/${targetSessionForAdd!.doctor_token}`)}>
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+              <Button className="w-full" onClick={handleCloseAddToExisting}>Cerrar</Button>
+            </div>
+          ) : (
+            <div className="mt-4 flex flex-col gap-4">
+              <div className="max-h-64 overflow-y-auto space-y-2">
+                {sessionsQuery.isLoading && <LoadingState message="Cargando sesiones..." />}
+                {sessionsQuery.data?.items.map(session => (
+                  <div
+                    key={session.id}
+                    onClick={() => setTargetSessionForAdd(s => s?.id === session.id ? null : session)}
+                    className={`flex items-center gap-3 cursor-pointer rounded-2xl border p-4 transition-all ${targetSessionForAdd?.id === session.id ? 'ring-2 ring-primary border-primary bg-primary/5' : 'border-border hover:border-primary/50'}`}
+                  >
+                    <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0 ${targetSessionForAdd?.id === session.id ? 'bg-primary border-primary' : 'border-muted-foreground/30'}`}>
+                      {targetSessionForAdd?.id === session.id && <div className="h-2 w-2 rounded-full bg-background" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-foreground">{session.doctor_name || <span className="italic text-muted-foreground">Sin nombre</span>}</p>
+                      <p className="text-xs text-muted-foreground">{formatDateTime(session.created_at)}</p>
+                    </div>
+                    <Badge variant="outline" className="shrink-0 text-xs">ID {session.id}</Badge>
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-end gap-3 pt-4 border-t border-border">
+                <Button variant="outline" onClick={handleCloseAddToExisting}>Cancelar</Button>
+                <Button
+                  disabled={!targetSessionForAdd}
+                  loading={addToExistingMutation.isPending}
+                  onClick={() => void addToExistingMutation.mutateAsync()}
+                >
+                  <PackagePlus className="mr-2 h-4 w-4" /> Agregar materiales
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
+
+// ─── History Page ─────────────────────────────────────────────────────────────
 
 export function RepHistoryPage() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -280,7 +583,7 @@ export function RepHistoryPage() {
     queryFn: () => listRepSessions({ page }),
   })
 
-  // Group materials (if we had them in response, but typical listing doesn't fetch nested full materials unless requested. The backend list action may just return sessions without materials, or we just display session metadata)
+  const [addMaterialsTarget, setAddMaterialsTarget] = useState<RepSession | null>(null)
 
   const copyToClipboard = async (text: string) => {
     try {
@@ -295,7 +598,7 @@ export function RepHistoryPage() {
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8 animate-in fade-in duration-500">
       <div>
         <h1 className="text-3xl font-display font-semibold tracking-tight text-foreground">Historial de Sesiones</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Revisa las sesiones que has creado previamente.</p>
+        <p className="mt-2 text-sm text-muted-foreground">Revisa las sesiones que has creado y agrega más materiales cuando lo necesites.</p>
       </div>
 
       <div className="flex flex-col gap-6">
@@ -314,7 +617,7 @@ export function RepHistoryPage() {
                   <TableHead className="w-[30%]">Médico / Etiqueta</TableHead>
                   <TableHead>Notas</TableHead>
                   <TableHead>Fecha Creación</TableHead>
-                  <TableHead className="text-right">Enlace de Visita</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -331,7 +634,15 @@ export function RepHistoryPage() {
                       {formatDateTime(item.created_at)}
                     </TableCell>
                     <TableCell className="text-right">
-                       <div className="flex justify-end gap-2">
+                       <div className="flex justify-end gap-2 flex-wrap">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setAddMaterialsTarget(item)}
+                            title="Agregar materiales"
+                          >
+                            <PackagePlus className="h-4 w-4 mr-1.5" /> Agregar
+                          </Button>
                           <Button variant="ghost" size="sm" asChild>
                             <Link to={`/public/visit/${item.doctor_token}`} target="_blank">
                               <ExternalLink className="h-4 w-4 mr-2" /> Abrir
@@ -356,6 +667,15 @@ export function RepHistoryPage() {
           onPageChange={nextPage => setSearchParams(current => updateSearchParams(current, { page: nextPage }))}
         />
       </div>
+
+      {/* Add Materials Dialog (from history page) */}
+      {addMaterialsTarget && (
+        <AddMaterialsDialog
+          session={addMaterialsTarget}
+          open={Boolean(addMaterialsTarget)}
+          onOpenChange={(open) => { if (!open) setAddMaterialsTarget(null) }}
+        />
+      )}
     </div>
   )
 }

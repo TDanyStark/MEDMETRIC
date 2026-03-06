@@ -35,6 +35,7 @@ use App\Application\Actions\Public\Material\GetMaterialResourceAction;
 use App\Application\Actions\Public\Material\OpenMaterialAction;
 use App\Application\Actions\Public\Session\GetPublicSessionAction;
 use App\Application\Actions\Rep\Material\ListMaterialsAction as RepListMaterialsAction;
+use App\Application\Actions\Rep\VisitSession\AddMaterialsToSessionAction;
 use App\Application\Actions\Rep\VisitSession\CreateVisitSessionAction;
 use App\Application\Actions\Rep\VisitSession\ListVisitSessionsAction;
 use App\Application\Middleware\JwtMiddleware;
@@ -204,6 +205,7 @@ return function (App $app) {
             $rep->group('/visit-sessions', function (RouteCollectorProxy $sessions) {
                 $sessions->get('',  ListVisitSessionsAction::class);
                 $sessions->post('', CreateVisitSessionAction::class);
+                $sessions->patch('/{id}/materials', AddMaterialsToSessionAction::class);
             });
 
         })->add(function ($request, $handler) use ($app) {

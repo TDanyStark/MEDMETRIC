@@ -118,7 +118,6 @@ function App() {
           >
             <Route index element={<RoleHomePage role="rep" />} />
             <Route path="library" element={<RepLibraryPage />} />
-            <Route path="sessions" element={<RoleSectionPage role="rep" path="/rep/sessions" />} />
             <Route path="history" element={<RepHistoryPage />} />
           </Route>
 

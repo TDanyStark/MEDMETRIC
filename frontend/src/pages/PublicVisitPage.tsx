@@ -49,21 +49,35 @@ export default function PublicVisitPage() {
     [activeMaterialId, sessionQuery.data?.materials],
   )
 
-  const handleOpenMaterial = async (material: PublicMaterial) => {
-    setOpeningId(material.id)
+  const handleOpenMaterial = async (material: PublicMaterial, openInNewWindow = false) => {
+    const pdfUrl = `/api/v1/public/material/${material.id}/resource?session_token=${encodeURIComponent(token)}`
 
+    // Early handling for PDF to avoid popup blockers
+    if (material.type === 'pdf') {
+      setActiveMaterialId(material.id)
+      setResource({ type: 'pdf', url: pdfUrl })
+      
+      if (openInNewWindow) {
+        window.open(pdfUrl, '_blank', 'noopener,noreferrer')
+      }
+
+      // Record hit in background
+      api.post(`/public/material/${material.id}/open`, {
+        session_token: token,
+        viewer_type: 'doctor',
+      }).catch(err => console.error('Failed to record open:', err))
+      
+      return
+    }
+
+    // For other types, we need the resource details from API
+    setOpeningId(material.id)
     try {
+      // Record hit first for non-PDF
       await api.post(`/public/material/${material.id}/open`, {
         session_token: token,
         viewer_type: 'doctor',
       })
-
-      if (material.type === 'pdf') {
-        const pdfUrl = `/api/v1/public/material/${material.id}/resource?session_token=${encodeURIComponent(token)}`
-        setActiveMaterialId(material.id)
-        setResource({ type: 'pdf', url: pdfUrl })
-        return
-      }
 
       const res = await api.get<ApiResponse<MaterialResource>>(
         `/public/material/${material.id}/resource?session_token=${encodeURIComponent(token)}`,
@@ -72,8 +86,11 @@ export default function PublicVisitPage() {
       setActiveMaterialId(material.id)
       setResource(res.data)
 
-      if (res.data.type === 'link' && res.data.url) {
-        window.open(res.data.url, '_blank', 'noopener,noreferrer')
+      if (openInNewWindow || (res.data.type === 'link' && res.data.url)) {
+        const targetUrl = res.data.type === 'link' ? res.data.url : res.data.embed_url || res.data.url
+        if (targetUrl) {
+          window.open(targetUrl, '_blank', 'noopener,noreferrer')
+        }
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'No se pudo abrir el material.'
@@ -119,43 +136,33 @@ export default function PublicVisitPage() {
       <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_top_left,rgba(96,41,130,0.12),transparent_40%),radial-gradient(circle_at_bottom_right,rgba(198,149,76,0.12),transparent_35%)]" />
 
       <div className="relative mx-auto flex max-w-7xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8 animate-in fade-in duration-700">
-        {/* Header Session Card */}
-        <Card className="overflow-hidden border-none bg-background/60 shadow-xl shadow-purple-500/5 backdrop-blur-xl ring-1 ring-border/50">
-          <CardContent className="grid gap-8 p-6 lg:grid-cols-[1.2fr_0.8fr] lg:p-10">
-            <div className="flex flex-col justify-center">
-              <div className="inline-flex items-center gap-2 rounded-full bg-accent/50 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-accent-foreground ring-1 ring-accent/20">
-                <Stethoscope className="h-3 w-3" />
-                Acceso medico inmediato
-              </div>
-              <h1 className="mt-6 font-display text-4xl font-bold leading-tight tracking-tight text-foreground lg:text-6xl">
-                {sessionQuery.data?.session.doctor_name || 'Sesion medica'}
-              </h1>
-              <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground/80">
-                Explora el contenido cientifico preparado especificamente para esta consulta medica.
+        {/* Compact Header Section */}
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between px-2">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Badge variant="accent" className="rounded-full px-2 py-0 text-[10px] uppercase font-bold tracking-tighter">
+                Visitador Online
+              </Badge>
+              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest">
+                {formatDateTime(sessionQuery.data?.session.created_at ?? '')}
+              </span>
+            </div>
+            <h1 className="text-2xl lg:text-3xl font-bold tracking-tight text-foreground">
+              {sessionQuery.data?.session.doctor_name || 'Sesion Medica'}
+            </h1>
+            {sessionQuery.data?.session.notes && (
+              <p className="mt-1 text-sm text-muted-foreground/80 italic line-clamp-1">
+                "{sessionQuery.data.session.notes}"
               </p>
-            </div>
-
-            <div className="relative flex flex-col justify-between rounded-3xl border border-border/40 bg-card/40 p-8 backdrop-blur-sm">
-              <div className="space-y-4">
-                <div className="flex items-center gap-3 text-xs font-medium text-muted-foreground/60 uppercase tracking-widest">
-                  Sesion creada {formatDateTime(sessionQuery.data?.session.created_at ?? '')}
-                </div>
-                {sessionQuery.data?.session.notes ? (
-                  <p className="text-sm leading-relaxed text-muted-foreground italic">
-                    "{sessionQuery.data.session.notes}"
-                  </p>
-                ) : (
-                  <p className="text-sm text-muted-foreground/40">Sin notas adicionales para esta sesion.</p>
-                )}
-              </div>
-              <div className="mt-8 flex items-center gap-3">
-                <Badge variant="outline" className="rounded-full px-4 py-1.5 bg-background shadow-sm border-border/50">
-                  {sessionQuery.data?.material_count} materiales seleccionados
-                </Badge>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            )}
+          </div>
+          
+          <div className="flex items-center gap-3">
+             <Badge variant="outline" className="rounded-full bg-background/50 backdrop-blur-sm border-border/50 px-4 py-1.5 shadow-sm">
+                <span className="font-bold text-primary mr-1">{sessionQuery.data?.material_count}</span> materiales listos
+             </Badge>
+          </div>
+        </div>
 
         <div className="grid gap-8 lg:grid-cols-[420px_1fr]">
           {/* List Side */}
@@ -166,14 +173,14 @@ export default function PublicVisitPage() {
             
             <div className="space-y-4">
               {sessionQuery.data?.materials && sessionQuery.data.materials.length === 0 ? (
-                <div className="rounded-[28px] border border-dashed border-border bg-background p-6 text-sm leading-7 text-muted-foreground">
+                <div className="rounded-xl border border-dashed border-border bg-background p-6 text-sm leading-7 text-muted-foreground">
                   Esta sesion no tiene materiales aprobados disponibles.
                 </div>
               ) : (
                 sessionQuery.data?.materials.map(material => (
                   <div 
                     key={material.id} 
-                    className="group relative cursor-pointer overflow-hidden rounded-[28px] border border-border bg-background transition-all hover:border-primary/50 hover:shadow-sm"
+                    className="group relative cursor-pointer overflow-hidden rounded-xl border border-border bg-background transition-all hover:border-primary/50 hover:shadow-sm"
                     onClick={() => handleOpenMaterial(material)}
                   >
                     <div className="flex flex-col sm:flex-row">
@@ -202,7 +209,7 @@ export default function PublicVisitPage() {
                             variant={activeMaterialId === material.id ? 'secondary' : 'outline'}
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleOpenMaterial(material);
+                              handleOpenMaterial(material, true);
                             }}
                             loading={openingId === material.id}
                           >
@@ -229,7 +236,7 @@ export default function PublicVisitPage() {
               </div>
 
               {!activeMaterial && (
-                <div className="flex min-h-[500px] flex-col items-center justify-center rounded-[40px] border border-dashed border-border bg-background/40 backdrop-blur-sm px-10 text-center transition-all duration-500">
+                <div className="flex min-h-[500px] flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-background/40 backdrop-blur-sm px-10 text-center transition-all duration-500">
                   <div className="rounded-full bg-primary/5 p-8 mb-6 ring-1 ring-primary/20">
                     <Share2 className="h-10 w-10 text-primary animate-pulse" />
                   </div>
@@ -242,14 +249,14 @@ export default function PublicVisitPage() {
 
               {activeMaterial && resource?.type === 'pdf' && (
                 <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <div className="aspect-video overflow-hidden rounded-[40px] border border-border bg-muted shadow-2xl">
+                  <div className="aspect-video overflow-hidden rounded-2xl border border-border bg-muted shadow-2xl">
                     <iframe
                       title={activeMaterial.title}
                       src={`${resource.url}#toolbar=0`}
                       className="h-full w-full"
                     />
                   </div>
-                  <Card className="rounded-[32px] border-none bg-background/40 backdrop-blur-md">
+                  <Card className="rounded-2xl border-none bg-background/40 backdrop-blur-md">
                     <CardContent className="p-8">
                        <div className="flex items-center justify-between gap-4">
                         <div>
@@ -272,7 +279,7 @@ export default function PublicVisitPage() {
               )}
 
               {activeMaterial && resource?.type === 'link' && (
-                <div className="flex min-h-[500px] flex-col items-center justify-center rounded-[40px] border border-border bg-background shadow-2xl shadow-purple-500/5 px-10 text-center animate-in zoom-in-95 duration-500">
+                <div className="flex min-h-[500px] flex-col items-center justify-center rounded-2xl border border-border bg-background shadow-2xl shadow-purple-500/5 px-10 text-center animate-in zoom-in-95 duration-500">
                   <div className="rounded-full bg-amber-500/10 p-8 mb-6 ring-1 ring-amber-500/20">
                     <ExternalLink className="h-12 w-12 text-amber-600" />
                   </div>
@@ -285,7 +292,7 @@ export default function PublicVisitPage() {
 
               {activeMaterial && resource?.type === 'video' && (
                 <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <div className="aspect-video overflow-hidden rounded-[40px] border border-border bg-black shadow-2xl">
+                  <div className="aspect-video overflow-hidden rounded-2xl border border-border bg-black shadow-2xl">
                     <iframe
                       title={resource?.title || activeMaterial?.title}
                       src={resource?.embed_url ?? resource?.url}
@@ -294,7 +301,7 @@ export default function PublicVisitPage() {
                       allowFullScreen
                     />
                   </div>
-                  <Card className="rounded-[32px] border-none bg-background/40 backdrop-blur-md">
+                  <Card className="rounded-2xl border-none bg-background/40 backdrop-blur-md">
                     <CardContent className="p-8">
                       <h3 className="text-2xl font-bold text-foreground">{resource?.title || activeMaterial?.title}</h3>
                       <p className="mt-3 text-base leading-relaxed text-muted-foreground">

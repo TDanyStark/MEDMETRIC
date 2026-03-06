@@ -89,7 +89,6 @@ export const ROLE_BLUEPRINTS: Record<Role, RoleBlueprint> = {
     navigation: [
       { to: '/rep', label: 'Panorama', description: 'Inicio del visitador con accesos rapidos a contenido y sesiones.', icon: LayoutDashboard },
       { to: '/rep/library', label: 'Biblioteca', description: 'Materiales aprobados de los gerentes suscritos.', icon: FolderKanban },
-      { to: '/rep/sessions', label: 'Sesiones', description: 'Creacion de sesiones y links para el medico.', icon: Stethoscope },
       { to: '/rep/history', label: 'Historial', description: 'Seguimiento de sesiones ya creadas y consumos asociados.', icon: Link2 },
     ],
   },

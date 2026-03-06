@@ -7,6 +7,7 @@ export interface RepSession {
   doctor_name: string | null
   notes: string | null
   created_at: string
+  material_ids?: number[]
 }
 
 export interface RepSessionPayload {

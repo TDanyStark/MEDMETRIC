@@ -26,3 +26,7 @@ export function createRepSession(payload: RepSessionPayload) {
 export function listRepSessions(params: { page?: number }) {
   return api.get<ApiResponse<PaginatedData<RepSession>>>(`/rep/visit-sessions${buildQuery(params)}`).then(unwrap)
 }
+
+export function addMaterialsToSession(sessionId: number, materialIds: number[]) {
+  return api.patch<ApiResponse<{ session_id: number; materials: Material[] }>>(`/rep/visit-sessions/${sessionId}/materials`, { material_ids: materialIds }).then(unwrap)
+}
