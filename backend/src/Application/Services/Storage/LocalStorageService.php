@@ -21,8 +21,8 @@ class LocalStorageService implements StorageServiceInterface
 
     public function store(UploadedFileInterface $file, string $path): string
     {
-        $fullPath = $this->basePath . '/' . ltrim($path, '/');
-        $dir = dirname($fullPath);
+        $relativePath = ltrim($path, '/');
+        $dir = $this->basePath . '/' . $relativePath;
 
         if (!is_dir($dir)) {
             mkdir($dir, 0755, true);
@@ -33,7 +33,7 @@ class LocalStorageService implements StorageServiceInterface
 
         $file->moveTo($destination);
 
-        return dirname($path) . '/' . $filename;
+        return $relativePath . '/' . $filename;
     }
 
     public function delete(string $path): bool

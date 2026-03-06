@@ -80,4 +80,30 @@
   ::selection {
     background: rgba(159, 56, 164, 0.2); /* Fuchsia selection */
   }
+
+  /* Custom scrollbar styles */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(96, 41, 130, 0.2); /* Subtle purple */
+    border-radius: 10px;
+    transition: background 0.2s ease;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(96, 41, 130, 0.5); /* Clearer purple on hover */
+  }
+
+  /* Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(96, 41, 130, 0.2) transparent;
+  }
 }

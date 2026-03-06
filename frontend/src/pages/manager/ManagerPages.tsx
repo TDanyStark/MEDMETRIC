@@ -458,7 +458,7 @@ export function ManagerMaterialsPage() {
               />
             )}
 
-            <div className="flex justify-end gap-3 pt-4 border-t border-border/50">
+            <div className="flex justify-end gap-3 pt-4 border-t border-border/50 sticky bottom-0 bg-background/95 backdrop-blur-sm -mx-6 px-6 py-4 mt-8 -mb-6">
               <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancelar</Button>
               <Button type="submit" loading={saveMutation.isPending}>{editingMaterial ? 'Guardar Cambios' : 'Crear Material'}</Button>
             </div>
@@ -510,7 +510,7 @@ export function ManagerRepsPage() {
       toast.success('Visitador removido.')
       void queryClient.invalidateQueries({ queryKey: ['manager', 'reps'] })
     },
-    onError: (error) => {
+    onError: () => {
       toast.error('Error al quitar visitador.')
     },
   })

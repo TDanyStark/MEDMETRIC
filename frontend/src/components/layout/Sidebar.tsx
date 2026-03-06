@@ -86,7 +86,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         <div className="h-px w-full bg-white/5" />
       </div>
 
-      <div className="flex-1 overflow-y-auto py-2 pb-8" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+      <div className="flex-1 overflow-y-auto py-2 pb-8">
         {/* Main Menu */}
         <div className="mb-2 px-6 py-2 mt-2">
           <h2 className="text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Main Menu</h2>

@@ -55,7 +55,7 @@ class DbMaterialRepository implements MaterialRepositoryInterface
         $countStmt->execute($params);
         $total = (int) $countStmt->fetchColumn();
 
-        $sql = "SELECT m.id, m.organization_id, m.brand_id, m.manager_id, m.title, m.description, m.type, m.status,
+        $sql = "SELECT m.id, m.organization_id, m.brand_id, m.manager_id, m.title, m.description, m.cover_path, m.type, m.status,
                        m.storage_driver, m.storage_path, m.external_url, m.approved_at, m.approved_by, 
                        m.created_at, m.updated_at
                 FROM   materials m
@@ -87,7 +87,7 @@ class DbMaterialRepository implements MaterialRepositoryInterface
     public function findById(int $id): Material
     {
         $stmt = $this->pdo->prepare(
-            'SELECT id, organization_id, brand_id, manager_id, title, description, type, status,
+            'SELECT id, organization_id, brand_id, manager_id, title, description, cover_path, type, status,
                     storage_driver, storage_path, external_url, approved_at, approved_by, 
                     created_at, updated_at
              FROM   materials
@@ -108,7 +108,7 @@ class DbMaterialRepository implements MaterialRepositoryInterface
     public function findByManagerAndId(int $managerId, int $id): Material
     {
         $stmt = $this->pdo->prepare(
-            'SELECT m.id, m.organization_id, m.brand_id, m.manager_id, m.title, m.description, m.type, m.status,
+            'SELECT m.id, m.organization_id, m.brand_id, m.manager_id, m.title, m.description, m.cover_path, m.type, m.status,
                     m.storage_driver, m.storage_path, m.external_url, m.approved_at, m.approved_by, 
                     m.created_at, m.updated_at
              FROM   materials m
@@ -130,8 +130,8 @@ class DbMaterialRepository implements MaterialRepositoryInterface
     public function create(array $data): Material
     {
         $stmt = $this->pdo->prepare(
-            'INSERT INTO materials (organization_id, brand_id, manager_id, title, description, type, status, storage_driver, storage_path, external_url) 
-             VALUES (:organization_id, :brand_id, :manager_id, :title, :description, :type, :status, :storage_driver, :storage_path, :external_url)'
+            'INSERT INTO materials (organization_id, brand_id, manager_id, title, description, cover_path, type, status, storage_driver, storage_path, external_url) 
+             VALUES (:organization_id, :brand_id, :manager_id, :title, :description, :cover_path, :type, :status, :storage_driver, :storage_path, :external_url)'
         );
 
         $stmt->execute([
@@ -140,6 +140,7 @@ class DbMaterialRepository implements MaterialRepositoryInterface
             ':manager_id'      => $data['manager_id'],
             ':title'           => $data['title'],
             ':description'     => $data['description'] ?? null,
+            ':cover_path'      => $data['cover_path'] ?? null,
             ':type'            => $data['type'],
             ':status'          => $data['status'] ?? 'draft',
             ':storage_driver'  => $data['storage_driver'] ?? 'local',
@@ -167,6 +168,11 @@ class DbMaterialRepository implements MaterialRepositoryInterface
         if (isset($data['description'])) {
             $fields[] = 'description = :description';
             $params[':description'] = $data['description'];
+        }
+        
+        if (isset($data['cover_path'])) {
+            $fields[] = 'cover_path = :cover_path';
+            $params[':cover_path'] = $data['cover_path'];
         }
 
         if (isset($data['brand_id'])) {
@@ -265,7 +271,7 @@ class DbMaterialRepository implements MaterialRepositoryInterface
         $countStmt->execute($params);
         $total = (int) $countStmt->fetchColumn();
 
-        $sql = "SELECT m.id, m.organization_id, m.brand_id, m.manager_id, m.title, m.description, m.type, m.status,
+        $sql = "SELECT m.id, m.organization_id, m.brand_id, m.manager_id, m.title, m.description, m.cover_path, m.type, m.status,
                         m.storage_driver, m.storage_path, m.external_url, m.approved_at, m.approved_by, 
                         m.created_at, m.updated_at,
                         b.name as brand_name,
