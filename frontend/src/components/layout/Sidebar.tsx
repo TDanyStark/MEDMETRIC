@@ -108,21 +108,32 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const renderContent = (collapsed: boolean) => (
     <div className="flex h-full flex-col bg-[#1A1C23] text-slate-300 font-sans transition-all duration-500">
       {/* Header Area */}
-      <div className={cn("pt-6 pb-2 transition-all duration-500", collapsed ? "px-4 flex justify-center" : "px-8")}>
+      <div className={cn("pt-8 pb-4 transition-all duration-500", collapsed ? "px-0" : "px-8")}>
         <div 
-          className="relative flex items-center cursor-pointer group" 
+          className="relative flex items-center justify-center cursor-pointer group" 
           onClick={() => navigate('/')}
         >
           <div className={cn(
-            "flex items-center transition-all duration-500 ease-in-out overflow-hidden rounded-xl",
-            collapsed ? "w-12 h-12 justify-center bg-white/5" : "w-full h-28 justify-center"
+            "relative flex items-center justify-center transition-all duration-500 ease-in-out",
+            collapsed ? "w-10 h-10" : "w-full h-24"
           )}>
+            {/* Full Logo (MEDMETRIC.webp) - Visible when expanded */}
             <img 
               src="/MEDMETRIC.webp" 
               alt="Medmetric Logo" 
               className={cn(
-                "brightness-0 invert transition-all duration-500 ease-in-out object-contain max-w-none origin-center",
-                collapsed ? "h-16 w-auto -ml-3" : "h-[120px] w-auto"
+                "absolute h-full w-full object-contain brightness-0 invert transition-all duration-500 ease-in-out",
+                collapsed ? "opacity-0 scale-90 translate-x-[-20%] pointer-events-none" : "opacity-100 scale-100 translate-x-0"
+              )} 
+            />
+            
+            {/* Icon Logo (favicon.png) - Visible when collapsed */}
+            <img 
+              src="/favicon.png" 
+              alt="Medmetric Icon" 
+              className={cn(
+                "absolute h-full w-full object-contain transition-all duration-500 ease-in-out filter brightness-0 invert",
+                collapsed ? "opacity-100 scale-100 translate-x-0" : "opacity-0 scale-75 translate-x-[20%] pointer-events-none"
               )} 
             />
           </div>
