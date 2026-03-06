@@ -8,6 +8,7 @@ import { getRoleHome } from '@/lib/auth'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
+import medmetricLogo from '@/assets/MEDMETRIC.svg'
 
 export default function LoginPage() {
   const { user, login } = useAuth()
@@ -54,8 +55,8 @@ export default function LoginPage() {
 
       <Card className="w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-500 shadow-xl border-border/50 bg-background/80 backdrop-blur-sm z-10">
         <CardContent className="p-8 sm:p-10">
-          <div className="text-center">
-            <h1 className="font-display text-4xl tracking-tight text-foreground font-semibold">MedMetric</h1>
+          <div className="text-center flex flex-col items-center">
+            <img src={medmetricLogo} alt="MedMetric" className="h-[150px] w-auto mb-4" />
             <p className="mt-2 text-sm text-muted-foreground">Inicia sesión en tu cuenta para continuar</p>
           </div>
 

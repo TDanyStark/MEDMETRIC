@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
-import { LogOut, LineChart, ChevronLeft, Menu } from 'lucide-react'
+import { LogOut, ChevronLeft, Menu } from 'lucide-react'
 import { useAuth } from '@/contexts/useAuth'
 import { Sheet, SheetContent } from '@/components/ui/Sheet'
 import { getNavItems } from '@/lib/auth'
 import { cn } from '@/lib/utils'
+import medmetricLogoBlanco from '@/assets/MEDMETRIC_blanco.svg'
 
 interface SidebarProps {
   isOpen: boolean
@@ -91,15 +92,9 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       {/* Header Area */}
       <div className={cn("pt-8 pb-6 mt-2", collapsed ? "px-0 flex justify-center" : "px-6")}>
         <div className={cn("flex items-center", collapsed ? "justify-center" : "gap-3")}>
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center text-white">
-            <LineChart className="h-7 w-7" strokeWidth={2} />
+          <div className="flex h-10 w-auto shrink-0 items-center justify-center overflow-hidden rounded-md">
+            <img src={medmetricLogoBlanco} alt="MedMetric Logo" className="h-full w-full object-contain" />
           </div>
-          {!collapsed && (
-            <div className="flex flex-col overflow-hidden">
-              <h1 className="text-xl font-bold tracking-wide text-white uppercase leading-none truncate">MEDMETRIC</h1>
-              <p className="text-[11px] text-slate-400 mt-1 truncate">Medical briefing system</p>
-            </div>
-          )}
         </div>
       </div>
 
