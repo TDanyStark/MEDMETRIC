@@ -49,7 +49,7 @@ class DbMaterialRepository implements MaterialRepositoryInterface
 
         $countSql = "SELECT COUNT(*) 
                      FROM materials m
-                     JOIN manager_brands mb ON m.brand_id = mb.brand_id AND mb.manager_id = :manager_id
+                     JOIN manager_brands mb ON m.brand_id = mb.brand_id AND mb.manager_id = m.manager_id
                      {$whereSql}";
         $countStmt = $this->pdo->prepare($countSql);
         $countStmt->execute($params);
@@ -59,7 +59,7 @@ class DbMaterialRepository implements MaterialRepositoryInterface
                        m.storage_driver, m.storage_path, m.external_url, m.approved_at, m.approved_by, 
                        m.created_at, m.updated_at
                 FROM   materials m
-                JOIN   manager_brands mb ON m.brand_id = mb.brand_id AND mb.manager_id = :manager_id
+                JOIN   manager_brands mb ON m.brand_id = mb.brand_id AND mb.manager_id = m.manager_id
                 {$whereSql}
                 ORDER  BY m.created_at DESC
                 LIMIT  :limit OFFSET :offset";
@@ -112,8 +112,8 @@ class DbMaterialRepository implements MaterialRepositoryInterface
                     m.storage_driver, m.storage_path, m.external_url, m.approved_at, m.approved_by, 
                     m.created_at, m.updated_at
              FROM   materials m
-             JOIN   manager_brands mb ON m.brand_id = mb.brand_id AND mb.manager_id = :manager_id
-             WHERE  m.id = :id AND m.manager_id = :manager_id AND mb.active = 1
+             JOIN   manager_brands mb ON m.brand_id = mb.brand_id
+             WHERE  m.id = :id AND m.manager_id = :manager_id AND mb.manager_id = m.manager_id AND mb.active = 1
              LIMIT  1'
         );
 

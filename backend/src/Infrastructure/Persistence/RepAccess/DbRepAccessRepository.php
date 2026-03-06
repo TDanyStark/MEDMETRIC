@@ -163,7 +163,7 @@ class DbRepAccessRepository implements RepAccessRepositoryInterface
 
     public function getAvailableRepsForManager(int $managerId, int $organizationId, ?string $search = null): array
     {
-        $where  = ['u.organization_id = :organization_id', 'u.role = :role'];
+        $where  = ['u.organization_id = :organization_id', 'r.name = :role'];
         $params = [
             ':organization_id' => $organizationId,
             ':role'           => 'rep',
@@ -179,6 +179,7 @@ class DbRepAccessRepository implements RepAccessRepositoryInterface
 
         $sql = "SELECT u.id, u.name, u.email
                 FROM users u
+                JOIN roles r ON u.role_id = r.id
                 LEFT JOIN rep_manager_access rma ON u.id = rma.rep_id AND rma.manager_id = :current_manager_id
                 {$whereSql}
                 AND (rma.id IS NULL OR rma.active = 0)
