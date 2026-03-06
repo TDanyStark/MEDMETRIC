@@ -64,7 +64,10 @@ export function SelectedMaterialsPanel({
   return (
     <>
       {/* Desktop View: Absoluto a la izquierda (Fixed) */}
-      <div className="hidden lg:block fixed bottom-8 w-80 z-40 lg:left-[calc(18rem+2.5rem)] max-h-[calc(100vh-8rem)] min-h-[400px]">
+      <div 
+        className="hidden lg:block fixed bottom-8 w-80 z-40 max-h-[calc(100vh-8rem)] min-h-[400px] transition-all duration-300"
+        style={{ left: 'calc(var(--sidebar-width, 18rem) + 2.5rem)' }}
+      >
          {content}
       </div>
 
