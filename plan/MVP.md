@@ -364,7 +364,7 @@ Completar flujo de campo y experiencia publica.
 
 ---
 
-## Fase 11 - Insights MVP
+## [x] Fase 11 - Insights MVP
 
 ### Objetivo
 

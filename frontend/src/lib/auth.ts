@@ -11,7 +11,6 @@ import {
   Network,
   Orbit,
   ShieldCheck,
-  Stethoscope,
   Users,
 } from 'lucide-react'
 import { Role } from '@/types'
@@ -78,6 +77,7 @@ export const ROLE_BLUEPRINTS: Record<Role, RoleBlueprint> = {
       { to: '/manager/brands', label: 'Marcas asignadas', description: 'Consulta de marcas habilitadas para trabajar contenido.', icon: Orbit },
       { to: '/manager/materials', label: 'Materiales', description: 'Alta, edicion y aprobacion de piezas PDF, video y link.', icon: FileStack },
       { to: '/manager/reps', label: 'Visitadores', description: 'Gestion de suscripciones de acceso al contenido del gerente.', icon: BriefcaseMedical },
+      { to: '/manager/metrics', label: 'Metricas', description: 'Rendimiento y uso de materiales.', icon: Activity },
     ],
   },
   rep: {

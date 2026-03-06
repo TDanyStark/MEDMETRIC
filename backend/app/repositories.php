@@ -12,6 +12,8 @@ use App\Infrastructure\Persistence\Auth\DbAuthRepository;
 use App\Infrastructure\Persistence\MaterialView\DbMaterialViewRepository;
 use App\Infrastructure\Persistence\Organization\DbOrganizationRepository;
 use App\Infrastructure\Persistence\User\InMemoryUserRepository;
+use App\Domain\Metrics\MetricsRepositoryInterface;
+use App\Infrastructure\Persistence\Metrics\DbMetricsRepository;
 use DI\ContainerBuilder;
 
 return function (ContainerBuilder $containerBuilder) {
@@ -30,5 +32,8 @@ return function (ContainerBuilder $containerBuilder) {
 
         // Material View repository — DB-backed (Phase 7)
         MaterialViewRepositoryInterface::class => \DI\autowire(DbMaterialViewRepository::class),
+
+        // Metrics repository
+        MetricsRepositoryInterface::class => \DI\autowire(DbMetricsRepository::class),
     ]);
 };

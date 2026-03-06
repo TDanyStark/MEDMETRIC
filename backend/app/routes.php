@@ -38,6 +38,9 @@ use App\Application\Actions\Rep\Material\ListMaterialsAction as RepListMaterials
 use App\Application\Actions\Rep\VisitSession\AddMaterialsToSessionAction;
 use App\Application\Actions\Rep\VisitSession\CreateVisitSessionAction;
 use App\Application\Actions\Rep\VisitSession\ListVisitSessionsAction;
+use App\Application\Actions\Metrics\GetMaterialViewsAction;
+use App\Application\Actions\Metrics\GetRepLastLoginAction;
+use App\Application\Actions\Metrics\GetTopMaterialsAction;
 use App\Application\Middleware\JwtMiddleware;
 use App\Application\Middleware\RoleMiddleware;
 use App\Infrastructure\Database\Connection;
@@ -211,6 +214,18 @@ return function (App $app) {
         })->add(function ($request, $handler) use ($app) {
             $responseFactory = $app->getContainer()->get(ResponseFactoryInterface::class);
             return (new RoleMiddleware($responseFactory, ['rep']))->process($request, $handler);
+        })->add(JwtMiddleware::class);
+
+        // -------------------------------------------------------------------------
+        // Metrics routes (JWT + org_admin or manager role required)
+        // -------------------------------------------------------------------------
+        $group->group('/metrics', function (RouteCollectorProxy $metrics) {
+            $metrics->get('/material-views', GetMaterialViewsAction::class);
+            $metrics->get('/rep-last-login', GetRepLastLoginAction::class);
+            $metrics->get('/top-materials', GetTopMaterialsAction::class);
+        })->add(function ($request, $handler) use ($app) {
+            $responseFactory = $app->getContainer()->get(ResponseFactoryInterface::class);
+            return (new RoleMiddleware($responseFactory, ['org_admin', 'manager']))->process($request, $handler);
         })->add(JwtMiddleware::class);
 
         // -------------------------------------------------------------------------

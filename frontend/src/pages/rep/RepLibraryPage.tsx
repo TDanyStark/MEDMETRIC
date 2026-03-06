@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { FileText, Link2, Copy, CheckCircle2, PackagePlus } from 'lucide-react'
+import { FileText, Link2, Copy, CheckCircle2, PackagePlus, Eye, ExternalLink } from 'lucide-react'
 import { toast } from 'sonner'
 import { useSearchParams, Link } from 'react-router-dom'
 
@@ -26,8 +26,10 @@ import {
   addMaterialsToSession,
 } from '@/services/rep'
 import { Material, RepSession } from '@/types/rep'
+import { ApiResponse, MaterialResource } from '@/types'
 import { LoadingState, ErrorState, MaterialTypeLabel } from './components/RepHelpers'
 import { SelectedMaterialsPanel } from './components/SelectedMaterialsPanel'
+import api from '@/services/api'
 
 export function RepLibraryPage() {
   const queryClient = useQueryClient()
@@ -46,6 +48,30 @@ export function RepLibraryPage() {
   const [sessionSearch, setSessionSearch] = useState('')
   const [targetSessionForAdd, setTargetSessionForAdd] = useState<RepSession | null>(null)
   const [addDone, setAddDone] = useState(false)
+
+  // Preview state
+  const [previewMaterial, setPreviewMaterial] = useState<Material | null>(null)
+  const [previewResource, setPreviewResource] = useState<MaterialResource | null>(null)
+
+  useEffect(() => {
+    if (!previewMaterial) {
+      setPreviewResource(null)
+      return
+    }
+    const fetchResource = async () => {
+      try {
+        if (previewMaterial.type === 'pdf') {
+          setPreviewResource({ type: 'pdf', url: `/api/v1/public/material/${previewMaterial.id}/resource` })
+          return
+        }
+        const res = await api.get<ApiResponse<MaterialResource>>(`/public/material/${previewMaterial.id}/resource`)
+        setPreviewResource(res.data)
+      } catch (err) {
+        toast.error('No se pudo cargar la previsualización')
+      }
+    }
+    void fetchResource()
+  }, [previewMaterial])
 
   const materialsQuery = useQuery({
     queryKey: ['rep', 'materials', q, page, type],
@@ -212,6 +238,19 @@ export function RepLibraryPage() {
                       <div className={`absolute top-3 right-3 h-5 w-5 rounded-full border flex items-center justify-center shadow-sm ${isSelected ? 'bg-primary border-primary' : 'bg-background/80 border-muted-foreground/30'}`}>
                         {isSelected && <div className="h-2 w-2 rounded-full bg-background" />}
                       </div>
+                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-3 pt-8 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="h-8 w-full shadow-lg border-none hover:bg-white hover:text-black"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPreviewMaterial(item);
+                          }}
+                        >
+                          <Eye className="mr-1.5 h-3.5 w-3.5" /> Previsualización rápida
+                        </Button>
+                      </div>
                     </div>
                     <CardContent className="p-4 pt-3">
                       <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60 mb-1">Cód. {item.id}</p>
@@ -359,6 +398,53 @@ export function RepLibraryPage() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Preview Dialog ────────────────────────────────────────── */}
+      <Dialog open={!!previewMaterial} onOpenChange={(open) => !open && setPreviewMaterial(null)}>
+        <DialogContent className="max-w-4xl w-[90vw] p-0 overflow-hidden bg-background gap-0 sm:rounded-xl">
+          <DialogHeader className="p-4 border-b bg-muted/20">
+            <DialogTitle className="text-lg font-semibold">{previewMaterial?.title}</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col relative w-full h-[75vh] bg-muted/5">
+            {!previewResource ? (
+              <div className="flex h-full items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : previewResource.type === 'pdf' ? (
+              <iframe
+                title={previewMaterial?.title}
+                src={`${previewResource.url}#toolbar=0`}
+                className="h-full w-full border-none bg-muted/20"
+              />
+            ) : previewResource.type === 'video' ? (
+              <div className="flex h-full w-full items-center justify-center bg-black">
+                <iframe
+                  title={previewMaterial?.title}
+                  src={previewResource.embed_url ?? previewResource.url}
+                  className="w-full aspect-video max-h-full border-none"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              </div>
+            ) : previewResource.type === 'link' ? (
+              <div className="flex h-full flex-col items-center justify-center p-10 text-center">
+                <div className="rounded-full bg-amber-500/10 p-8 mb-6 ring-1 ring-amber-500/20">
+                  <ExternalLink className="h-12 w-12 text-amber-600" />
+                </div>
+                <h3 className="text-2xl font-bold text-foreground">{previewMaterial?.title}</h3>
+                <p className="mt-4 max-w-md text-base text-muted-foreground mb-8">
+                  Este material es un enlace externo. Ábrelo para visualizar el contenido en una nueva pestaña.
+                </p>
+                <Button size="lg" onClick={() => window.open(previewResource.url ?? previewMaterial?.external_url ?? '', '_blank')}>
+                  Abrir enlace externo <ExternalLink className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <div className="flex h-full items-center justify-center text-muted-foreground">Contenido no disponible.</div>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

@@ -5,6 +5,7 @@ import {
   listOrgBrands,
   listOrgUsers,
 } from '@/services/backoffice'
+import { MetricsDashboard } from '@/components/backoffice/MetricsDashboard'
 
 export function OrgAdminMetricsPage() {
   const [managersQuery, repsQuery, brandsQuery] = useQueries({
@@ -46,6 +47,11 @@ export function OrgAdminMetricsPage() {
           <h3 className="font-semibold text-lg text-foreground">Marcas</h3>
           <p className="mt-2 text-4xl font-display text-foreground">{brandsQuery.data?.total ?? 0}</p>
         </div>
+      </div>
+
+      <div className="mt-8">
+        <h2 className="text-2xl font-display font-semibold tracking-tight text-foreground mb-6">Métricas de Consumo de Contenido</h2>
+        <MetricsDashboard />
       </div>
     </div>
   )

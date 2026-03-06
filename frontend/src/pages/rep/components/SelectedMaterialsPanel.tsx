@@ -7,14 +7,10 @@ import { MaterialTypeLabel } from './RepHelpers'
 export function SelectedMaterialsPanel({
   selected,
   onNewSession,
-  onAddToExisting,
-  hasExistingSessions,
   onRemove
 }: {
   selected: Material[]
   onNewSession: () => void
-  onAddToExisting: () => void
-  hasExistingSessions: boolean
   onRemove: (id: number) => void
 }) {
   const count = selected.length
@@ -48,7 +44,7 @@ export function SelectedMaterialsPanel({
                </div>
                <button 
                  onClick={(e) => { e.stopPropagation(); onRemove(m.id); }}
-                 className="h-7 w-7 rounded-full bg-muted/50 flex items-center justify-center text-muted-foreground hover:bg-destructive hover:text-destructive-foreground transition-colors shrink-0"
+                 className="h-7 w-7 rounded-full bg-muted/50 flex items-center justify-center text-muted-foreground hover:bg-destructive hover:text-white transition-colors shrink-0"
                 >
                   <Plus className="h-3.5 w-3.5 rotate-45" />
                </button>
@@ -61,11 +57,6 @@ export function SelectedMaterialsPanel({
         <Button className="w-full rounded-2xl shadow-xl shadow-primary/20 h-12 text-base font-semibold" onClick={onNewSession}>
           <Plus className="mr-2 h-5 w-5" /> Nueva sesión
         </Button>
-        {hasExistingSessions && (
-          <Button variant="outline" className="w-full rounded-2xl h-11 bg-background text-sm font-medium border-primary/20 hover:bg-primary/5 hover:border-primary/40" onClick={onAddToExisting}>
-            <PackagePlus className="mr-2 h-4 w-4" /> Agregar a sesión
-          </Button>
-        )}
       </div>
     </div>
   )

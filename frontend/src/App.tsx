@@ -8,7 +8,7 @@ import { useAuth } from './contexts/useAuth'
 import { getRoleHome } from './lib/auth'
 import LoginPage from './pages/LoginPage'
 import NotFoundPage from './pages/NotFoundPage'
-import { ManagerBrandsPage, ManagerMaterialsPage, ManagerRepsPage } from './pages/manager/ManagerPages'
+import { ManagerBrandsPage, ManagerMaterialsPage, ManagerRepsPage, ManagerMetricsPage } from './pages/manager/ManagerPages'
 import { RepLibraryPage, RepHistoryPage } from './pages/rep/RepPages'
 import { OrgAdminAssignmentsPage } from './pages/org-admin/OrgAdminAssignmentsPage'
 import { OrgAdminBrandsPage } from './pages/org-admin/OrgAdminBrandsPage'
@@ -16,7 +16,6 @@ import { OrgAdminMetricsPage } from './pages/org-admin/OrgAdminMetricsPage'
 import { OrgAdminUsersPage } from './pages/org-admin/OrgAdminUsersPage'
 import PublicVisitPage from './pages/PublicVisitPage'
 import RoleHomePage from './pages/RoleHomePage'
-import RoleSectionPage from './pages/RoleSectionPage'
 import { SuperAdminMetricsPage, SuperAdminOrgAdminsPage, SuperAdminOrganizationsPage } from './pages/superadmin/SuperAdminPages'
 
 const queryClient = new QueryClient({
@@ -106,6 +105,7 @@ function App() {
             <Route path="brands" element={<ManagerBrandsPage />} />
             <Route path="materials" element={<ManagerMaterialsPage />} />
             <Route path="reps" element={<ManagerRepsPage />} />
+            <Route path="metrics" element={<ManagerMetricsPage />} />
           </Route>
 
           <Route
