@@ -37,7 +37,7 @@ class DbAdminUserRepository implements AdminUserRepositoryInterface
                 JOIN   roles r         ON r.id = u.role_id';
     }
 
-    public function findAll(?string $role = null, ?int $organizationId = null, ?string $search = null, int $page = 1): array
+    public function findAll($role = null, ?int $organizationId = null, ?string $search = null, int $page = 1): array
     {
         $pageSize = \App\Infrastructure\Config\PaginationConfig::PAGE_SIZE;
         $offset   = ($page - 1) * $pageSize;
@@ -46,8 +46,18 @@ class DbAdminUserRepository implements AdminUserRepositoryInterface
         $params = [];
 
         if ($role !== null) {
-            $where[]          = 'r.name = :role';
-            $params[':role']  = $role;
+            if (is_array($role)) {
+                $roleParams = [];
+                foreach ($role as $index => $r) {
+                    $key = ':role_' . $index;
+                    $roleParams[] = $key;
+                    $params[$key] = $r;
+                }
+                $where[] = 'r.name IN (' . implode(', ', $roleParams) . ')';
+            } else {
+                $where[]          = 'r.name = :role';
+                $params[':role']  = $role;
+            }
         }
 
         if ($organizationId !== null) {

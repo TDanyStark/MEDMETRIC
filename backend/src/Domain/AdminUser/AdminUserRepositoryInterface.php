@@ -9,9 +9,10 @@ interface AdminUserRepositoryInterface
     /**
      * Return all users with organization and role info, with filtering and pagination.
      *
+     * @param string|array|null $role Single role name or array of role names to filter by
      * @return array{items: AdminUser[], total: int, page: int, per_page: int, last_page: int}
      */
-    public function findAll(?string $role = null, ?int $organizationId = null, ?string $search = null, int $page = 1): array;
+    public function findAll($role = null, ?int $organizationId = null, ?string $search = null, int $page = 1): array;
 
     /**
      * Find a single user by ID.
