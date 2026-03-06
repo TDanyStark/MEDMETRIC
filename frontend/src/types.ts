@@ -34,6 +34,7 @@ export interface PublicMaterial {
   id: number
   title: string
   description: string | null
+  cover_path: string | null
   type: 'pdf' | 'video' | 'link'
   status: 'draft' | 'approved' | 'archived'
 }

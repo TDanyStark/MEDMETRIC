@@ -160,7 +160,7 @@ class DbVisitSessionRepository implements VisitSessionRepositoryInterface
     public function getSessionMaterials(int $sessionId): array
     {
         $stmt = $this->pdo->prepare(
-            'SELECT m.id, m.organization_id, m.brand_id, m.manager_id, m.title, m.description, m.type, m.status,
+            'SELECT m.id, m.organization_id, m.brand_id, m.manager_id, m.title, m.description, m.cover_path, m.type, m.status,
                     m.storage_driver, m.storage_path, m.external_url, m.approved_at, m.approved_by, 
                     m.created_at, m.updated_at, vsm.sort_order
              FROM visit_session_materials vsm

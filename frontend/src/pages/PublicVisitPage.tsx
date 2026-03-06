@@ -59,9 +59,9 @@ export default function PublicVisitPage() {
       })
 
       if (material.type === 'pdf') {
-        window.open(`/api/v1/public/material/${material.id}/resource?session_token=${encodeURIComponent(token)}`, '_blank', 'noopener,noreferrer')
+        const pdfUrl = `/api/v1/public/material/${material.id}/resource?session_token=${encodeURIComponent(token)}`
         setActiveMaterialId(material.id)
-        setResource({ type: 'pdf' })
+        setResource({ type: 'pdf', url: pdfUrl })
         return
       }
 
@@ -114,127 +114,198 @@ export default function PublicVisitPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background px-4 py-6 sm:px-6 lg:px-8">
-      <div className="mx-auto flex max-w-6xl flex-col gap-6">
-        <Card className="overflow-hidden">
-          <CardContent className="grid gap-6 p-6 lg:grid-cols-[1.1fr_0.9fr] lg:p-8">
-            <div>
-              <Badge variant="accent">Acceso medico inmediato</Badge>
-              <h1 className="mt-5 font-display text-4xl leading-tight text-foreground lg:text-5xl">
-                {sessionQuery.data.session.doctor_name || 'Sesion medica'}
+    <div className="relative min-h-screen bg-background overflow-x-hidden">
+      {/* Background Gradients */}
+      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_top_left,rgba(96,41,130,0.12),transparent_40%),radial-gradient(circle_at_bottom_right,rgba(198,149,76,0.12),transparent_35%)]" />
+
+      <div className="relative mx-auto flex max-w-7xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8 animate-in fade-in duration-700">
+        {/* Header Session Card */}
+        <Card className="overflow-hidden border-none bg-background/60 shadow-xl shadow-purple-500/5 backdrop-blur-xl ring-1 ring-border/50">
+          <CardContent className="grid gap-8 p-6 lg:grid-cols-[1.2fr_0.8fr] lg:p-10">
+            <div className="flex flex-col justify-center">
+              <div className="inline-flex items-center gap-2 rounded-full bg-accent/50 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-accent-foreground ring-1 ring-accent/20">
+                <Stethoscope className="h-3 w-3" />
+                Acceso medico inmediato
+              </div>
+              <h1 className="mt-6 font-display text-4xl font-bold leading-tight tracking-tight text-foreground lg:text-6xl">
+                {sessionQuery.data?.session.doctor_name || 'Sesion medica'}
               </h1>
-              <p className="mt-4 max-w-3xl text-base leading-8 text-muted-foreground">
-                Los materiales fueron preparados para esta visita. Puedes abrirlos sin iniciar sesion y el sistema registrara la interaccion base.
+              <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground/80">
+                Explora el contenido cientifico preparado especificamente para esta consulta medica.
               </p>
             </div>
 
-            <div className="rounded-[32px] border border-border bg-background p-6">
-              <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                <Stethoscope className="h-4 w-4 text-primary" />
-                Sesion creada el {formatDateTime(sessionQuery.data.session.created_at)}
+            <div className="relative flex flex-col justify-between rounded-3xl border border-border/40 bg-card/40 p-8 backdrop-blur-sm">
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 text-xs font-medium text-muted-foreground/60 uppercase tracking-widest">
+                  Sesion creada {formatDateTime(sessionQuery.data?.session.created_at ?? '')}
+                </div>
+                {sessionQuery.data?.session.notes ? (
+                  <p className="text-sm leading-relaxed text-muted-foreground italic">
+                    "{sessionQuery.data.session.notes}"
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted-foreground/40">Sin notas adicionales para esta sesion.</p>
+                )}
               </div>
-              <p className="mt-4 text-sm leading-7 text-muted-foreground">
-                {sessionQuery.data.session.notes || 'No hay notas adicionales para esta sesion.'}
-              </p>
-              <div className="mt-5 flex flex-wrap gap-3">
-                <Badge variant="outline">{sessionQuery.data.material_count} materiales</Badge>
-                <Badge variant="success">Trazabilidad activa</Badge>
+              <div className="mt-8 flex items-center gap-3">
+                <Badge variant="outline" className="rounded-full px-4 py-1.5 bg-background shadow-sm border-border/50">
+                  {sessionQuery.data?.material_count} materiales seleccionados
+                </Badge>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-          <Card>
-            <CardHeader>
-              <CardTitle>Materiales de la visita</CardTitle>
-              <CardDescription>Selecciona una pieza para abrirla o verla aqui mismo.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {sessionQuery.data.materials.length === 0 ? (
+        <div className="grid gap-8 lg:grid-cols-[420px_1fr]">
+          {/* List Side */}
+          <div className="flex flex-col gap-6">
+            <div className="flex items-center justify-between px-2">
+              <h2 className="text-xl font-bold tracking-tight text-foreground">Materiales de la visita</h2>
+            </div>
+            
+            <div className="space-y-4">
+              {sessionQuery.data?.materials && sessionQuery.data.materials.length === 0 ? (
                 <div className="rounded-[28px] border border-dashed border-border bg-background p-6 text-sm leading-7 text-muted-foreground">
                   Esta sesion no tiene materiales aprobados disponibles.
                 </div>
               ) : (
-                sessionQuery.data.materials.map(material => (
-                  <div key={material.id} className="rounded-[28px] border border-border bg-background p-5">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <MaterialTypeBadge type={material.type} />
-                      <Button
-                        type="button"
-                        variant={activeMaterialId === material.id ? 'secondary' : 'outline'}
-                        onClick={() => handleOpenMaterial(material)}
-                        loading={openingId === material.id}
-                      >
-                        Abrir material
-                      </Button>
+                sessionQuery.data?.materials.map(material => (
+                  <div 
+                    key={material.id} 
+                    className="group relative cursor-pointer overflow-hidden rounded-[28px] border border-border bg-background transition-all hover:border-primary/50 hover:shadow-sm"
+                    onClick={() => handleOpenMaterial(material)}
+                  >
+                    <div className="flex flex-col sm:flex-row">
+                      {/* Cover Image Side */}
+                      <div className="relative h-40 w-full shrink-0 overflow-hidden bg-muted sm:h-auto sm:w-32">
+                        {material.cover_path ? (
+                          <img 
+                            src={`/api/v1/public/material/${material.id}/cover`} 
+                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" 
+                            alt={material.title} 
+                          />
+                        ) : (
+                          <div className="flex h-full w-full flex-col items-center justify-center opacity-20">
+                             <FileText className="h-8 w-8" />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Content Side */}
+                      <div className="flex flex-1 flex-col p-5">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <MaterialTypeBadge type={material.type} />
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant={activeMaterialId === material.id ? 'secondary' : 'outline'}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenMaterial(material);
+                            }}
+                            loading={openingId === material.id}
+                          >
+                            Abrir material
+                          </Button>
+                        </div>
+                        <h2 className="mt-4 text-base font-semibold text-foreground">{material.title}</h2>
+                        <p className="mt-1 text-xs leading-relaxed text-muted-foreground line-clamp-2">
+                          {material.description || 'Material listo para la visita.'}
+                        </p>
+                      </div>
                     </div>
-                    <h2 className="mt-4 text-lg font-semibold text-foreground">{material.title}</h2>
-                    <p className="mt-2 text-sm leading-7 text-muted-foreground">
-                      {material.description || 'Material listo para ser presentado durante la visita.'}
-                    </p>
                   </div>
                 ))
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Vista activa</CardTitle>
-              <CardDescription>El contenido se muestra aqui cuando aplica. PDFs y links tambien pueden abrirse en una nueva pestaña.</CardDescription>
-            </CardHeader>
-            <CardContent>
+          {/* Active View Side */}
+          <div className="relative">
+            <div className="sticky top-8 space-y-6">
+              <div className="flex items-center justify-between px-2">
+                <h2 className="text-xl font-bold tracking-tight text-foreground">Vista activa</h2>
+              </div>
+
               {!activeMaterial && (
-                <div className="flex min-h-[28rem] flex-col items-center justify-center rounded-[28px] border border-dashed border-border bg-background px-6 text-center">
-                  <Share2 className="h-8 w-8 text-primary/70" />
-                  <p className="mt-4 max-w-md text-sm leading-7 text-muted-foreground">
-                    Elige un material del panel izquierdo para iniciar la experiencia de la visita.
+                <div className="flex min-h-[500px] flex-col items-center justify-center rounded-[40px] border border-dashed border-border bg-background/40 backdrop-blur-sm px-10 text-center transition-all duration-500">
+                  <div className="rounded-full bg-primary/5 p-8 mb-6 ring-1 ring-primary/20">
+                    <Share2 className="h-10 w-10 text-primary animate-pulse" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-foreground">Listo para comenzar</h3>
+                  <p className="mt-4 max-w-xs text-sm leading-relaxed text-muted-foreground/70">
+                    Selecciona un material de la lista izquierda para iniciar la experiencia interactiva de la visita médica.
                   </p>
                 </div>
               )}
 
               {activeMaterial && resource?.type === 'pdf' && (
-                <div className="flex min-h-[28rem] flex-col items-center justify-center rounded-[28px] border border-border bg-background px-6 text-center">
-                  <FileText className="h-10 w-10 text-primary" />
-                  <h3 className="mt-5 text-xl font-semibold text-foreground">{activeMaterial.title}</h3>
-                  <p className="mt-3 max-w-md text-sm leading-7 text-muted-foreground">
-                    El PDF se abrio en una nueva pestaña para lectura comoda durante la visita.
-                  </p>
+                <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <div className="aspect-video overflow-hidden rounded-[40px] border border-border bg-muted shadow-2xl">
+                    <iframe
+                      title={activeMaterial.title}
+                      src={`${resource.url}#toolbar=0`}
+                      className="h-full w-full"
+                    />
+                  </div>
+                  <Card className="rounded-[32px] border-none bg-background/40 backdrop-blur-md">
+                    <CardContent className="p-8">
+                       <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <h3 className="text-2xl font-bold text-foreground">{activeMaterial.title}</h3>
+                          <p className="mt-2 text-sm text-muted-foreground line-clamp-2">
+                            {activeMaterial.description || 'Documento disponible para visualizar.'}
+                          </p>
+                        </div>
+                        <Button 
+                          variant="secondary" 
+                          className="rounded-full px-6"
+                          onClick={() => window.open(resource.url, '_blank')}
+                        >
+                          Ampliar <ExternalLink className="ml-2 h-4 w-4" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
               )}
 
               {activeMaterial && resource?.type === 'link' && (
-                <div className="flex min-h-[28rem] flex-col items-center justify-center rounded-[28px] border border-border bg-background px-6 text-center">
-                  <ExternalLink className="h-10 w-10 text-primary" />
-                  <h3 className="mt-5 text-xl font-semibold text-foreground">{activeMaterial.title}</h3>
-                  <p className="mt-3 max-w-md text-sm leading-7 text-muted-foreground">
-                    El enlace externo se abrio en una nueva pestaña manteniendo el registro de apertura en la sesion.
+                <div className="flex min-h-[500px] flex-col items-center justify-center rounded-[40px] border border-border bg-background shadow-2xl shadow-purple-500/5 px-10 text-center animate-in zoom-in-95 duration-500">
+                  <div className="rounded-full bg-amber-500/10 p-8 mb-6 ring-1 ring-amber-500/20">
+                    <ExternalLink className="h-12 w-12 text-amber-600" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-foreground">{activeMaterial.title}</h3>
+                  <p className="mt-4 max-w-md text-base leading-relaxed text-muted-foreground">
+                    El enlace externo se ha abierto en una ventana independiente manteniendo su sesión activa.
                   </p>
                 </div>
               )}
 
               {activeMaterial && resource?.type === 'video' && (
-                <div className="space-y-4">
-                  <div className="aspect-video overflow-hidden rounded-[28px] border border-border bg-background">
+                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <div className="aspect-video overflow-hidden rounded-[40px] border border-border bg-black shadow-2xl">
                     <iframe
-                      title={resource.title || activeMaterial.title}
-                      src={resource.embed_url ?? resource.url}
+                      title={resource?.title || activeMaterial?.title}
+                      src={resource?.embed_url ?? resource?.url}
                       className="h-full w-full"
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                       allowFullScreen
                     />
                   </div>
-                  <div className="rounded-[24px] border border-border bg-background p-4">
-                    <h3 className="text-lg font-semibold text-foreground">{resource.title || activeMaterial.title}</h3>
-                    <p className="mt-2 text-sm leading-7 text-muted-foreground">
-                      {resource.description || activeMaterial.description || 'Video listo para reproduccion embebida.'}
-                    </p>
-                  </div>
+                  <Card className="rounded-[32px] border-none bg-background/40 backdrop-blur-md">
+                    <CardContent className="p-8">
+                      <h3 className="text-2xl font-bold text-foreground">{resource?.title || activeMaterial?.title}</h3>
+                      <p className="mt-3 text-base leading-relaxed text-muted-foreground">
+                        {resource?.description || activeMaterial?.description || 'Contenido audiovisual disponible.'}
+                      </p>
+                    </CardContent>
+                  </Card>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       </div>
     </div>
