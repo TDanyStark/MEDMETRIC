@@ -34,6 +34,21 @@ export default function PublicVisitPage() {
   const [activeMaterialId, setActiveMaterialId] = useState<number | null>(null)
   const [resource, setResource] = useState<MaterialResource | null>(null)
   const [openingId, setOpeningId] = useState<number | null>(null)
+  
+  const viewerInfo = useMemo(() => {
+    try {
+      const authUserStr = localStorage.getItem('auth_user')
+      if (authUserStr) {
+        const user = JSON.parse(authUserStr)
+        if (user && user.role) {
+          return { type: 'rep', id: user.id || null }
+        }
+      }
+    } catch(e) {
+      // Ignore
+    }
+    return { type: 'doctor', id: null }
+  }, [])
 
   const sessionQuery = useQuery({
     queryKey: ['public-visit', token],
@@ -64,7 +79,8 @@ export default function PublicVisitPage() {
       // Record hit in background
       api.post(`/public/material/${material.id}/open`, {
         session_token: token,
-        viewer_type: 'doctor',
+        viewer_type: viewerInfo.type,
+        viewer_id: viewerInfo.id,
       }).catch(err => console.error('Failed to record open:', err))
       
       return
@@ -76,7 +92,8 @@ export default function PublicVisitPage() {
       // Record hit first for non-PDF
       await api.post(`/public/material/${material.id}/open`, {
         session_token: token,
-        viewer_type: 'doctor',
+        viewer_type: viewerInfo.type,
+        viewer_id: viewerInfo.id,
       })
 
       const res = await api.get<ApiResponse<MaterialResource>>(
@@ -140,9 +157,15 @@ export default function PublicVisitPage() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between px-2">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <Badge variant="accent" className="rounded-full px-2 py-0 text-[10px] uppercase font-bold tracking-tighter">
-                Visitador Online
-              </Badge>
+              {viewerInfo.type === 'rep' ? (
+                <Badge variant="accent" className="rounded-full px-2 py-0 text-[10px] uppercase font-bold tracking-tighter">
+                  Modo Visitador
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="rounded-full border-primary/50 text-primary px-2 py-0 text-[10px] uppercase font-bold tracking-tighter">
+                  Vista Médico
+                </Badge>
+              )}
               <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest">
                 {formatDateTime(sessionQuery.data?.session.created_at ?? '')}
               </span>
