@@ -1,23 +1,24 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Network, Tags, Users } from 'lucide-react'
+import { Network, Tags, Users, Plus, Pencil } from 'lucide-react'
 import { toast } from 'sonner'
+import { useSearchParams } from 'react-router-dom'
+
 import {
   ChoicePills,
   EmptyState,
-  MetricGrid,
-  PageIntro,
   PaginationBar,
   SearchToolbar,
   SegmentedControl,
   ToggleField,
-  WorkPanel,
-  Workspace,
 } from '@/components/backoffice/Workbench'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/Dialog'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table'
+
 import { getNullableNumberParam, getNumberParam, getStringParam, updateSearchParams } from '@/lib/search'
 import { formatDate, formatDateTime } from '@/lib/utils'
 import {
@@ -35,14 +36,13 @@ import {
   updateRepSubscriptions,
 } from '@/services/backoffice'
 import { AdminUser, Brand } from '@/types/backoffice'
-import { useSearchParams } from 'react-router-dom'
 
 function LoadingState({ message }: { message: string }) {
-  return <div className="rounded-[24px] border border-border/80 bg-background/70 px-4 py-5 text-sm text-muted-foreground">{message}</div>
+  return <div className="rounded-2xl border border-border/50 bg-background/50 px-4 py-8 text-center text-sm text-muted-foreground">{message}</div>
 }
 
 function ErrorState({ message }: { message: string }) {
-  return <div className="rounded-[24px] border border-destructive/20 bg-destructive/5 px-4 py-5 text-sm text-destructive">{message}</div>
+  return <div className="rounded-2xl border border-destructive/20 bg-destructive/5 px-4 py-8 text-center text-sm text-destructive">{message}</div>
 }
 
 interface UserFormState {
@@ -57,36 +57,15 @@ const emptyUserForm: UserFormState = {
   name: '',
   email: '',
   password: '',
-  role_id: 3,
+  role_id: 3, // manager default
   active: true,
-}
-
-function UserCard({ item, onEdit }: { item: AdminUser; onEdit: (user: AdminUser) => void }) {
-  return (
-    <button
-      type="button"
-      onClick={() => onEdit(item)}
-      className="w-full rounded-[28px] border border-border/80 bg-background/75 p-5 text-left transition hover:-translate-y-0.5 hover:border-primary/20"
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="font-semibold text-foreground">{item.name}</p>
-          <p className="mt-1 text-sm text-muted-foreground">{item.email}</p>
-        </div>
-        <Badge variant={item.role === 'manager' ? 'accent' : 'warm'}>{item.role === 'manager' ? 'Gerente' : 'Visitador'}</Badge>
-      </div>
-      <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-        <Badge variant={item.active ? 'success' : 'outline'}>{item.active ? 'Activo' : 'Inactivo'}</Badge>
-        <span>Ultimo login {formatDateTime(item.last_login_at)}</span>
-      </div>
-    </button>
-  )
 }
 
 export function OrgAdminUsersPage() {
   const queryClient = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
   const [editingUser, setEditingUser] = useState<AdminUser | null>(null)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [form, setForm] = useState<UserFormState>(emptyUserForm)
   const [subscriptionManagerIds, setSubscriptionManagerIds] = useState<number[]>([])
 
@@ -114,16 +93,15 @@ export function OrgAdminUsersPage() {
   const subscriptionsQuery = useQuery({
     queryKey: ['org-admin', 'rep-subscriptions', editingUser?.id],
     queryFn: () => getRepSubscriptions(editingUser!.id),
-    enabled: editingUser?.role === 'rep',
+    enabled: !!editingUser && editingUser.role === 'rep',
   })
 
   useEffect(() => {
     if (!editingUser) {
-      setForm(emptyUserForm)
+      setForm({ ...emptyUserForm, role_id: managerRoleId })
       setSubscriptionManagerIds([])
       return
     }
-
     setForm({
       name: editingUser.name,
       email: editingUser.email,
@@ -131,7 +109,7 @@ export function OrgAdminUsersPage() {
       role_id: editingUser.role_id,
       active: editingUser.active,
     })
-
+    setIsDialogOpen(true)
     if (editingUser.role !== 'rep') {
       setSubscriptionManagerIds([])
     }
@@ -174,14 +152,8 @@ export function OrgAdminUsersPage() {
     },
     onSuccess: (savedUser) => {
       toast.success(editingUser ? 'Usuario actualizado.' : 'Usuario creado.')
-      setEditingUser(savedUser)
-      setForm({
-        name: savedUser.name,
-        email: savedUser.email,
-        password: '',
-        role_id: savedUser.role_id,
-        active: savedUser.active,
-      })
+      setIsDialogOpen(false)
+      setEditingUser(null)
       void queryClient.invalidateQueries({ queryKey: ['org-admin', 'users'] })
       void queryClient.invalidateQueries({ queryKey: ['org-admin', 'managers'] })
       void queryClient.invalidateQueries({ queryKey: ['org-admin', 'rep-subscriptions', savedUser.id] })
@@ -192,141 +164,170 @@ export function OrgAdminUsersPage() {
     },
   })
 
-  const metrics = useMemo(() => {
-    const items = usersQuery.data?.items ?? []
-    return [
-      { label: 'Usuarios', value: usersQuery.data?.total ?? 0, detail: 'Gerentes y visitadores dentro de la organizacion.' },
-      { label: 'Gerentes visibles', value: items.filter(item => item.role === 'manager').length, detail: 'Responsables de contenido en la pagina actual.' },
-      { label: 'Visitadores visibles', value: items.filter(item => item.role === 'rep').length, detail: 'Equipo de campo visible con el filtro actual.' },
-      { label: 'Filtro', value: roleFilter === 'all' ? 'Todos' : roleFilter, detail: 'Estado navegable desde la URL.' },
-    ]
-  }, [roleFilter, usersQuery.data])
-
-  const resetForm = () => {
-    setEditingUser(null)
-    setForm({ ...emptyUserForm, role_id: managerRoleId })
-    setSubscriptionManagerIds([])
-  }
-
   const managerOptions = (managersQuery.data?.items ?? []).map(item => ({
     value: item.id,
     label: item.name,
     hint: item.email,
   }))
 
+  const handleOpenNewDialog = () => {
+    setEditingUser(null)
+    setForm({ ...emptyUserForm, role_id: managerRoleId })
+    setSubscriptionManagerIds([])
+    setIsDialogOpen(true)
+  }
+
   return (
-    <div className="mx-auto flex min-h-full w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-10 lg:py-8">
-      <PageIntro
-        eyebrow="Equipo interno"
-        title="Gerentes y visitadores ordenados desde la mesa de coordinacion."
-        badge="Personas + acceso"
-        actions={<Button type="button" variant="outline" onClick={resetForm}>Nuevo usuario</Button>}
-      />
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8 animate-in fade-in duration-500">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-3xl font-display font-semibold tracking-tight text-foreground">Usuarios</h1>
+          <p className="mt-2 text-sm text-muted-foreground">Gestiona los gerentes y visitadores de tu organización.</p>
+        </div>
+        <Button onClick={handleOpenNewDialog}>
+          <Plus className="mr-2 h-4 w-4" /> Nuevo Usuario
+        </Button>
+      </div>
 
-      <MetricGrid items={metrics} />
-
-      <Workspace
-        primary={(
-          <WorkPanel title="Directorio de usuarios">
-            <SearchToolbar
-              value={q}
-              onChange={value => setSearchParams(current => updateSearchParams(current, { q: value || null, page: 1 }))}
-              placeholder="Buscar por nombre o correo"
-              extra={(
-                <SegmentedControl
-                  value={roleFilter}
-                  onChange={value => setSearchParams(current => updateSearchParams(current, { role: value === 'all' ? null : value, page: 1 }))}
-                  options={[
-                    { label: 'Todos', value: 'all' },
-                    { label: 'Gerentes', value: 'manager' },
-                    { label: 'Visitadores', value: 'rep' },
-                  ]}
-                />
-              )}
+      <div className="flex flex-col gap-6">
+        <SearchToolbar
+          value={q ?? ''}
+          onChange={value => setSearchParams(current => updateSearchParams(current, { q: value || null, page: 1 }))}
+          placeholder="Buscar por nombre o correo..."
+          extra={(
+            <SegmentedControl
+              value={roleFilter}
+              onChange={value => setSearchParams(current => updateSearchParams(current, { role: value === 'all' ? null : value, page: 1 }))}
+              options={[
+                { label: 'Todos', value: 'all' },
+                { label: 'Gerentes', value: 'manager' },
+                { label: 'Visitadores', value: 'rep' },
+              ]}
             />
+          )}
+        />
 
-            {usersQuery.isLoading && <LoadingState message="Cargando usuarios..." />}
-            {usersQuery.isError && <ErrorState message="No se pudo cargar el directorio de usuarios." />}
+        {usersQuery.isLoading && <LoadingState message="Cargando usuarios..." />}
+        {usersQuery.isError && <ErrorState message="No se pudo cargar la lista." />}
 
-            {!usersQuery.isLoading && !usersQuery.isError && usersQuery.data?.items.length === 0 && (
-              <EmptyState title="Sin usuarios" description="Crea el primer gerente o visitador para esta organizacion." />
-            )}
-
-            <div className="space-y-3">
-              {usersQuery.data?.items.map(item => (
-                <UserCard key={item.id} item={item} onEdit={setEditingUser} />
-              ))}
-            </div>
-
-            <PaginationBar
-              page={usersQuery.data?.page ?? page}
-              lastPage={usersQuery.data?.last_page ?? 1}
-              total={usersQuery.data?.total ?? 0}
-              onPageChange={nextPage => setSearchParams(current => updateSearchParams(current, { page: nextPage }))}
-            />
-          </WorkPanel>
+        {!usersQuery.isLoading && !usersQuery.isError && usersQuery.data?.items.length === 0 && (
+          <EmptyState title="Sin resultados" description="No hay usuarios registrados con esos filtros." />
         )}
-        secondary={(
-          <WorkPanel
-            title={editingUser ? 'Editar usuario' : 'Crear usuario'}
-            aside={editingUser ? <Badge variant="warm">Edicion</Badge> : <Badge variant="outline">Alta</Badge>}
-          >
-            <form
-              className="space-y-4"
-              onSubmit={event => {
-                event.preventDefault()
-                void saveMutation.mutateAsync()
-              }}
-            >
-              <Input label="Nombre" value={form.name} onChange={event => setForm(current => ({ ...current, name: event.target.value }))} required />
-              <Input label="Correo" type="email" value={form.email} onChange={event => setForm(current => ({ ...current, email: event.target.value }))} required />
-              <Input
-                label={editingUser ? 'Nueva contrasena (opcional)' : 'Contrasena'}
-                type="password"
-                value={form.password}
-                onChange={event => setForm(current => ({ ...current, password: event.target.value }))}
-                required={!editingUser}
-              />
 
+        {!usersQuery.isLoading && !usersQuery.isError && (usersQuery.data?.items.length ?? 0) > 0 && (
+          <div className="rounded-3xl border border-border/50 bg-background/50 shadow-sm overflow-hidden">
+            <Table>
+              <TableHeader className="bg-muted/30">
+                <TableRow>
+                  <TableHead className="w-[30%]">Nombre</TableHead>
+                  <TableHead>Correo</TableHead>
+                  <TableHead>Rol</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead>Último Acceso</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {usersQuery.data?.items.map(item => (
+                  <TableRow key={item.id} className="group transition-colors hover:bg-muted/20">
+                    <TableCell className="font-medium text-foreground">{item.name}</TableCell>
+                    <TableCell className="text-muted-foreground">{item.email}</TableCell>
+                    <TableCell>
+                      <Badge variant={item.role === 'manager' ? 'accent' : 'outline'}>{item.role === 'manager' ? 'Gerente' : 'Visitador'}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={item.active ? 'success' : 'outline'}>{item.active ? 'Activo' : 'Inactivo'}</Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{formatDateTime(item.last_login_at)}</TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="sm" onClick={() => setEditingUser(item)} className="opacity-70 hover:opacity-100 transition-opacity">
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+
+        <PaginationBar
+          page={usersQuery.data?.page ?? page}
+          lastPage={usersQuery.data?.last_page ?? 1}
+          total={usersQuery.data?.total ?? 0}
+          onPageChange={nextPage => setSearchParams(current => updateSearchParams(current, { page: nextPage }))}
+        />
+      </div>
+
+      <Dialog open={isDialogOpen} onOpenChange={open => {
+        setIsDialogOpen(open)
+        if (!open) setEditingUser(null)
+      }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingUser ? 'Editar Usuario' : 'Nuevo Usuario'}</DialogTitle>
+            <DialogDescription>
+              {editingUser ? 'Actualiza los datos del usuario.' : 'Crea un nuevo gerente o visitador.'}
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            className="mt-2 space-y-5"
+            onSubmit={event => {
+              event.preventDefault()
+              void saveMutation.mutateAsync()
+            }}
+          >
+            <Input label="Nombre completo" value={form.name} onChange={event => setForm(current => ({ ...current, name: event.target.value }))} required />
+            <Input label="Correo electrónico" type="email" value={form.email} onChange={event => setForm(current => ({ ...current, email: event.target.value }))} required />
+            <Input
+              label={editingUser ? 'Nueva contraseña (opcional)' : 'Contraseña'}
+              type="password"
+              value={form.password}
+              onChange={event => setForm(current => ({ ...current, password: event.target.value }))}
+              required={!editingUser}
+            />
+
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-foreground">Rol del Usuario</label>
               <SegmentedControl
                 value={String(form.role_id)}
                 onChange={value => setForm(current => ({ ...current, role_id: Number(value) }))}
                 options={[
-                  { label: 'Gerente', value: String(managerRoleId) },
-                  { label: 'Visitador', value: String(repRoleId) },
+                  { label: 'Gerente (Administra contenido)', value: String(managerRoleId) },
+                  { label: 'Visitador (Campo)', value: String(repRoleId) },
                 ]}
               />
+            </div>
 
-              <ToggleField
-                checked={form.active}
-                onChange={active => setForm(current => ({ ...current, active }))}
-                label="Acceso habilitado"
-                hint="Permite entrar y operar dentro de la organizacion."
-              />
+            <ToggleField
+              checked={form.active}
+              onChange={active => setForm(current => ({ ...current, active }))}
+              label="Habilitado"
+              hint="El usuario puede iniciar sesión en la plataforma."
+            />
 
-              {isRepForm && (
-                <div className="rounded-[28px] border border-border/80 bg-background/75 p-4">
-                  <p className="text-[0.72rem] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Suscripciones del visitador</p>
-                  <p className="mt-2 text-sm leading-6 text-muted-foreground">Selecciona los gerentes cuyo contenido vera este visitador.</p>
-                  <div className="mt-4">
-                    {subscriptionsQuery.isLoading && editingUser?.role === 'rep' && <LoadingState message="Cargando suscripciones actuales..." />}
-                    <ChoicePills
-                      value={subscriptionManagerIds}
-                      onToggle={managerId => setSubscriptionManagerIds(current => current.includes(managerId) ? current.filter(item => item !== managerId) : [...current, managerId])}
-                      options={managerOptions}
-                    />
-                  </div>
+            {isRepForm && (
+              <div className="rounded-2xl border border-border/50 bg-muted/20 p-4 mt-6">
+                <p className="text-sm font-semibold text-foreground">Suscripciones del visitador</p>
+                <p className="mt-1 text-sm text-muted-foreground">Selecciona los gerentes cuyo contenido verá este visitador.</p>
+                <div className="mt-4">
+                  {subscriptionsQuery.isLoading && editingUser?.role === 'rep' && <p className="text-xs text-muted-foreground">Cargando suscripciones...</p>}
+                  <ChoicePills
+                    value={subscriptionManagerIds}
+                    onToggle={managerId => setSubscriptionManagerIds(current => current.includes(managerId) ? current.filter(item => item !== managerId) : [...current, managerId])}
+                    options={managerOptions}
+                  />
                 </div>
-              )}
-
-              <div className="flex flex-wrap gap-3">
-                <Button type="submit" loading={saveMutation.isPending}>{editingUser ? 'Guardar cambios' : 'Crear usuario'}</Button>
-                <Button type="button" variant="outline" onClick={resetForm}>Limpiar</Button>
               </div>
-            </form>
-          </WorkPanel>
-        )}
-      />
+            )}
+
+            <div className="flex justify-end gap-3 pt-4 border-t border-border/50">
+              <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancelar</Button>
+              <Button type="submit" loading={saveMutation.isPending}>{editingUser ? 'Guardar Cambios' : 'Crear Usuario'}</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
@@ -343,29 +344,11 @@ const emptyBrandForm: BrandFormState = {
   active: true,
 }
 
-function BrandCard({ item, onEdit }: { item: Brand; onEdit: (brand: Brand) => void }) {
-  return (
-    <button
-      type="button"
-      onClick={() => onEdit(item)}
-      className="w-full rounded-[28px] border border-border/80 bg-background/75 p-5 text-left transition hover:-translate-y-0.5 hover:border-primary/20"
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="font-semibold text-foreground">{item.name}</p>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">{item.description || 'Sin descripcion cargada.'}</p>
-        </div>
-        <Badge variant={item.active ? 'success' : 'outline'}>{item.active ? 'Activa' : 'Inactiva'}</Badge>
-      </div>
-      <p className="mt-4 text-xs text-muted-foreground">Actualizada {formatDateTime(item.updated_at)}</p>
-    </button>
-  )
-}
-
 export function OrgAdminBrandsPage() {
   const queryClient = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
   const [editingBrand, setEditingBrand] = useState<Brand | null>(null)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [form, setForm] = useState<BrandFormState>(emptyBrandForm)
 
   const q = getStringParam(searchParams, 'q')
@@ -381,12 +364,12 @@ export function OrgAdminBrandsPage() {
       setForm(emptyBrandForm)
       return
     }
-
     setForm({
       name: editingBrand.name,
       description: editingBrand.description ?? '',
       active: editingBrand.active,
     })
+    setIsDialogOpen(true)
   }, [editingBrand])
 
   const saveMutation = useMutation({
@@ -394,13 +377,12 @@ export function OrgAdminBrandsPage() {
       if (editingBrand) {
         return updateOrgBrand(editingBrand.id, form)
       }
-
       return createOrgBrand({ name: form.name, description: form.description, active: form.active })
     },
     onSuccess: () => {
       toast.success(editingBrand ? 'Marca actualizada.' : 'Marca creada.')
+      setIsDialogOpen(false)
       setEditingBrand(null)
-      setForm(emptyBrandForm)
       void queryClient.invalidateQueries({ queryKey: ['org-admin', 'brands'] })
     },
     onError: (error) => {
@@ -409,96 +391,118 @@ export function OrgAdminBrandsPage() {
     },
   })
 
-  const metrics = useMemo(() => {
-    const items = brandsQuery.data?.items ?? []
-    return [
-      { label: 'Marcas', value: brandsQuery.data?.total ?? 0, detail: 'Catalogo maestro de la organizacion.' },
-      { label: 'Activas visibles', value: items.filter(item => item.active).length, detail: 'Marcas disponibles en la pagina actual.' },
-      { label: 'Descripcion', value: items.filter(item => item.description).length, detail: 'Marcas con contexto operativo cargado.' },
-      { label: 'Filtro', value: q ? 'Busqueda' : 'Completo', detail: q ? `Consulta: ${q}` : 'Sin filtro aplicado.' },
-    ]
-  }, [brandsQuery.data, q])
-
-  const resetForm = () => {
+  const handleOpenNewDialog = () => {
     setEditingBrand(null)
     setForm(emptyBrandForm)
+    setIsDialogOpen(true)
   }
 
   return (
-    <div className="mx-auto flex min-h-full w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-10 lg:py-8">
-      <PageIntro
-        eyebrow="Catalogo maestro"
-        title="Marcas limpias, activas y listas para asignar a gerentes."
-        badge="Marca sin duplicados"
-        actions={<Button type="button" variant="outline" onClick={resetForm}>Nueva marca</Button>}
-      />
+    <div className="mx-auto flex min-h-full w-full max-w-6xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8 animate-in fade-in duration-500">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-3xl font-display font-semibold tracking-tight text-foreground">Marcas</h1>
+          <p className="mt-2 text-sm text-muted-foreground">Catálogo maestro de marcas de la organización.</p>
+        </div>
+        <Button onClick={handleOpenNewDialog}>
+          <Plus className="mr-2 h-4 w-4" /> Nueva Marca
+        </Button>
+      </div>
 
-      <MetricGrid items={metrics} />
+      <div className="flex flex-col gap-6">
+        <SearchToolbar
+          value={q ?? ''}
+          onChange={value => setSearchParams(current => updateSearchParams(current, { q: value || null, page: 1 }))}
+          placeholder="Buscar marcas..."
+        />
 
-      <Workspace
-        primary={(
-          <WorkPanel title="Listado de marcas">
-            <SearchToolbar
-              value={q}
-              onChange={value => setSearchParams(current => updateSearchParams(current, { q: value || null, page: 1 }))}
-              placeholder="Buscar marcas"
-            />
+        {brandsQuery.isLoading && <LoadingState message="Cargando marcas..." />}
+        {brandsQuery.isError && <ErrorState message="No se pudo cargar la lista." />}
 
-            {brandsQuery.isLoading && <LoadingState message="Cargando marcas..." />}
-            {brandsQuery.isError && <ErrorState message="No se pudo cargar el catalogo de marcas." />}
-
-            {!brandsQuery.isLoading && !brandsQuery.isError && brandsQuery.data?.items.length === 0 && (
-              <EmptyState title="Sin marcas" description="Crea la primera marca para empezar a asignarla a gerentes." />
-            )}
-
-            <div className="space-y-3">
-              {brandsQuery.data?.items.map(item => (
-                <BrandCard key={item.id} item={item} onEdit={setEditingBrand} />
-              ))}
-            </div>
-
-            <PaginationBar
-              page={brandsQuery.data?.page ?? page}
-              lastPage={brandsQuery.data?.last_page ?? 1}
-              total={brandsQuery.data?.total ?? 0}
-              onPageChange={nextPage => setSearchParams(current => updateSearchParams(current, { page: nextPage }))}
-            />
-          </WorkPanel>
+        {!brandsQuery.isLoading && !brandsQuery.isError && brandsQuery.data?.items.length === 0 && (
+          <EmptyState title="Sin resultados" description="No hay marcas en el catálogo." />
         )}
-        secondary={(
-          <WorkPanel
-            title={editingBrand ? 'Editar marca' : 'Crear marca'}
-            aside={editingBrand ? <Badge variant="warm">Edicion</Badge> : <Badge variant="outline">Alta</Badge>}
+
+        {!brandsQuery.isLoading && !brandsQuery.isError && (brandsQuery.data?.items.length ?? 0) > 0 && (
+          <div className="rounded-3xl border border-border/50 bg-background/50 shadow-sm overflow-hidden">
+            <Table>
+              <TableHeader className="bg-muted/30">
+                <TableRow>
+                  <TableHead className="w-[30%]">Nombre</TableHead>
+                  <TableHead>Descripción</TableHead>
+                  <TableHead className="w-[10%]">Estado</TableHead>
+                  <TableHead className="w-[15%]">Última Actualización</TableHead>
+                  <TableHead className="text-right w-[10%]">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {brandsQuery.data?.items.map(item => (
+                  <TableRow key={item.id} className="group transition-colors hover:bg-muted/20">
+                    <TableCell className="font-medium text-foreground">{item.name}</TableCell>
+                    <TableCell className="text-muted-foreground truncate max-w-md" title={item.description || ''}>{item.description || <span className="text-muted-foreground/50 italic">Sin descripción</span>}</TableCell>
+                    <TableCell>
+                      <Badge variant={item.active ? 'success' : 'outline'}>{item.active ? 'Activa' : 'Inactiva'}</Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-xs">{formatDateTime(item.updated_at)}</TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="sm" onClick={() => setEditingBrand(item)} className="opacity-70 hover:opacity-100 transition-opacity">
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+
+        <PaginationBar
+          page={brandsQuery.data?.page ?? page}
+          lastPage={brandsQuery.data?.last_page ?? 1}
+          total={brandsQuery.data?.total ?? 0}
+          onPageChange={nextPage => setSearchParams(current => updateSearchParams(current, { page: nextPage }))}
+        />
+      </div>
+
+      <Dialog open={isDialogOpen} onOpenChange={open => {
+        setIsDialogOpen(open)
+        if (!open) setEditingBrand(null)
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingBrand ? 'Editar Marca' : 'Nueva Marca'}</DialogTitle>
+            <DialogDescription>
+              {editingBrand ? 'Actualiza la información de la marca.' : 'Agrega una nueva marca al catálogo maestro.'}
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            className="mt-2 space-y-5"
+            onSubmit={event => {
+              event.preventDefault()
+              void saveMutation.mutateAsync()
+            }}
           >
-            <form
-              className="space-y-4"
-              onSubmit={event => {
-                event.preventDefault()
-                void saveMutation.mutateAsync()
-              }}
-            >
-              <Input label="Nombre de la marca" value={form.name} onChange={event => setForm(current => ({ ...current, name: event.target.value }))} required />
-              <Textarea
-                label="Descripcion"
-                value={form.description}
-                onChange={event => setForm(current => ({ ...current, description: event.target.value }))}
-                placeholder="Contexto comercial o cientifico de la marca"
-              />
-              <ToggleField
-                checked={form.active}
-                onChange={active => setForm(current => ({ ...current, active }))}
-                label="Marca activa"
-                hint="Permite seguir asignandola a gerentes y usandola en materiales."
-              />
-
-              <div className="flex flex-wrap gap-3">
-                <Button type="submit" loading={saveMutation.isPending}>{editingBrand ? 'Guardar cambios' : 'Crear marca'}</Button>
-                <Button type="button" variant="outline" onClick={resetForm}>Limpiar</Button>
-              </div>
-            </form>
-          </WorkPanel>
-        )}
-      />
+            <Input label="Nombre de la marca" value={form.name} onChange={event => setForm(current => ({ ...current, name: event.target.value }))} required />
+            <Textarea
+              label="Descripción"
+              value={form.description}
+              onChange={event => setForm(current => ({ ...current, description: event.target.value }))}
+              placeholder="Contexto comercial o científico"
+              rows={4}
+            />
+            <ToggleField
+              checked={form.active}
+              onChange={active => setForm(current => ({ ...current, active }))}
+              label="Marca activa"
+              hint="Permite asignar a gerentes y crear materiales."
+            />
+            <div className="flex justify-end gap-3 pt-4 border-t border-border/50">
+              <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancelar</Button>
+              <Button type="submit" loading={saveMutation.isPending}>{editingBrand ? 'Guardar Cambios' : 'Crear Marca'}</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
@@ -519,10 +523,13 @@ export function OrgAdminAssignmentsPage() {
       },
       {
         queryKey: ['org-admin', 'assignment-brands'],
-        queryFn: () => listOrgBrands({ page: 1 }),
+        queryFn: () => listOrgBrands({ page: 1 }), // Assuming we want almost all active brands
       },
     ],
   })
+
+  // We could implement an infinite query or specific search for brands, but for simplicity we rely on listOrgBrands.
+  // In a real scenario, this endpoint should likely not paginate or should be searchable for assignments.
 
   const assignedBrandsQuery = useQuery({
     queryKey: ['org-admin', 'manager-brands', managerId],
@@ -533,129 +540,114 @@ export function OrgAdminAssignmentsPage() {
   useEffect(() => {
     if (assignedBrandsQuery.data) {
       setDraftBrandIds(assignedBrandsQuery.data.items.map(item => item.id))
+    } else {
+      setDraftBrandIds([])
     }
-  }, [assignedBrandsQuery.data])
+  }, [assignedBrandsQuery.data, managerId])
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      if (!managerId) {
-        throw new Error('Selecciona un gerente.')
-      }
+      if (!managerId) throw new Error('Selecciona un gerente.')
 
       const currentIds = assignedBrandsQuery.data?.items.map(item => item.id) ?? []
       const toAssign = draftBrandIds.filter(id => !currentIds.includes(id))
       const toRemove = currentIds.filter(id => !draftBrandIds.includes(id))
 
-      if (toAssign.length > 0) {
-        await assignBrandsToManager(managerId, toAssign)
-      }
-
-      if (toRemove.length > 0) {
-        await removeBrandsFromManager(managerId, toRemove)
-      }
+      if (toAssign.length > 0) await assignBrandsToManager(managerId, toAssign)
+      if (toRemove.length > 0) await removeBrandsFromManager(managerId, toRemove)
     },
     onSuccess: () => {
-      toast.success('Asignaciones actualizadas.')
+      toast.success('Asignaciones guardadas.')
       void queryClient.invalidateQueries({ queryKey: ['org-admin', 'manager-brands', managerId] })
     },
     onError: (error) => {
-      const message = error instanceof Error ? error.message : 'No se pudieron actualizar las asignaciones.'
+      const message = error instanceof Error ? error.message : 'No se pudieron guardar las asignaciones.'
       toast.error(message)
     },
   })
 
   const selectedManager = managersQuery.data?.items.find(item => item.id === managerId) ?? null
 
-  const metrics = useMemo(() => [
-    { label: 'Gerentes', value: managersQuery.data?.total ?? 0, detail: 'Responsables disponibles para recibir marcas.' },
-    { label: 'Marcas', value: brandsQuery.data?.total ?? 0, detail: 'Catalogo listo para asignacion.' },
-    { label: 'Asignadas', value: assignedBrandsQuery.data?.items.length ?? 0, detail: 'Marcas activas del gerente seleccionado.' },
-    { label: 'Foco', value: selectedManager?.name ?? 'Pendiente', detail: 'Gerente elegido desde la URL.' },
-  ], [assignedBrandsQuery.data, brandsQuery.data, managersQuery.data, selectedManager?.name])
-
   return (
-    <div className="mx-auto flex min-h-full w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-10 lg:py-8">
-      <PageIntro
-        eyebrow="Relaciones marca-gerente"
-        title="Asignaciones visibles para que cada gerente vea solo sus marcas."
-        badge="Operacion de cartera"
-      />
+    <div className="mx-auto flex min-h-full w-full max-w-6xl gap-8 px-4 py-8 sm:px-6 lg:px-8 animate-in fade-in duration-500">
+      
+      {/* Left panel: Managers */}
+      <div className="w-1/3 flex flex-col gap-6">
+        <div>
+          <h1 className="text-2xl font-display font-semibold tracking-tight text-foreground">Gerentes</h1>
+          <p className="mt-2 text-sm text-muted-foreground">Selecciona un gerente para asignar marcas.</p>
+        </div>
 
-      <MetricGrid items={metrics} />
+        <SearchToolbar
+          value={q ?? ''}
+          onChange={value => setSearchParams(current => updateSearchParams(current, { q: value || null, page: 1 }))}
+          placeholder="Buscar..."
+        />
 
-      <Workspace
-        primary={(
-          <WorkPanel title="Gerentes disponibles">
-            <SearchToolbar
-              value={q}
-              onChange={value => setSearchParams(current => updateSearchParams(current, { q: value || null, page: 1 }))}
-              placeholder="Buscar gerente"
-            />
+        {managersQuery.isLoading && <LoadingState message="Cargando..." />}
+        
+        <div className="space-y-2 overflow-y-auto max-h-[60vh] pr-2">
+          {(managersQuery.data?.items ?? []).map(item => (
+            <button
+              key={item.id}
+              onClick={() => setSearchParams(current => updateSearchParams(current, { manager_id: item.id }))}
+              className={`w-full p-4 rounded-2xl text-left transition-all duration-200 border ${
+                item.id === managerId 
+                  ? 'bg-primary/10 border-primary text-primary shadow-sm' 
+                  : 'bg-background hover:bg-muted/50 border-border/50 text-foreground'
+              }`}
+            >
+              <p className="font-semibold">{item.name}</p>
+              <p className="text-xs opacity-70 truncate">{item.email}</p>
+            </button>
+          ))}
+        </div>
+        
+        <PaginationBar
+          page={managersQuery.data?.page ?? page}
+          lastPage={managersQuery.data?.last_page ?? 1}
+          total={managersQuery.data?.total ?? 0}
+          onPageChange={nextPage => setSearchParams(current => updateSearchParams(current, { page: nextPage }))}
+        />
+      </div>
 
-            {managersQuery.isLoading && <LoadingState message="Cargando gerentes..." />}
-            {managersQuery.isError && <ErrorState message="No se pudo cargar la lista de gerentes." />}
+      {/* Right panel: Assigments */}
+      <div className="w-2/3 flex flex-col gap-6">
+        <div>
+          <h1 className="text-2xl font-display font-semibold tracking-tight text-foreground">
+            {selectedManager ? `Marcas de ${selectedManager.name}` : 'Asignaciones'}
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {selectedManager ? 'Elige las marcas que este gerente administrará.' : 'Selecciona un gerente a la izquierda.'}
+          </p>
+        </div>
 
-            <div className="space-y-3">
-              {(managersQuery.data?.items ?? []).map(item => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => setSearchParams(current => updateSearchParams(current, { manager_id: item.id }))}
-                  className={`w-full rounded-[28px] border p-5 text-left transition hover:-translate-y-0.5 ${item.id === managerId ? 'border-primary/20 bg-primary text-primary-foreground shadow-[0_16px_35px_rgba(24,90,86,0.22)]' : 'border-border/80 bg-background/75 text-foreground'}`}
-                >
-                  <p className="font-semibold">{item.name}</p>
-                  <p className={`mt-1 text-sm ${item.id === managerId ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>{item.email}</p>
-                </button>
-              ))}
-            </div>
-
-            <PaginationBar
-              page={managersQuery.data?.page ?? page}
-              lastPage={managersQuery.data?.last_page ?? 1}
-              total={managersQuery.data?.total ?? 0}
-              onPageChange={nextPage => setSearchParams(current => updateSearchParams(current, { page: nextPage }))}
-            />
-          </WorkPanel>
+        {!managerId && (
+          <div className="h-full min-h-[40vh] rounded-3xl border border-dashed border-border/50 flex items-center justify-center text-muted-foreground bg-muted/10">
+            <p>Selecciona un gerente para ver sus asignaciones.</p>
+          </div>
         )}
-        secondary={(
-          <WorkPanel title="Editor de asignaciones">
-            {!managerId && <EmptyState title="Selecciona un gerente" description="La URL guardara el gerente elegido para que puedas compartir o retomar la vista." />}
-            {managerId && assignedBrandsQuery.isLoading && <LoadingState message="Cargando marcas asignadas..." />}
-            {managerId && assignedBrandsQuery.isError && <ErrorState message="No se pudieron cargar las marcas del gerente." />}
 
-            {managerId && !assignedBrandsQuery.isLoading && !assignedBrandsQuery.isError && (
-              <>
-                <div className="rounded-[24px] border border-border/80 bg-background/75 p-4">
-                  <p className="font-semibold text-foreground">{selectedManager?.name ?? 'Gerente seleccionado'}</p>
-                  <p className="mt-2 text-sm leading-6 text-muted-foreground">Activa o desactiva marcas del catalogo para definir su espacio de trabajo.</p>
-                </div>
-
-                <ChoicePills
-                  value={draftBrandIds}
-                  onToggle={brandId => setDraftBrandIds(current => current.includes(brandId) ? current.filter(item => item !== brandId) : [...current, brandId])}
-                  options={(brandsQuery.data?.items ?? []).map(item => ({
-                    value: item.id,
-                    label: item.name,
-                    hint: item.description ?? 'Marca lista para asignacion',
-                    disabled: !item.active,
-                  }))}
-                />
-
-                <div className="flex flex-wrap gap-3">
-                  <Button type="button" loading={saveMutation.isPending} onClick={() => void saveMutation.mutateAsync()}>Guardar asignaciones</Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setDraftBrandIds(assignedBrandsQuery.data?.items.map(item => item.id) ?? [])}
-                  >
-                    Revertir
-                  </Button>
-                </div>
-              </>
-            )}
-          </WorkPanel>
+        {managerId && (
+          <div className="bg-background/50 rounded-3xl border border-border/50 p-6 shadow-sm flex flex-col gap-6">
+             <ChoicePills
+                value={draftBrandIds}
+                onToggle={brandId => setDraftBrandIds(current => current.includes(brandId) ? current.filter(item => item !== brandId) : [...current, brandId])}
+                options={(brandsQuery.data?.items ?? []).map(item => ({
+                  value: item.id,
+                  label: item.name,
+                  hint: item.description ?? '',
+                  disabled: !item.active,
+                }))}
+              />
+              
+              <div className="flex justify-start gap-3 mt-4 pt-6 border-t border-border/20">
+                <Button loading={saveMutation.isPending} onClick={() => void saveMutation.mutateAsync()}>Guardar Asignaciones</Button>
+                <Button variant="ghost" onClick={() => setDraftBrandIds(assignedBrandsQuery.data?.items.map(item => item.id) ?? [])}>Deshacer cambios</Button>
+              </div>
+          </div>
         )}
-      />
+      </div>
     </div>
   )
 }
@@ -669,48 +661,38 @@ export function OrgAdminMetricsPage() {
     ],
   })
 
-  const metrics = [
-    { label: 'Gerentes', value: managersQuery.data?.total ?? 0, detail: 'Personas a cargo del contenido.' },
-    { label: 'Visitadores', value: repsQuery.data?.total ?? 0, detail: 'Equipo de campo de la organizacion.' },
-    { label: 'Marcas', value: brandsQuery.data?.total ?? 0, detail: 'Catalogo propio de la organizacion.' },
-    {
-      label: 'Ultimo acceso visible',
-      value: repsQuery.data?.items[0]?.last_login_at ? formatDate(repsQuery.data.items[0].last_login_at) : '—',
-      detail: 'Referencia rapida del ultimo login visible de visitadores.',
-    },
-  ]
-
   return (
-    <div className="mx-auto flex min-h-full w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-10 lg:py-8">
-      <PageIntro
-        eyebrow="Pulso de la organizacion"
-        title="Senales operativas para revisar estructura."
-        badge="Metrica operativa"
-      />
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8 animate-in fade-in duration-500">
+      <div>
+        <h1 className="text-3xl font-display font-semibold tracking-tight text-foreground">Vista General</h1>
+        <p className="mt-2 text-sm text-muted-foreground">Métricas operativas de la organización.</p>
+      </div>
 
-      <MetricGrid items={metrics} />
+      <div className="grid gap-6 md:grid-cols-3">
+        <div className="rounded-3xl border border-border/50 bg-background/50 p-6 shadow-sm flex flex-col items-center text-center">
+          <div className="h-12 w-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-4">
+            <Users className="h-6 w-6" />
+          </div>
+          <h3 className="font-semibold text-lg text-foreground">Gerentes</h3>
+          <p className="mt-2 text-4xl font-display text-foreground">{managersQuery.data?.total ?? 0}</p>
+        </div>
 
-      <Workspace
-        primary={(
-          <WorkPanel title="Resumen del roster">
-            <div className="grid gap-3 md:grid-cols-3">
-              <div className="rounded-[24px] border border-border/80 bg-background/75 p-4">
-                <div className="flex items-center gap-3 text-foreground"><Users className="h-4 w-4 text-primary" /><p className="font-semibold">Equipo</p></div>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">{(managersQuery.data?.total ?? 0) + (repsQuery.data?.total ?? 0)} usuarios internos visibles para la operacion.</p>
-              </div>
-              <div className="rounded-[24px] border border-border/80 bg-background/75 p-4">
-                <div className="flex items-center gap-3 text-foreground"><Tags className="h-4 w-4 text-primary" /><p className="font-semibold">Catalogo</p></div>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">{brandsQuery.data?.total ?? 0} marcas listas para relacionarse con los gerentes.</p>
-              </div>
-              <div className="rounded-[24px] border border-border/80 bg-background/75 p-4">
-                <div className="flex items-center gap-3 text-foreground"><Network className="h-4 w-4 text-primary" /><p className="font-semibold">Coordinacion</p></div>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">Las asignaciones de marca ya viven en una pantalla propia dentro de esta fase.</p>
-              </div>
-            </div>
-          </WorkPanel>
-        )}
-        secondary={null}
-      />
+        <div className="rounded-3xl border border-border/50 bg-background/50 p-6 shadow-sm flex flex-col items-center text-center">
+          <div className="h-12 w-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-4">
+            <Network className="h-6 w-6" />
+          </div>
+          <h3 className="font-semibold text-lg text-foreground">Visitadores</h3>
+          <p className="mt-2 text-4xl font-display text-foreground">{repsQuery.data?.total ?? 0}</p>
+        </div>
+
+        <div className="rounded-3xl border border-border/50 bg-background/50 p-6 shadow-sm flex flex-col items-center text-center">
+          <div className="h-12 w-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-4">
+            <Tags className="h-6 w-6" />
+          </div>
+          <h3 className="font-semibold text-lg text-foreground">Marcas</h3>
+          <p className="mt-2 text-4xl font-display text-foreground">{brandsQuery.data?.total ?? 0}</p>
+        </div>
+      </div>
     </div>
   )
 }

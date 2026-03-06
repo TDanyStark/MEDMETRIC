@@ -1,36 +1,53 @@
 import { useEffect } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
-import { LogOut, PanelLeftClose } from 'lucide-react'
+import { LogOut, LineChart } from 'lucide-react'
 import { useAuth } from '@/contexts/useAuth'
-import { Avatar, AvatarFallback } from '@/components/ui/Avatar'
-import { Badge } from '@/components/ui/Badge'
 import { Sheet, SheetContent } from '@/components/ui/Sheet'
-import { getNavItem, getNavItems, ROLE_BLUEPRINTS } from '@/lib/auth'
-import { cn, getInitials } from '@/lib/utils'
+import { getNavItems } from '@/lib/auth'
+import { cn } from '@/lib/utils'
 
 interface SidebarProps {
   isOpen: boolean
   onClose: () => void
 }
 
-function NavItem({ to, label, icon: Icon }: ReturnType<typeof getNavItems>[number]) {
+function NavItem({ to, label, icon: Icon, badge }: ReturnType<typeof getNavItems>[number] & { badge?: string | number }) {
   return (
     <NavLink
       to={to}
       className={({ isActive }) => cn(
-        'group flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all',
+        'group flex items-center gap-4 px-6 py-3.5 transition-all relative',
         isActive
-          ? 'bg-primary/10 text-primary font-medium'
-          : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
+          ? 'bg-gradient-to-r from-white/10 to-transparent text-white'
+          : 'text-slate-400 hover:text-white hover:bg-white/5'
       )}
     >
       {({ isActive }) => (
         <>
-          <Icon className={cn("h-5 w-5 shrink-0 transition-colors", isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground")} />
-          <p className="text-sm leading-none">{label}</p>
+          <Icon className={cn("h-5 w-5 shrink-0 transition-colors", isActive ? "text-white" : "text-slate-400 group-hover:text-white")} />
+          <span className="text-[15px] font-medium leading-none">{label}</span>
+          {badge && (
+            <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-pink-500 text-[10px] font-bold text-white">
+              {badge}
+            </span>
+          )}
         </>
       )}
     </NavLink>
+  )
+}
+
+function StaticNavItem({ label, icon: Icon, onClick }: { label: string, icon: any, onClick?: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        'w-full group flex items-center gap-4 px-6 py-3.5 transition-all relative text-slate-400 hover:text-white hover:bg-white/5'
+      )}
+    >
+      <Icon className="h-5 w-5 shrink-0 transition-colors text-slate-400 group-hover:text-white" />
+      <span className="text-[15px] font-medium leading-none">{label}</span>
+    </button>
   )
 }
 
@@ -40,8 +57,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const location = useLocation()
 
   const items = user ? getNavItems(user.role) : []
-  const activeItem = user ? getNavItem(user.role, location.pathname) : null
-  const blueprint = user ? ROLE_BLUEPRINTS[user.role] : null
 
   useEffect(() => {
     onClose()
@@ -53,80 +68,52 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   }
 
   const content = (
-    <div className="flex h-full flex-col bg-sidebar px-4 py-4">
-      <div className="rounded-[28px] border border-border bg-card p-5 shadow-sm">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="font-display text-[1.35rem] leading-none tracking-tight text-foreground">MedMetric</p>
-            <p className="mt-2 text-xs uppercase tracking-[0.28em] text-muted-foreground">Medical briefing system</p>
+    <div className="flex h-full flex-col bg-[#1A1C23] text-slate-300 font-sans">
+      {/* Header Area */}
+      <div className="pt-8 px-6 pb-6 mt-2">
+        <div className="flex items-center gap-3">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center text-white">
+            <LineChart className="h-7 w-7" strokeWidth={2} />
+          </div>
+          <div className="flex flex-col">
+            <h1 className="text-xl font-bold tracking-wide text-white uppercase leading-none">MEDMETRIC</h1>
+            <p className="text-[11px] text-slate-400 mt-1">Medical briefing system</p>
           </div>
         </div>
-
-        {blueprint && (
-          <div className="mt-5 rounded-3xl border border-border bg-background p-4">
-            <p className="text-[0.7rem] uppercase tracking-[0.22em] text-muted-foreground">{blueprint.eyebrow}</p>
-            <h2 className="mt-2 font-display text-xl text-foreground">{blueprint.label}</h2>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">{blueprint.deck}</p>
-          </div>
-        )}
       </div>
 
-      <div className="mt-4 rounded-[28px] border border-border bg-card p-3 shadow-sm">
-        <div className="mb-2 flex items-center justify-between px-2 py-2">
-          <div>
-            <p className="text-[0.7rem] uppercase tracking-[0.22em] text-muted-foreground">Navegacion</p>
-            <p className="mt-1 text-sm font-medium text-foreground">{activeItem?.label ?? 'Modulo'}</p>
-          </div>
-          <Badge variant="accent">Operacion</Badge>
+      <div className="px-6 pb-2">
+        <div className="h-px w-full bg-white/5" />
+      </div>
+
+      <div className="flex-1 overflow-y-auto py-2 pb-8" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+        {/* Main Menu */}
+        <div className="mb-2 px-6 py-2 mt-2">
+          <h2 className="text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Main Menu</h2>
         </div>
-        <nav className="space-y-2">
+        
+        <nav className="space-y-1">
           {items.map(item => (
             <NavItem key={item.to} {...item} />
           ))}
         </nav>
       </div>
 
-      <div className="mt-auto rounded-[28px] border border-border bg-card p-4 shadow-sm">
-        <div className="flex items-center gap-3 rounded-[22px] border border-border bg-background p-3">
-          <Avatar className="h-11 w-11 border border-border bg-primary/10 text-primary">
-            <AvatarFallback>{getInitials(user?.name)}</AvatarFallback>
-          </Avatar>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-foreground">{user?.name}</p>
-            <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
-          </div>
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-border bg-background text-muted-foreground transition hover:border-primary/30 hover:bg-primary hover:text-primary-foreground"
-            title="Cerrar sesion"
-            aria-label="Cerrar sesion"
-          >
-            <LogOut className="h-4 w-4" />
-          </button>
-        </div>
+      {/* Footer Area */}
+      <div className="mt-auto mb-6">
+        <StaticNavItem label="Log Out" icon={LogOut} onClick={handleLogout} />
       </div>
     </div>
   )
 
   return (
     <>
-      <aside className="hidden h-screen w-88 shrink-0 border-r border-border bg-sidebar md:block">
+      <aside className="hidden h-screen w-72 shrink-0 border-r border-[#1A1C23] bg-[#1A1C23] md:block">
         {content}
       </aside>
 
       <Sheet open={isOpen} onOpenChange={open => (!open ? onClose() : undefined)}>
-        <SheetContent side="left" className="w-88 border-r border-border bg-sidebar p-0">
-          <div className="flex items-center justify-end border-b border-border px-4 py-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-border bg-background text-muted-foreground transition hover:text-foreground"
-              aria-label="Cerrar menu"
-            >
-              <PanelLeftClose className="h-4 w-4" />
-            </button>
-          </div>
+        <SheetContent side="left" className="w-72 border-r border-[#1A1C23] bg-[#1A1C23] p-0">
           {content}
         </SheetContent>
       </Sheet>
