@@ -16,8 +16,10 @@ interface MetricsRepositoryInterface
      */
     public function getRepLastLoginMetrics(int $organizationId, ?int $managerId, array $filters = []): array;
 
+    public function getTopMaterialsMetrics(int $organizationId, ?int $managerId, array $filters = [], int $limit = 10): array;
+
     /**
      * @return array
      */
-    public function getTopMaterialsMetrics(int $organizationId, ?int $managerId, array $filters = [], int $limit = 10): array;
+    public function getMaterialViewsList(int $organizationId, ?int $managerId, array $filters = []): array;
 }

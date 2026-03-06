@@ -23,9 +23,30 @@ export interface TopMaterialMetric {
   doctor_views: number
 }
 
+export interface MaterialViewListMetric {
+  id: number
+  material_id: number
+  material_title: string
+  material_type: 'pdf' | 'video' | 'link'
+  cover_path: string | null
+  viewer_type: 'rep' | 'doctor'
+  opened_at: string
+  doctor_name: string | null
+  rep_name: string | null
+}
+
 class MetricsService {
   async getMaterialViews() {
     return api.get<{ data: MaterialViewsMetric[] }>('/metrics/material-views')
+  }
+
+  async getMaterialViewsList(filters?: { material_id?: number; start_date?: string; end_date?: string }) {
+    const params = new URLSearchParams()
+    if (filters?.material_id) params.append('material_id', filters.material_id.toString())
+    if (filters?.start_date) params.append('start_date', filters.start_date)
+    if (filters?.end_date) params.append('end_date', filters.end_date)
+    
+    return api.get<{ data: MaterialViewListMetric[] }>(`/metrics/material-views-list?${params.toString()}`)
   }
 
   async getRepLastLogin() {

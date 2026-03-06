@@ -39,6 +39,7 @@ use App\Application\Actions\Rep\VisitSession\AddMaterialsToSessionAction;
 use App\Application\Actions\Rep\VisitSession\CreateVisitSessionAction;
 use App\Application\Actions\Rep\VisitSession\ListVisitSessionsAction;
 use App\Application\Actions\Metrics\GetMaterialViewsAction;
+use App\Application\Actions\Metrics\GetMaterialViewsListAction;
 use App\Application\Actions\Metrics\GetRepLastLoginAction;
 use App\Application\Actions\Metrics\GetTopMaterialsAction;
 use App\Application\Middleware\JwtMiddleware;
@@ -221,6 +222,7 @@ return function (App $app) {
         // -------------------------------------------------------------------------
         $group->group('/metrics', function (RouteCollectorProxy $metrics) {
             $metrics->get('/material-views', GetMaterialViewsAction::class);
+            $metrics->get('/material-views-list', GetMaterialViewsListAction::class);
             $metrics->get('/rep-last-login', GetRepLastLoginAction::class);
             $metrics->get('/top-materials', GetTopMaterialsAction::class);
         })->add(function ($request, $handler) use ($app) {

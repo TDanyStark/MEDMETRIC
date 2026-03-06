@@ -109,4 +109,54 @@ class DbMetricsRepository implements MetricsRepositoryInterface
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    public function getMaterialViewsList(int $organizationId, ?int $managerId, array $filters = []): array
+    {
+        $where = ['m.organization_id = :org_id'];
+        $params = [':org_id' => $organizationId];
+
+        if ($managerId !== null) {
+            $where[] = 'm.manager_id = :manager_id';
+            $params[':manager_id'] = $managerId;
+        }
+        
+        if (!empty($filters['material_id'])) {
+            $where[] = 'm.id = :material_id';
+            $params[':material_id'] = $filters['material_id'];
+        }
+        
+        if (!empty($filters['start_date'])) {
+            $where[] = 'DATE(mv.opened_at) >= :start_date';
+            $params[':start_date'] = $filters['start_date'];
+        }
+
+        if (!empty($filters['end_date'])) {
+            $where[] = 'DATE(mv.opened_at) <= :end_date';
+            $params[':end_date'] = $filters['end_date'];
+        }
+
+        $whereSql = implode(' AND ', $where);
+
+        $sql = "SELECT 
+                    mv.id,
+                    m.id as material_id,
+                    m.title as material_title,
+                    m.type as material_type,
+                    m.cover_path,
+                    mv.viewer_type,
+                    mv.opened_at,
+                    vs.doctor_name,
+                    rep.name as rep_name
+                FROM material_views mv
+                JOIN materials m ON m.id = mv.material_id
+                LEFT JOIN visit_sessions vs ON vs.id = mv.visit_session_id
+                LEFT JOIN users rep ON rep.id = vs.rep_id OR rep.id = mv.viewer_id
+                WHERE {$whereSql}
+                ORDER BY mv.opened_at DESC";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }

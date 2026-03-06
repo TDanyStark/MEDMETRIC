@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { ExternalLink, FileText, PlayCircle, Share2, Stethoscope } from 'lucide-react'
+import { ExternalLink, FileText, PlayCircle, Share2 } from 'lucide-react'
 import { useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/Badge'

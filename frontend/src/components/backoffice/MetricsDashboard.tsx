@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { LogIn, TrendingUp, Presentation, FileText, CheckCircle2 } from 'lucide-react'
 import { metricsApi } from '@/services/metrics'
 import { cn } from '@/lib/utils'
+import { MaterialViewsTable } from './MaterialViewsTable'
 
 export function MetricsDashboard() {
   const { data: viewsData, isLoading: isLoadingViews } = useQuery({
@@ -161,6 +162,9 @@ export function MetricsDashboard() {
           </div>
         </div>
       </div>
+      
+      {/* Tabla detallada de visualizaciones */}
+      <MaterialViewsTable />
     </div>
   )
 }

@@ -57,6 +57,7 @@ export function SelectedMaterialsPanel({
         <Button className="w-full rounded-2xl shadow-xl shadow-primary/20 h-12 text-base font-semibold" onClick={onNewSession}>
           <Plus className="mr-2 h-5 w-5" /> Nueva sesión
         </Button>
+        
       </div>
     </div>
   )

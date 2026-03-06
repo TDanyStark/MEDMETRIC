@@ -279,8 +279,6 @@ export function RepLibraryPage() {
         <SelectedMaterialsPanel
           selected={selectedMaterials}
           onNewSession={() => setIsSessionDialogOpen(true)}
-          onAddToExisting={() => setIsAddToExistingOpen(true)}
-          hasExistingSessions={(sessionsQuery.data?.items.length ?? 0) > 0}
           onRemove={toggleMaterial}
         />
       </div>
