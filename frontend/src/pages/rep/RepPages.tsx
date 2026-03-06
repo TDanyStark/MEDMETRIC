@@ -142,19 +142,20 @@ export function RepLibraryPage() {
                 return (
                   <Card 
                     key={item.id} 
-                    className={`cursor-pointer overflow-hidden transition-all ${isSelected ? 'ring-2 ring-primary bg-primary/5' : 'hover:border-primary/50'}`}
+                    className={`group cursor-pointer overflow-hidden transition-all duration-300 ${isSelected ? 'ring-2 ring-primary bg-primary/5' : 'hover:border-primary/50 hover:shadow-md'}`}
                     onClick={() => toggleMaterial(item.id)}
                   >
-                    <div className="relative aspect-video bg-muted border-b border-border/10">
+                    <div className="relative aspect-[5/4] bg-muted border-b border-border/10 overflow-hidden">
                       {item.cover_path ? (
                         <img 
                           src={`/api/v1/public/material/${item.id}/cover`} 
-                          className="h-full w-full object-cover transition-transform group-hover:scale-105" 
+                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" 
                           alt={item.title} 
                         />
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center opacity-20">
+                        <div className="flex h-full w-full flex-col items-center justify-center opacity-20 transition-transform duration-500 group-hover:scale-110">
                            <FileText className="h-12 w-12" />
+                           <span className="text-[10px] font-bold mt-2 uppercase tracking-widest">{item.type}</span>
                         </div>
                       )}
                       <div className="absolute top-3 left-3">

@@ -24,7 +24,9 @@ class Material implements JsonSerializable
         private ?string  $approvedAt,
         private ?int     $approvedBy,
         private string   $createdAt,
-        private string   $updatedAt
+        private string   $updatedAt,
+        private ?string  $brandName = null,
+        private ?string  $managerName = null
     ) {}
 
     public function getId(): int           { return $this->id; }
@@ -43,6 +45,8 @@ class Material implements JsonSerializable
     public function getApprovedBy(): ?int   { return $this->approvedBy; }
     public function getCreatedAt(): string { return $this->createdAt; }
     public function getUpdatedAt(): string { return $this->updatedAt; }
+    public function getBrandName(): ?string { return $this->brandName; }
+    public function getManagerName(): ?string { return $this->managerName; }
 
     public function isPdf(): bool    { return $this->type === 'pdf'; }
     public function isVideo(): bool  { return $this->type === 'video'; }
@@ -69,6 +73,8 @@ class Material implements JsonSerializable
             'approved_by'     => $this->approvedBy,
             'created_at'      => $this->createdAt,
             'updated_at'      => $this->updatedAt,
+            'brand_name'      => $this->brandName,
+            'manager_name'    => $this->managerName,
         ];
     }
 
@@ -91,6 +97,8 @@ class Material implements JsonSerializable
             approvedBy:      isset($row['approved_by']) ? (int) $row['approved_by'] : null,
             createdAt:       $row['created_at'],
             updatedAt:       $row['updated_at'],
+            brandName:       $row['brand_name'] ?? null,
+            managerName:     $row['manager_name'] ?? null,
         );
     }
 }

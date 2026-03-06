@@ -66,6 +66,8 @@ export interface Material {
   approved_by: number | null
   created_at: string
   updated_at: string
+  brand_name?: string
+  manager_name?: string
 }
 
 export interface RepCandidate {

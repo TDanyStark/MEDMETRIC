@@ -269,7 +269,7 @@ class DbMaterialRepository implements MaterialRepositoryInterface
                         m.storage_driver, m.storage_path, m.external_url, m.approved_at, m.approved_by, 
                         m.created_at, m.updated_at,
                         b.name as brand_name,
-                        u.first_name as manager_first_name, u.last_name as manager_last_name
+                        u.name as manager_name
                 FROM   materials m
                 JOIN   rep_manager_access rma ON m.manager_id = rma.manager_id
                 JOIN   brands b ON m.brand_id = b.id
