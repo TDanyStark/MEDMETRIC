@@ -18,8 +18,8 @@ function NavItem({ to, label, icon: Icon, badge, isCollapsed }: ReturnType<typeo
       to={to}
       title={isCollapsed ? label : undefined}
       className={({ isActive }) => cn(
-        'group flex items-center transition-all relative',
-        isCollapsed ? 'justify-center mx-auto w-12 h-12 rounded-xl mb-1' : 'gap-4 px-6 py-3.5',
+        'group flex items-center transition-all duration-500 relative mx-3 rounded-xl overflow-hidden',
+        isCollapsed ? 'justify-center w-12 h-12 mb-1 px-0' : 'gap-4 px-4 py-3 mb-1',
         isActive
           ? (isCollapsed ? 'bg-white/10 text-white' : 'bg-gradient-to-r from-white/10 to-transparent text-white')
           : 'text-slate-400 hover:text-white hover:bg-white/5'
@@ -27,15 +27,28 @@ function NavItem({ to, label, icon: Icon, badge, isCollapsed }: ReturnType<typeo
     >
       {({ isActive }) => (
         <>
-          <Icon className={cn("shrink-0 transition-colors", isCollapsed ? "h-6 w-6" : "h-5 w-5", isActive ? "text-white" : "text-slate-400 group-hover:text-white")} />
-          {!isCollapsed && <span className="text-[15px] font-medium leading-none whitespace-nowrap">{label}</span>}
-          {badge && !isCollapsed && (
-            <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-pink-500 text-[10px] font-bold text-white">
-              {badge}
+          <Icon className={cn(
+            "shrink-0 transition-all duration-500", 
+            isCollapsed ? "h-6 w-6" : "h-5 w-5", 
+            isActive ? "text-white" : "text-slate-400 group-hover:text-white"
+          )} />
+          
+          <span className={cn(
+            "text-[15px] font-medium leading-none whitespace-nowrap transition-all duration-500 ease-in-out block overflow-hidden",
+            isCollapsed ? "max-w-0 opacity-0 pointer-events-none" : "max-w-[200px] opacity-100 ml-4"
+          )}>
+            {label}
+          </span>
+
+          {badge && (
+            <span className={cn(
+              "flex items-center justify-center rounded-full bg-pink-500 text-white transition-all duration-500",
+              isCollapsed 
+                ? "absolute top-2 right-2 h-2.5 w-2.5 ring-2 ring-[#1A1C23]" 
+                : "ml-auto h-5 w-5 text-[10px] font-bold"
+            )}>
+              {!isCollapsed && badge}
             </span>
-          )}
-          {badge && isCollapsed && (
-            <span className="absolute top-2 right-2 flex h-2.5 w-2.5 rounded-full bg-pink-500 ring-2 ring-[#1A1C23]" />
           )}
         </>
       )}
@@ -49,12 +62,17 @@ function StaticNavItem({ label, icon: Icon, onClick, isCollapsed }: { label: str
       onClick={onClick}
       title={isCollapsed ? label : undefined}
       className={cn(
-        'group flex items-center transition-all relative text-slate-400 hover:text-white hover:bg-white/5',
-        isCollapsed ? 'justify-center mx-auto w-12 h-12 rounded-xl' : 'w-full gap-4 px-6 py-3.5'
+        'group flex items-center transition-all duration-500 relative text-slate-400 hover:text-white hover:bg-white/5 mx-3 rounded-xl overflow-hidden',
+        isCollapsed ? 'justify-center w-12 h-12' : 'w-full gap-4 px-4 py-3.5'
       )}
     >
-      <Icon className={cn("shrink-0 transition-colors text-slate-400 group-hover:text-white", isCollapsed ? "h-6 w-6" : "h-5 w-5")} />
-      {!isCollapsed && <span className="text-[15px] font-medium leading-none whitespace-nowrap">{label}</span>}
+      <Icon className={cn("shrink-0 transition-all duration-500", isCollapsed ? "h-6 w-6" : "h-5 w-5")} />
+      <span className={cn(
+        "text-[15px] font-medium leading-none whitespace-nowrap transition-all duration-500 ease-in-out block overflow-hidden text-left",
+        isCollapsed ? "max-w-0 opacity-0 pointer-events-none" : "max-w-[200px] opacity-100 ml-4"
+      )}>
+        {label}
+      </span>
     </button>
   )
 }
@@ -88,17 +106,30 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   }
 
   const renderContent = (collapsed: boolean) => (
-    <div className="flex h-full flex-col bg-[#1A1C23] text-slate-300 font-sans transition-all duration-300">
+    <div className="flex h-full flex-col bg-[#1A1C23] text-slate-300 font-sans transition-all duration-500">
       {/* Header Area */}
-      <div className={cn("pt-4 pb-2 mt-2", collapsed ? "px-0 flex justify-center" : "px-6")}>
-        <div className="flex items-center justify-center">
-          <div className={cn("flex items-center overflow-hidden transition-all duration-300 ease-in-out cursor-pointer", collapsed ? "h-[56px] w-[50px] rounded-md justify-start" : "h-[120px] w-auto justify-center")} onClick={() => navigate('/')}>
-            <img src="/MEDMETRIC.webp" alt="Medmetric Logo" className={cn("brightness-0 invert transition-[height,margin] duration-300 max-w-none origin-left", collapsed ? "h-[56px] w-auto -ml-[6px]" : "h-[120px] w-auto")} />
+      <div className={cn("pt-6 pb-2 transition-all duration-500", collapsed ? "px-4 flex justify-center" : "px-8")}>
+        <div 
+          className="relative flex items-center cursor-pointer group" 
+          onClick={() => navigate('/')}
+        >
+          <div className={cn(
+            "flex items-center transition-all duration-500 ease-in-out overflow-hidden rounded-xl",
+            collapsed ? "w-12 h-12 justify-center bg-white/5" : "w-full h-28 justify-center"
+          )}>
+            <img 
+              src="/MEDMETRIC.webp" 
+              alt="Medmetric Logo" 
+              className={cn(
+                "brightness-0 invert transition-all duration-500 ease-in-out object-contain max-w-none origin-center",
+                collapsed ? "h-16 w-auto -ml-3" : "h-[120px] w-auto"
+              )} 
+            />
           </div>
         </div>
       </div>
 
-      <div className={cn("pb-2", collapsed ? "px-4" : "px-6")}>
+      <div className={cn("pb-2 transition-all duration-500", collapsed ? "px-4" : "px-8")}>
         <div className="h-px w-full bg-white/5" />
       </div>
 
@@ -126,18 +157,18 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           <button
             onClick={() => setIsCollapsed(!collapsed)}
             className={cn(
-              "group flex items-center justify-center transition-all text-slate-500 hover:text-white rounded-xl bg-black/20 hover:bg-black/40",
-              collapsed ? "w-12 h-12" : "w-full mx-6 h-12 gap-6"
+              "group flex items-center justify-center transition-all duration-500 text-slate-500 hover:text-white rounded-xl bg-black/20 hover:bg-black/40",
+              collapsed ? "w-12 h-12" : "w-[calc(100%-24px)] mx-3 h-12 gap-6"
             )}
             title={collapsed ? "Expandir menú" : "Ocultar menú"}
           >
             {collapsed ? (
-              <Menu className="h-6 w-6" />
+              <Menu className="h-6 w-6 transition-transform duration-500 group-hover:scale-110" />
             ) : (
-              <>
-                <ChevronLeft className="h-5 w-5" />
+              <div className="flex items-center gap-2">
+                <ChevronLeft className="h-5 w-5 transition-transform duration-500 group-hover:-translate-x-1" />
                 <Menu className="h-5 w-5" />
-              </>
+              </div>
             )}
           </button>
         </div>
@@ -149,7 +180,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     <>
       <aside 
         className={cn(
-          "hidden h-screen shrink-0 border-r border-[#1A1C23] bg-[#1A1C23] md:block transition-all duration-300",
+          "hidden h-screen shrink-0 border-r border-[#1A1C23] bg-[#1A1C23] md:block transition-all duration-500",
           isCollapsed ? "w-20" : "w-72"
         )}
       >
