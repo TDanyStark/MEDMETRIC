@@ -14,7 +14,7 @@ export function AppLayout() {
     <div className="flex min-h-screen bg-background text-foreground">
       <Sidebar isOpen={isSidebarOpen} onClose={handleCloseSidebar} />
       <main className="relative flex-1 overflow-hidden">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(46,119,112,0.14),transparent_30%),radial-gradient(circle_at_bottom_right,rgba(198,149,76,0.14),transparent_24%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(96,41,130,0.14),transparent_30%),radial-gradient(circle_at_bottom_right,rgba(198,149,76,0.14),transparent_24%)]" />
         <div className="sticky top-0 z-30 border-b border-border bg-background px-4 py-3 backdrop-blur md:hidden">
           <button
             type="button"
