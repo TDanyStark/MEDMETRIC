@@ -26,8 +26,10 @@ class ListVisitSessionsAction extends Action
         
         $params = $this->request->getQueryParams();
         $page = (int) ($params['page'] ?? 1);
+        $q = $params['q'] ?? null;
+        $date = $params['date'] ?? null;
 
-        $result = $this->visitSessionRepository->findAllByRep($repId, $page);
+        $result = $this->visitSessionRepository->findAllByRep($repId, $page, $q, $date);
 
         return $this->respondWithData($result);
     }

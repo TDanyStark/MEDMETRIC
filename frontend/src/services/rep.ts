@@ -23,7 +23,7 @@ export function createRepSession(payload: RepSessionPayload) {
   return api.post<ApiResponse<RepSessionResponse>>('/rep/visit-sessions', payload).then(unwrap)
 }
 
-export function listRepSessions(params: { page?: number }) {
+export function listRepSessions(params: { page?: number; q?: string; date?: string }) {
   return api.get<ApiResponse<PaginatedData<RepSession>>>(`/rep/visit-sessions${buildQuery(params)}`).then(unwrap)
 }
 

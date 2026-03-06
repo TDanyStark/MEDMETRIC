@@ -77,21 +77,20 @@ function AddMaterialsDialog({ session, open, onOpenChange }: AddMaterialsDialogP
   })
 
   const existingIds = session.material_ids ?? []
-  const newSelections = selected.filter(id => !existingIds.includes(id))
+  const hasChanges = selected.length !== existingIds.length || selected.some(id => !existingIds.includes(id))
 
   const addMutation = useMutation({
     mutationFn: () => {
-      if (newSelections.length === 0) throw new Error('No has seleccionado ningún material nuevo.')
+      if (!hasChanges) throw new Error('No has realizado ningún cambio.')
       return addMaterialsToSession(session.id, selected)
     },
     onSuccess: () => {
-      toast.success('Materiales agregados a la sesión.')
+      toast.success('Sesión actualizada exitosamente.')
       setDone(true)
-      setSelected([])
       void queryClient.invalidateQueries({ queryKey: ['rep', 'sessions'] })
     },
     onError: (err) => {
-      const msg = err instanceof Error ? err.message : 'Error al agregar materiales.'
+      const msg = err instanceof Error ? err.message : 'Error al actualizar sesión.'
       toast.error(msg)
     },
   })
@@ -179,27 +178,45 @@ function AddMaterialsDialog({ session, open, onOpenChange }: AddMaterialsDialogP
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {materialsQuery.data?.items.map((item: Material) => {
                     const isExisting = existingIds.includes(item.id)
-                    const isSel = selected.includes(item.id)
+                    const isSelected = selected.includes(item.id)
                     
                     return (
                       <div
                         key={item.id}
-                        onClick={() => {
-                          if (!isExisting) toggle(item.id)
-                        }}
-                        className={`flex items-center gap-3 rounded-2xl border p-3 transition-all ${isExisting ? 'bg-muted/50 border-muted opacity-80 cursor-default' : 'cursor-pointer'} ${!isExisting && isSel ? 'ring-2 ring-primary border-primary bg-primary/5' : 'border-border'} ${!isExisting ? 'hover:border-primary/50' : ''}`}
+                        onClick={() => toggle(item.id)}
+                        className={`group flex items-center gap-3 rounded-2xl border p-2.5 transition-all cursor-pointer ${isSelected ? 'ring-2 ring-primary border-primary bg-primary/5' : 'border-border hover:border-primary/50'}`}
                       >
-                        <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0 ${isSel || isExisting ? 'bg-primary border-primary' : 'border-muted-foreground/30'}`}>
-                          {(isSel || isExisting) && <div className="h-2 w-2 rounded-full bg-background" />}
+                        {/* Cover / Icon */}
+                        <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-muted border border-border/50">
+                          {item.cover_path ? (
+                            <img 
+                              src={`/api/v1/public/material/${item.id}/cover`} 
+                              className="h-full w-full object-cover" 
+                              alt="" 
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center opacity-20">
+                               <FileText className="h-5 w-5" />
+                            </div>
+                          )}
+                          <div className={`absolute inset-0 flex items-center justify-center bg-primary/20 transition-opacity ${isSelected ? 'opacity-100' : 'opacity-0'}`}>
+                             <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center border border-background">
+                                <div className="h-2 w-2 rounded-full bg-background" />
+                             </div>
+                          </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-medium text-foreground truncate">{item.title}</p>
+
+                        <div className="flex-1 min-w-0 pr-1">
+                          <div className="flex items-center gap-1.5 mb-0.5">
+                            <p className="text-sm font-semibold text-foreground truncate">{item.title}</p>
                             {isExisting && (
-                              <Badge variant="outline" className="text-[10px] py-0 h-4 bg-background">En sesión</Badge>
+                              <Badge variant="outline" className="text-[9px] py-0 h-3.5 px-1.5 opacity-60">En sesión</Badge>
                             )}
                           </div>
-                          <MaterialTypeLabel type={item.type} />
+                          <div className="flex items-center gap-2">
+                             <MaterialTypeLabel type={item.type} />
+                             <span className="text-[10px] text-muted-foreground font-mono">#{item.id}</span>
+                          </div>
                         </div>
                       </div>
                     )
@@ -216,12 +233,12 @@ function AddMaterialsDialog({ session, open, onOpenChange }: AddMaterialsDialogP
               <div className="flex gap-3">
                 <Button variant="outline" onClick={handleClose}>Cancelar</Button>
                 <Button
-                  disabled={newSelections.length === 0}
+                  disabled={!hasChanges}
                   loading={addMutation.isPending}
                   onClick={() => void addMutation.mutateAsync()}
                 >
                   <Plus className="mr-2 h-4 w-4" /> 
-                  {newSelections.length > 0 ? `Agregar ${newSelections.length} nuevo${newSelections.length > 1 ? 's' : ''}` : 'Agregar materiales'}
+                  {hasChanges ? 'Guardar cambios' : 'Sin cambios'}
                 </Button>
               </div>
             </div>
@@ -249,6 +266,7 @@ export function RepLibraryPage() {
 
   // For "add to existing session" flow
   const [isAddToExistingOpen, setIsAddToExistingOpen] = useState(false)
+  const [sessionSearch, setSessionSearch] = useState('')
   const [targetSessionForAdd, setTargetSessionForAdd] = useState<RepSession | null>(null)
   const [addDone, setAddDone] = useState(false)
 
@@ -259,8 +277,8 @@ export function RepLibraryPage() {
 
   // Fetch recent sessions to allow "add to existing"
   const sessionsQuery = useQuery({
-    queryKey: ['rep', 'sessions', 1],
-    queryFn: () => listRepSessions({ page: 1 }),
+    queryKey: ['rep', 'sessions', 1, sessionSearch],
+    queryFn: () => listRepSessions({ page: 1, q: sessionSearch || undefined }),
   })
 
   const createSessionMutation = useMutation({
@@ -323,6 +341,7 @@ export function RepLibraryPage() {
   const handleCloseAddToExisting = () => {
     setIsAddToExistingOpen(false)
     setTargetSessionForAdd(null)
+    setSessionSearch('')
     setAddDone(false)
   }
 
@@ -535,7 +554,12 @@ export function RepLibraryPage() {
             </div>
           ) : (
             <div className="mt-4 flex flex-col gap-4">
-              <div className="max-h-64 overflow-y-auto space-y-2">
+              <SearchToolbar
+                value={sessionSearch}
+                onChange={setSessionSearch}
+                placeholder="Buscar médico..."
+              />
+              <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
                 {sessionsQuery.isLoading && <LoadingState message="Cargando sesiones..." />}
                 {sessionsQuery.data?.items.map(session => (
                   <div
@@ -577,10 +601,12 @@ export function RepLibraryPage() {
 export function RepHistoryPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const page = getNumberParam(searchParams, 'page')
+  const q = getStringParam(searchParams, 'q')
+  const date = getStringParam(searchParams, 'date')
 
   const sessionsQuery = useQuery({
-    queryKey: ['rep', 'sessions', page],
-    queryFn: () => listRepSessions({ page }),
+    queryKey: ['rep', 'sessions', page, q, date],
+    queryFn: () => listRepSessions({ page, q: q || undefined, date: date || undefined }),
   })
 
   const [addMaterialsTarget, setAddMaterialsTarget] = useState<RepSession | null>(null)
@@ -602,6 +628,23 @@ export function RepHistoryPage() {
       </div>
 
       <div className="flex flex-col gap-6">
+        <SearchToolbar
+          value={q ?? ''}
+          placeholder="Buscar médico..."
+          onChange={val => setSearchParams(prev => updateSearchParams(prev, { q: val || null, page: 1 }))}
+          extra={(
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap">Filtrar por fecha:</span>
+              <Input
+                type="date"
+                value={date ?? ''}
+                onChange={e => setSearchParams(prev => updateSearchParams(prev, { date: e.target.value || null, page: 1 }))}
+                className="w-40 h-10 px-3 bg-background border-border"
+              />
+            </div>
+          )}
+        />
+
         {sessionsQuery.isLoading && <LoadingState message="Cargando historial..." />}
         {sessionsQuery.isError && <ErrorState message="No se pudo cargar el historial." />}
 
