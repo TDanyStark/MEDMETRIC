@@ -9,6 +9,7 @@ import { getRoleHome } from './lib/auth'
 import LoginPage from './pages/LoginPage'
 import NotFoundPage from './pages/NotFoundPage'
 import { ManagerBrandsPage, ManagerMaterialsPage, ManagerRepsPage } from './pages/manager/ManagerPages'
+import { RepLibraryPage, RepHistoryPage } from './pages/rep/RepPages'
 import { OrgAdminAssignmentsPage, OrgAdminBrandsPage, OrgAdminMetricsPage, OrgAdminUsersPage } from './pages/org-admin/OrgAdminPages'
 import PublicVisitPage from './pages/PublicVisitPage'
 import RoleHomePage from './pages/RoleHomePage'
@@ -113,9 +114,9 @@ function App() {
             }
           >
             <Route index element={<RoleHomePage role="rep" />} />
-            <Route path="library" element={<RoleSectionPage role="rep" path="/rep/library" />} />
+            <Route path="library" element={<RepLibraryPage />} />
             <Route path="sessions" element={<RoleSectionPage role="rep" path="/rep/sessions" />} />
-            <Route path="history" element={<RoleSectionPage role="rep" path="/rep/history" />} />
+            <Route path="history" element={<RepHistoryPage />} />
           </Route>
 
           <Route path="*" element={<NotFoundPage />} />

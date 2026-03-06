@@ -340,7 +340,7 @@ Completar operacion interna principal.
 
 ---
 
-## Fase 10 - Frontend Visitador + vista medico
+## [x] Fase 10 - Frontend Visitador + vista medico
 
 ### Objetivo
 
