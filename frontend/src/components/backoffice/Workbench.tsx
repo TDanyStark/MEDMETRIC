@@ -1,4 +1,4 @@
-import { Search, Sparkles } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { ReactNode } from 'react'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'

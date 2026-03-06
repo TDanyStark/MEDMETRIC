@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
-import { BarChart3, BriefcaseMedical, Network, Tags, Users } from 'lucide-react'
+import { Network, Tags, Users } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   ChoicePills,

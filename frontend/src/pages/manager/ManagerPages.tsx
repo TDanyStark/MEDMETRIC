@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
-import { FileStack, Orbit, UsersRound } from 'lucide-react'
+
 import { toast } from 'sonner'
 import {
   ChoicePills,
@@ -31,7 +31,7 @@ import {
   removeManagerRep,
   updateManagerMaterial,
 } from '@/services/backoffice'
-import { Brand, Material, MaterialType, RepAccess } from '@/types/backoffice'
+import { Material, MaterialType, RepAccess } from '@/types/backoffice'
 import { useSearchParams } from 'react-router-dom'
 
 function LoadingState({ message }: { message: string }) {
@@ -165,7 +165,7 @@ function buildMaterialPayload(form: MaterialFormState, editingMaterial: Material
     return payload
   }
 
-  const payload = {
+  const payload: any = {
     title: form.title,
     description: form.description,
     brand_id: form.brand_id ?? 0,
