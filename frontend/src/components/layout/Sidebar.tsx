@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/useAuth'
 import { Sheet, SheetContent } from '@/components/ui/Sheet'
 import { getNavItems } from '@/lib/auth'
 import { cn } from '@/lib/utils'
-import medmetricLogoBlanco from '@/assets/MEDMETRIC_blanco.svg'
+
 
 interface SidebarProps {
   isOpen: boolean
@@ -90,10 +90,10 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const renderContent = (collapsed: boolean) => (
     <div className="flex h-full flex-col bg-[#1A1C23] text-slate-300 font-sans transition-all duration-300">
       {/* Header Area */}
-      <div className={cn("pt-8 pb-6 mt-2", collapsed ? "px-0 flex justify-center" : "px-6")}>
-        <div className={cn("flex items-center", collapsed ? "justify-center" : "gap-3")}>
-          <div className="flex h-10 w-auto shrink-0 items-center justify-center overflow-hidden rounded-md">
-            <img src={medmetricLogoBlanco} alt="MedMetric Logo" className="h-full w-full object-contain" />
+      <div className={cn("pt-4 pb-2 mt-2", collapsed ? "px-0 flex justify-center" : "px-6")}>
+        <div className="flex items-center justify-center">
+          <div className={cn("flex items-center overflow-hidden transition-all duration-300 ease-in-out cursor-pointer", collapsed ? "h-[56px] w-[50px] rounded-md justify-start" : "h-[120px] w-auto justify-center")} onClick={() => navigate('/')}>
+            <img src="/MEDMETRIC.webp" alt="Medmetric Logo" className={cn("brightness-0 invert transition-[height,margin] duration-300 max-w-none origin-left", collapsed ? "h-[56px] w-auto -ml-[6px]" : "h-[120px] w-auto")} />
           </div>
         </div>
       </div>
