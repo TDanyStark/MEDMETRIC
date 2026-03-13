@@ -123,8 +123,8 @@ export default function PublicVisitPage() {
         <div className="mx-auto flex max-w-6xl flex-col gap-4">
           <Skeleton className="h-48 w-full" />
           <div className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
-            <Skeleton className="h-[32rem] w-full" />
-            <Skeleton className="h-[32rem] w-full" />
+            <Skeleton className="h-128 w-full" />
+            <Skeleton className="h-128 w-full" />
           </div>
         </div>
       </div>
@@ -259,7 +259,7 @@ export default function PublicVisitPage() {
               </div>
 
               {!activeMaterial && (
-                <div className="flex min-h-[500px] flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-background/40 backdrop-blur-sm px-10 text-center transition-all duration-500">
+                <div className="flex min-h-125 flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-background/40 backdrop-blur-sm px-10 text-center transition-all duration-500">
                   <div className="rounded-full bg-primary/5 p-8 mb-6 ring-1 ring-primary/20">
                     <Share2 className="h-10 w-10 text-primary animate-pulse" />
                   </div>
@@ -302,7 +302,7 @@ export default function PublicVisitPage() {
               )}
 
               {activeMaterial && resource?.type === 'link' && (
-                <div className="flex min-h-[500px] flex-col items-center justify-center rounded-2xl border border-border bg-background shadow-2xl shadow-purple-500/5 px-10 text-center animate-in zoom-in-95 duration-500">
+                <div className="flex min-h-125 flex-col items-center justify-center rounded-2xl border border-border bg-background shadow-2xl shadow-purple-500/5 px-10 text-center animate-in zoom-in-95 duration-500">
                   <div className="rounded-full bg-amber-500/10 p-8 mb-6 ring-1 ring-amber-500/20">
                     <ExternalLink className="h-12 w-12 text-amber-600" />
                   </div>
