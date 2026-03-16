@@ -1,16 +1,16 @@
 import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { FileText, Copy, Plus, CheckCircle2 } from 'lucide-react'
+import { FileText, Copy, Plus, CheckCircle2, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { 
   EmptyState, 
   SearchToolbar, 
-  SegmentedControl 
 } from '@/components/backoffice/Workbench'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { Select } from '@/components/ui/Select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/Dialog'
-import { listRepMaterials, addMaterialsToSession } from '@/services/rep'
+import { listRepMaterials, addMaterialsToSession, listRepMaterialFilters } from '@/services/rep'
 import { Material, RepSession } from '@/types/rep'
 import { LoadingState, ErrorState, MaterialTypeLabel } from './RepHelpers'
 import { Badge } from '@/components/ui/Badge'
@@ -25,6 +25,8 @@ export function AddMaterialsDialog({ session, open, onOpenChange }: AddMaterials
   const queryClient = useQueryClient()
   const [q, setQ] = useState('')
   const [type, setType] = useState('all')
+  const [managerId, setManagerId] = useState<number | null>(null)
+  const [brandId, setBrandId] = useState<number | null>(null)
   const [selected, setSelected] = useState<number[]>(session.material_ids ?? [])
   const [done, setDone] = useState(false)
   const [createdToken] = useState(session.doctor_token)
@@ -37,8 +39,20 @@ export function AddMaterialsDialog({ session, open, onOpenChange }: AddMaterials
   }, [open, session.material_ids])
 
   const materialsQuery = useQuery({
-    queryKey: ['rep', 'materials-picker', q, type],
-    queryFn: () => listRepMaterials({ q: q || undefined, page: 1, type: type === 'all' ? undefined : type }),
+    queryKey: ['rep', 'materials-picker', q, type, managerId, brandId],
+    queryFn: () => listRepMaterials({ 
+      q: q || undefined, 
+      page: 1, 
+      type: type === 'all' ? undefined : type,
+      manager_id: managerId ?? undefined,
+      brand_id: brandId ?? undefined
+    }),
+    enabled: open,
+  })
+
+  const filtersOptionsQuery = useQuery({
+    queryKey: ['rep', 'material-filters-picker'],
+    queryFn: () => listRepMaterialFilters(),
     enabled: open,
   })
 
@@ -70,7 +84,16 @@ export function AddMaterialsDialog({ session, open, onOpenChange }: AddMaterials
     setSelected([])
     setQ('')
     setType('all')
+    setManagerId(null)
+    setBrandId(null)
     onOpenChange(false)
+  }
+
+  const resetFilters = () => {
+    setQ('')
+    setType('all')
+    setManagerId(null)
+    setBrandId(null)
   }
 
   const copyToClipboard = async (text: string) => {
@@ -84,7 +107,7 @@ export function AddMaterialsDialog({ session, open, onOpenChange }: AddMaterials
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-4xl">
         <DialogHeader>
           <DialogTitle>Agregar materiales a la sesión</DialogTitle>
           <DialogDescription>
@@ -119,29 +142,72 @@ export function AddMaterialsDialog({ session, open, onOpenChange }: AddMaterials
                 onChange={setQ}
                 placeholder="Buscar material..."
                 extra={
-                  <SegmentedControl
-                    value={type}
-                    onChange={setType}
-                    options={[
-                      { label: 'Todos', value: 'all' },
-                      { label: 'PDF', value: 'pdf' },
-                      { label: 'Video', value: 'video' },
-                      { label: 'Link', value: 'link' },
-                    ]}
-                  />
+                  <div className="flex flex-wrap items-center gap-2">
+                    {(q || type !== 'all' || managerId || brandId) && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={resetFilters}
+                        className="h-10 px-2 text-muted-foreground hover:text-destructive"
+                      >
+                        <X className="h-4 w-4 mr-2" />
+                        Limpiar
+                      </Button>
+                    )}
+
+                    <Select
+                      value={type}
+                      onChange={e => setType(e.target.value)}
+                      className="h-10 w-full min-w-[110px] sm:w-auto text-xs"
+                    >
+                      <option value="all">Tipos</option>
+                      <option value="pdf">PDF</option>
+                      <option value="video">Video</option>
+                      <option value="link">Link</option>
+                    </Select>
+
+                    <Select
+                      value={managerId?.toString() ?? ''}
+                      onChange={e => {
+                        setManagerId(e.target.value ? Number(e.target.value) : null)
+                        setBrandId(null)
+                      }}
+                      className="h-10 w-full min-w-[140px] sm:w-auto text-xs"
+                      disabled={filtersOptionsQuery.isLoading}
+                    >
+                      <option value="">Gerentes</option>
+                      {filtersOptionsQuery.data?.managers.map(m => (
+                        <option key={m.manager_id} value={m.manager_id}>{m.manager_name}</option>
+                      ))}
+                    </Select>
+
+                    <Select
+                      value={brandId?.toString() ?? ''}
+                      onChange={e => setBrandId(e.target.value ? Number(e.target.value) : null)}
+                      className="h-10 w-full min-w-[140px] sm:w-auto text-xs"
+                      disabled={filtersOptionsQuery.isLoading}
+                    >
+                      <option value="">Marcas</option>
+                      {filtersOptionsQuery.data?.brands
+                        .filter(b => !managerId || b.manager_id === managerId)
+                        .map(b => (
+                          <option key={`${b.id}-${b.manager_id}`} value={b.id}>{b.name}</option>
+                        ))}
+                    </Select>
+                  </div>
                 }
               />
             </div>
 
             {/* Material Grid */}
-            <div className="mt-2 max-h-[50vh] overflow-y-auto pr-1">
+            <div className="mt-4 max-h-[55vh] overflow-y-auto pr-1">
               {materialsQuery.isLoading && <LoadingState message="Cargando materiales..." />}
               {materialsQuery.isError && <ErrorState message="No se pudo cargar la biblioteca." />}
               {!materialsQuery.isLoading && !materialsQuery.isError && (materialsQuery.data?.items.length ?? 0) === 0 && (
-                <EmptyState title="Sin materiales" description="No hay materiales disponibles." />
+                <EmptyState title="Sin materiales" description="No hay materiales disponibles con esos filtros." />
               )}
               {!materialsQuery.isLoading && !materialsQuery.isError && (materialsQuery.data?.items.length ?? 0) > 0 && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pb-4">
                   {materialsQuery.data?.items.map((item: Material) => {
                     const isExisting = existingIds.includes(item.id)
                     const isSelected = selected.includes(item.id)
