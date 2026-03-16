@@ -240,7 +240,7 @@ class DbMaterialRepository implements MaterialRepositoryInterface
         return $this->findById($id);
     }
 
-    public function findAllApprovedByRep(int $repId, ?string $search = null, ?string $type = null, int $page = 1): array
+    public function findAllApprovedByRep(int $repId, ?string $search = null, ?string $type = null, int $page = 1, ?int $managerId = null, ?int $brandId = null): array
     {
         $pageSize = PaginationConfig::PAGE_SIZE;
         $offset   = ($page - 1) * $pageSize;
@@ -259,6 +259,16 @@ class DbMaterialRepository implements MaterialRepositoryInterface
         if ($type !== null && $type !== '') {
             $where[]      = 'm.type = :type';
             $params[':type'] = $type;
+        }
+
+        if ($managerId !== null) {
+            $where[] = 'm.manager_id = :manager_id';
+            $params[':manager_id'] = $managerId;
+        }
+
+        if ($brandId !== null) {
+            $where[] = 'm.brand_id = :brand_id';
+            $params[':brand_id'] = $brandId;
         }
 
         $whereSql = ' WHERE ' . implode(' AND ', $where);

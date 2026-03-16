@@ -20,4 +20,5 @@ interface BrandRepositoryInterface
     public function assignToManager(int $managerId, int $brandId): void;
     public function removeFromManager(int $managerId, int $brandId): void;
     public function getManagerBrandIds(int $managerId): array;
+    public function findAllAccessibleByRep(int $repId): array;
 }

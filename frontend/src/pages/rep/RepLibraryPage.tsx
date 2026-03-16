@@ -8,7 +8,6 @@ import {
   EmptyState,
   PaginationBar,
   SearchToolbar,
-  SegmentedControl,
 } from '@/components/backoffice/Workbench'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -17,19 +16,21 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Card, CardContent } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 
-import { getNumberParam, getStringParam, updateSearchParams } from '@/lib/search'
+import { getNumberParam, getStringParam, updateSearchParams, getNullableNumberParam } from '@/lib/search'
 import { formatDateTime } from '@/lib/utils'
 import {
   listRepMaterials,
   createRepSession,
   listRepSessions,
   addMaterialsToSession,
+  listRepMaterialFilters,
 } from '@/services/rep'
 import { Material, RepSession } from '@/types/rep'
 import { ApiResponse, MaterialResource } from '@/types'
 import { LoadingState, ErrorState, MaterialTypeLabel } from './components/RepHelpers'
 import { SelectedMaterialsPanel } from './components/SelectedMaterialsPanel'
 import api from '@/services/api'
+import { Select } from '@/components/ui/Select'
 
 export function RepLibraryPage() {
   const queryClient = useQueryClient()
@@ -37,6 +38,8 @@ export function RepLibraryPage() {
   const q = getStringParam(searchParams, 'q')
   const page = getNumberParam(searchParams, 'page')
   const type = getStringParam(searchParams, 'type', 'all')
+  const managerId = getNullableNumberParam(searchParams, 'manager_id')
+  const brandId = getNullableNumberParam(searchParams, 'brand_id')
 
   const [selectedMaterialIds, setSelectedMaterialIds] = useState<number[]>([])
   const [isSessionDialogOpen, setIsSessionDialogOpen] = useState(false)
@@ -74,8 +77,19 @@ export function RepLibraryPage() {
   }, [previewMaterial])
 
   const materialsQuery = useQuery({
-    queryKey: ['rep', 'materials', q, page, type],
-    queryFn: () => listRepMaterials({ q, page, type: type === 'all' ? undefined : type }),
+    queryKey: ['rep', 'materials', q, page, type, managerId, brandId],
+    queryFn: () => listRepMaterials({ 
+      q, 
+      page, 
+      type: type === 'all' ? undefined : type,
+      manager_id: managerId ?? undefined,
+      brand_id: brandId ?? undefined
+    }),
+  })
+
+  const filtersOptionsQuery = useQuery({
+    queryKey: ['rep', 'material-filters'],
+    queryFn: () => listRepMaterialFilters(),
   })
 
   // Fetch recent sessions to allow "add to existing"
@@ -189,16 +203,50 @@ export function RepLibraryPage() {
             onChange={value => setSearchParams(current => updateSearchParams(current, { q: value || null, page: 1 }))}
             placeholder="Buscar material..."
             extra={(
-              <SegmentedControl
-                value={type}
-                onChange={value => setSearchParams(current => updateSearchParams(current, { type: value === 'all' ? null : value, page: 1 }))}
-                options={[
-                  { label: 'Todos', value: 'all' },
-                  { label: 'PDF', value: 'pdf' },
-                  { label: 'Video', value: 'video' },
-                  { label: 'Link', value: 'link' },
-                ]}
-              />
+              <div className="flex flex-wrap items-end gap-3">
+                <Select
+                  value={type}
+                  onChange={e => setSearchParams(current => updateSearchParams(current, { type: e.target.value === 'all' ? null : e.target.value, page: 1 }))}
+                  className="h-11 w-full min-w-[140px] sm:w-auto"
+                >
+                  <option value="all">Tipos</option>
+                  <option value="pdf">PDF</option>
+                  <option value="video">Video</option>
+                  <option value="link">Link</option>
+                </Select>
+                <Select
+                  value={managerId?.toString() ?? ''}
+                  onChange={e => {
+                    const nextManager = e.target.value || null;
+                    setSearchParams(current => updateSearchParams(current, { 
+                      manager_id: nextManager, 
+                      brand_id: null, // Reset brand when manager changes
+                      page: 1 
+                    }));
+                  }}
+                  className="h-11 w-full min-w-[180px] sm:w-auto"
+                  disabled={filtersOptionsQuery.isLoading}
+                >
+                  <option value="">Gerentes</option>
+                  {filtersOptionsQuery.data?.managers.map(m => (
+                    <option key={m.manager_id} value={m.manager_id}>{m.manager_name}</option>
+                  ))}
+                </Select>
+
+                <Select
+                  value={brandId?.toString() ?? ''}
+                  onChange={e => setSearchParams(current => updateSearchParams(current, { brand_id: e.target.value || null, page: 1 }))}
+                  className="h-11 w-full min-w-[180px] sm:w-auto"
+                  disabled={filtersOptionsQuery.isLoading}
+                >
+                  <option value="">Marcas</option>
+                  {filtersOptionsQuery.data?.brands
+                    .filter(b => !managerId || b.manager_id === managerId)
+                    .map(b => (
+                      <option key={`${b.id}-${b.manager_id}`} value={b.id}>{b.name}</option>
+                    ))}
+                </Select>
+              </div>
             )}
           />
 

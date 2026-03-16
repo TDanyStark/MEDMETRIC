@@ -15,8 +15,17 @@ function unwrap<T>(response: ApiResponse<T>): T {
   return response.data
 }
 
-export function listRepMaterials(params: { q?: string; type?: string; page?: number }) {
+export type MaterialFilters = {
+  managers: Array<{ manager_id: number; manager_name: string }>;
+  brands: Array<{ id: number; name: string; manager_id: number }>;
+}
+
+export function listRepMaterials(params: { q?: string; type?: string; page?: number; manager_id?: number; brand_id?: number }) {
   return api.get<ApiResponse<PaginatedData<Material>>>(`/rep/materials${buildQuery(params)}`).then(unwrap)
+}
+
+export function listRepMaterialFilters() {
+  return api.get<ApiResponse<MaterialFilters>>('/rep/materials/filters').then(unwrap)
 }
 
 export function createRepSession(payload: RepSessionPayload) {

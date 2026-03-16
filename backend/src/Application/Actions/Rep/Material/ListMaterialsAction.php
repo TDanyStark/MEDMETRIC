@@ -28,9 +28,11 @@ class ListMaterialsAction extends Action
         $search = $params['q'] ?? null;
         $type = $params['type'] ?? null;
         $page = (int) ($params['page'] ?? 1);
+        $managerId = isset($params['manager_id']) ? (int) $params['manager_id'] : null;
+        $brandId = isset($params['brand_id']) ? (int) $params['brand_id'] : null;
 
         // Get only approved materials from subscribed managers
-        $result = $this->materialRepository->findAllApprovedByRep($repId, $search, $type, $page);
+        $result = $this->materialRepository->findAllApprovedByRep($repId, $search, $type, $page, $managerId, $brandId);
 
         return $this->respondWithData($result);
     }

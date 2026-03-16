@@ -305,4 +305,21 @@ class DbBrandRepository implements BrandRepositoryInterface
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
         return array_map(fn($row) => (int) $row['brand_id'], $rows);
     }
+
+    public function findAllAccessibleByRep(int $repId): array
+    {
+        $sql = "SELECT b.id, b.organization_id, b.name, b.description, b.active, b.created_at, b.updated_at,
+                       mb.manager_id
+                FROM   brands b
+                JOIN   manager_brands mb ON b.id = mb.brand_id
+                JOIN   rep_manager_access rma ON mb.manager_id = rma.manager_id
+                WHERE  rma.rep_id = :rep_id AND rma.active = 1 AND mb.active = 1 AND b.active = 1
+                ORDER  BY b.name ASC";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([':rep_id' => $repId]);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        return $rows; // Return raw rows to include manager_id, or we could map to a hybrid object
+    }
 }
