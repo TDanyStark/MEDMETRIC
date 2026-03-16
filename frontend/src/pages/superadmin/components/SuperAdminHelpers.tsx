@@ -1,5 +1,12 @@
+import { Spinner } from '@/components/ui/Spinner'
+
 export function LoadingState({ message }: { message: string }) {
-  return <div className="rounded-2xl border border-border/80 bg-background/50 px-4 py-8 text-center text-sm text-muted-foreground">{message}</div>
+  return (
+    <div className="flex flex-col items-center justify-center gap-3 rounded-3xl border border-border/50 bg-background/50 px-4 py-12 text-center text-sm text-muted-foreground shadow-sm">
+      <Spinner size="lg" />
+      {message}
+    </div>
+  )
 }
 
 export function ErrorState({ message }: { message: string }) {
