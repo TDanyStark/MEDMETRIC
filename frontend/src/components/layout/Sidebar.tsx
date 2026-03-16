@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
-import { LogOut, ChevronLeft, Menu } from 'lucide-react'
+import { LogOut, ChevronLeft, ChevronRight, User as UserIcon } from 'lucide-react'
 import { useAuth } from '@/contexts/useAuth'
 import { Sheet, SheetContent } from '@/components/ui/Sheet'
+import { Avatar, AvatarFallback } from '@/components/ui/Avatar'
 import { getNavItems } from '@/lib/auth'
 import { cn } from '@/lib/utils'
-
 
 interface SidebarProps {
   isOpen: boolean
@@ -18,33 +18,36 @@ function NavItem({ to, label, icon: Icon, badge, isCollapsed }: ReturnType<typeo
       to={to}
       title={isCollapsed ? label : undefined}
       className={({ isActive }) => cn(
-        'group flex items-center transition-all duration-500 relative mx-3 rounded-xl overflow-hidden',
-        isCollapsed ? 'justify-center w-12 h-12 mb-1 px-0' : 'gap-4 px-4 py-3 mb-1',
+        'group flex items-center transition-all duration-300 relative mx-3 rounded-xl overflow-hidden',
+        isCollapsed ? 'justify-center w-12 h-12 mb-2 px-0' : 'gap-3 px-4 py-3 mb-1',
         isActive
-          ? (isCollapsed ? 'bg-white/10 text-white' : 'bg-gradient-to-r from-white/10 to-transparent text-white')
+          ? 'bg-primary/20 text-white shadow-lg shadow-primary/5'
           : 'text-slate-400 hover:text-white hover:bg-white/5'
       )}
     >
       {({ isActive }) => (
         <>
+          {isActive && !isCollapsed && (
+            <div className="absolute left-0 top-3 bottom-3 w-1 rounded-r-full bg-primary" />
+          )}
           <Icon className={cn(
-            "shrink-0 transition-all duration-500", 
+            "shrink-0 transition-all duration-300", 
             isCollapsed ? "h-6 w-6" : "h-5 w-5", 
-            isActive ? "text-white" : "text-slate-400 group-hover:text-white"
+            isActive ? "text-primary" : "text-slate-400 group-hover:text-white"
           )} />
           
           <span className={cn(
-            "text-[15px] font-medium leading-none whitespace-nowrap transition-all duration-500 ease-in-out block overflow-hidden",
-            isCollapsed ? "max-w-0 opacity-0 pointer-events-none" : "max-w-[200px] opacity-100 ml-4"
+            "text-[15px] font-medium leading-none whitespace-nowrap transition-all duration-300 ease-in-out block overflow-hidden",
+            isCollapsed ? "max-w-0 opacity-0 pointer-events-none" : "max-w-[200px] opacity-100 ml-1"
           )}>
             {label}
           </span>
 
           {badge && (
             <span className={cn(
-              "flex items-center justify-center rounded-full bg-pink-500 text-white transition-all duration-500",
+              "flex items-center justify-center rounded-full bg-primary text-white transition-all duration-300",
               isCollapsed 
-                ? "absolute top-2 right-2 h-2.5 w-2.5 ring-2 ring-[#1A1C23]" 
+                ? "absolute top-1.5 right-1.5 h-3 w-3 ring-2 ring-[#121418]" 
                 : "ml-auto h-5 w-5 text-[10px] font-bold"
             )}>
               {!isCollapsed && badge}
@@ -56,41 +59,22 @@ function NavItem({ to, label, icon: Icon, badge, isCollapsed }: ReturnType<typeo
   )
 }
 
-function StaticNavItem({ label, icon: Icon, onClick, isCollapsed }: { label: string, icon: any, onClick?: () => void, isCollapsed?: boolean }) {
-  return (
-    <button
-      onClick={onClick}
-      title={isCollapsed ? label : undefined}
-      className={cn(
-        'group flex items-center transition-all duration-500 relative text-slate-400 hover:text-white hover:bg-white/5 mx-3 rounded-xl overflow-hidden',
-        isCollapsed ? 'justify-center w-12 h-12' : 'w-full gap-4 px-4 py-3.5'
-      )}
-    >
-      <Icon className={cn("shrink-0 transition-all duration-500", isCollapsed ? "h-6 w-6" : "h-5 w-5")} />
-      <span className={cn(
-        "text-[15px] font-medium leading-none whitespace-nowrap transition-all duration-500 ease-in-out block overflow-hidden text-left",
-        isCollapsed ? "max-w-0 opacity-0 pointer-events-none" : "max-w-[200px] opacity-100 ml-4"
-      )}>
-        {label}
-      </span>
-    </button>
-  )
-}
-
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
-  // Collapse by default on tablet sizes (iPad), expand on large desktop
   const [isCollapsed, setIsCollapsed] = useState(() => {
     if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('sidebar_collapsed')
+      if (saved !== null) return saved === 'true'
       return window.innerWidth >= 768 && window.innerWidth < 1024
     }
     return false
   })
 
   useEffect(() => {
+    localStorage.setItem('sidebar_collapsed', String(isCollapsed))
     document.documentElement.style.setProperty('--sidebar-width', isCollapsed ? '5rem' : '18rem')
   }, [isCollapsed])
 
@@ -105,19 +89,18 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     navigate('/login')
   }
 
-  const renderContent = (collapsed: boolean) => (
-    <div className="flex h-full flex-col bg-[#1A1C23] text-slate-300 font-sans transition-all duration-500">
+  const renderContent = (collapsed: boolean, isMobile = false) => (
+    <div className="flex h-full flex-col bg-[#121418] text-slate-300 font-sans transition-all duration-500 relative border-r border-white/5">
       {/* Header Area */}
-      <div className={cn("pt-8 pb-4 transition-all duration-500", collapsed ? "px-0" : "px-8")}>
+      <div className={cn("pt-10 pb-6 transition-all duration-500", collapsed ? "px-0" : "px-8")}>
         <div 
           className="relative flex items-center justify-center cursor-pointer group" 
           onClick={() => navigate('/')}
         >
           <div className={cn(
             "relative flex items-center justify-center transition-all duration-500 ease-in-out",
-            collapsed ? "w-10 h-10" : "w-full h-24"
+            collapsed ? "w-10 h-10" : "w-full h-20"
           )}>
-            {/* Full Logo (MEDMETRIC.webp) - Visible when expanded */}
             <img 
               src="/MEDMETRIC.webp" 
               alt="Medmetric Logo" 
@@ -127,7 +110,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               )} 
             />
             
-            {/* Icon Logo (favicon.png) - Visible when collapsed */}
             <img 
               src="/favicon.png" 
               alt="Medmetric Icon" 
@@ -140,50 +122,85 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         </div>
       </div>
 
-      <div className={cn("pb-2 transition-all duration-500", collapsed ? "px-4" : "px-8")}>
-        <div className="h-px w-full bg-white/5" />
-      </div>
-
-      <div className="flex-1 overflow-y-auto py-2 pb-8 custom-scrollbar">
-        {/* Main Menu */}
-        {!collapsed && (
-          <div className="mb-2 px-6 py-2 mt-2">
-            <h2 className="text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Main Menu</h2>
-          </div>
-        )}
-        
-        <nav className={cn("space-y-1", collapsed && "px-2 pt-4")}>
+      <div className="flex-1 overflow-y-auto pt-2 pb-6 custom-scrollbar px-3">
+        {/* Navigation */}
+        <nav className="space-y-1">
           {items.map(item => (
             <NavItem key={item.to} {...item} isCollapsed={collapsed} />
           ))}
         </nav>
       </div>
 
-      {/* Footer Area */}
-      <div className="mt-auto mb-4 space-y-2">
-        <StaticNavItem label="Log Out" icon={LogOut} onClick={handleLogout} isCollapsed={collapsed} />
-        
-        {/* Toggle Collapse Button (Only visibly useful on desktop/tablet) */}
-        <div className="hidden md:flex justify-center pb-2">
-          <button
-            onClick={() => setIsCollapsed(!collapsed)}
-            className={cn(
-              "group flex items-center justify-center transition-all duration-500 text-slate-500 hover:text-white rounded-xl bg-black/20 hover:bg-black/40",
-              collapsed ? "w-12 h-12" : "w-[calc(100%-24px)] mx-3 h-12 gap-6"
-            )}
-            title={collapsed ? "Expandir menú" : "Ocultar menú"}
-          >
-            {collapsed ? (
-              <Menu className="h-6 w-6 transition-transform duration-500 group-hover:scale-110" />
-            ) : (
-              <div className="flex items-center gap-2">
-                <ChevronLeft className="h-5 w-5 transition-transform duration-500 group-hover:-translate-x-1" />
-                <Menu className="h-5 w-5" />
-              </div>
-            )}
-          </button>
+      {/* Footer Area with User Profile */}
+      <div className={cn(
+        "mt-auto border-t border-white/5 p-4 bg-white/[0.02] transition-all duration-300",
+        collapsed ? "px-2" : "px-4"
+      )}>
+        <div className={cn(
+          "relative flex items-center rounded-2xl bg-white/5 p-2 transition-all duration-300 hover:bg-white/10 group overflow-hidden",
+          collapsed ? "justify-center" : "gap-3"
+        )}>
+          <Avatar className="h-10 w-10 shrink-0 border border-primary/20">
+              <AvatarFallback className="bg-primary/20 text-primary font-bold uppercase text-xs">
+                {user?.name?.substring(0, 2) || <UserIcon className="h-4 w-4" />}
+              </AvatarFallback>
+          </Avatar>
+          
+          {!collapsed && (
+            <div className="flex flex-1 flex-col overflow-hidden">
+              <span className="truncate text-[13px] font-bold text-white leading-tight">{user?.name}</span>
+              <span className="truncate text-[11px] text-slate-500 capitalize font-medium">{user?.role?.replace('_', ' ')}</span>
+            </div>
+          )}
+
+          {!collapsed && (
+             <button
+                onClick={handleLogout}
+                className="rounded-xl p-2.5 text-slate-400 hover:bg-destructive/10 hover:text-destructive transition-all duration-300"
+                title="Cerrar sesión"
+             >
+                <LogOut className="h-4 w-4" />
+             </button>
+          )}
+
+          {collapsed && (
+            <button
+                onClick={handleLogout}
+                className="absolute inset-0 z-10 opacity-0 group-hover:opacity-100 flex items-center justify-center bg-destructive text-white transition-all duration-300 backdrop-blur-sm"
+                title="Cerrar sesión"
+            >
+                <LogOut className="h-5 w-5" />
+            </button>
+          )}
         </div>
+
+        {/* Toggle Button for Mobile - Hidden on Desktop */}
+        {isMobile && (
+           <div className="mt-4 flex justify-center pb-2">
+           <button
+             onClick={onClose}
+             className="w-full h-11 flex items-center justify-center gap-2 rounded-xl bg-white/5 text-slate-400 hover:text-white transition-colors"
+           >
+             <ChevronLeft className="h-4 w-4" />
+             <span className="text-xs font-semibold uppercase tracking-wider">Cerrar Menú</span>
+           </button>
+         </div>
+        )}
       </div>
+
+      {/* Desktop Toggle Button (Absolute positioned on the border) */}
+      {!isMobile && (
+        <button
+          onClick={() => setIsCollapsed(!collapsed)}
+          className={cn(
+            "absolute -right-3.5 top-24 z-50 flex h-7 w-7 items-center justify-center rounded-full border border-white/10 bg-[#121418] text-slate-400 shadow-xl transition-all hover:scale-110 hover:text-white",
+            "hidden md:flex"
+          )}
+          title={collapsed ? "Expandir" : "Contraer"}
+        >
+          {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+        </button>
+      )}
     </div>
   )
 
@@ -191,19 +208,20 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     <>
       <aside 
         className={cn(
-          "hidden h-screen shrink-0 border-r border-[#1A1C23] bg-[#1A1C23] md:block transition-all duration-500",
+          "hidden h-screen shrink-0 md:block transition-all duration-500 ease-in-out",
           isCollapsed ? "w-20" : "w-72"
         )}
       >
         {renderContent(isCollapsed)}
       </aside>
 
-      {/* Mobile Sidebar (always full width when open) */}
+      {/* Mobile Sidebar */}
       <Sheet open={isOpen} onOpenChange={open => (!open ? onClose() : undefined)}>
-        <SheetContent side="left" className="w-72 border-r border-[#1A1C23] bg-[#1A1C23] p-0">
-          {renderContent(false)}
+        <SheetContent side="left" className="w-[280px] border-none bg-transparent p-0">
+          {renderContent(false, true)}
         </SheetContent>
       </Sheet>
     </>
   )
 }
+
