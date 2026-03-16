@@ -96,12 +96,12 @@ interface SearchToolbarProps {
 
 export function SearchToolbar({ value, onChange, placeholder, extra }: SearchToolbarProps) {
   return (
-    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-      <div className="relative w-full max-w-xl">
+    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div className="relative w-full lg:max-w-xs">
         <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input value={value} onChange={event => onChange(event.target.value)} placeholder={placeholder} className="pl-11" />
+        <Input value={value} onChange={event => onChange(event.target.value)} placeholder={placeholder} className="pl-11 h-11" />
       </div>
-      {extra && <div className="flex flex-wrap gap-2">{extra}</div>}
+      {extra && <div className="flex flex-1 flex-wrap items-center justify-end gap-3">{extra}</div>}
     </div>
   )
 }
