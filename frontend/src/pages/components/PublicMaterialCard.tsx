@@ -31,7 +31,7 @@ export function PublicMaterialCard({
           ? "ring-2 ring-primary bg-primary/5 shadow-lg shadow-primary/10"
           : "hover:border-primary/50 hover:shadow-md border-border/50 bg-background/50 backdrop-blur-sm"
       }`}
-      onClick={() => onClick(item)}
+      onClick={() => onOpenNew(item)}
     >
       <div className="relative aspect-video bg-muted border-b border-border/10 overflow-hidden">
         {item.cover_path ? (
@@ -61,10 +61,10 @@ export function PublicMaterialCard({
             loading={isOpening}
             onClick={(e) => {
               e.stopPropagation();
-              onOpenNew(item);
+              onClick(item);
             }}
           >
-            <Eye className="mr-1.5 h-3 w-3" /> Ver Material
+            <Eye className="mr-1.5 h-3 w-3" /> Vista Previa
           </Button>
         </div>
       </div>
