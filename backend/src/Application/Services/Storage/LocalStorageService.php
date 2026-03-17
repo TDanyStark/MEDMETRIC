@@ -59,6 +59,45 @@ class LocalStorageService implements StorageServiceInterface
         return file_exists($fullPath) && is_file($fullPath);
     }
 
+    public function storeImageAsAvif(UploadedFileInterface $file, string $path, int $width = 1200, int $height = 675): string
+    {
+        $relativePath = ltrim($path, '/');
+        $dir = $this->basePath . '/' . $relativePath;
+
+        if (!is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+
+        $filename = $this->generateFilename($file->getClientFilename());
+        $filename = pathinfo($filename, PATHINFO_FILENAME) . '.avif';
+        $destination = $dir . '/' . $filename;
+
+        // Create temporary file to use with Imagick
+        $tmpPath = sys_get_temp_dir() . '/' . uniqid('imagick_');
+        $file->moveTo($tmpPath);
+
+        try {
+            $imagick = new \Imagick($tmpPath);
+            
+            // Resize and crop to 1200x675 (aspect ratio 16:9)
+            $imagick->cropThumbnailImage($width, $height);
+            
+            // Convert to AVIF
+            $imagick->setImageFormat('avif');
+            $imagick->setCompressionQuality(60); // Good balance for AVIF
+            
+            $imagick->writeImage($destination);
+            $imagick->clear();
+            $imagick->destroy();
+        } finally {
+            if (file_exists($tmpPath)) {
+                unlink($tmpPath);
+            }
+        }
+
+        return $relativePath . '/' . $filename;
+    }
+
     private function generateFilename(?string $originalFilename): string
     {
         if (!$originalFilename) {

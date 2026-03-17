@@ -78,8 +78,13 @@ class UpdateMaterialAction extends Action
             if ($coverFile->getError() === UPLOAD_ERR_OK) {
                 $type = $coverFile->getClientMediaType();
                 if (str_starts_with($type, 'image/')) {
+                    // Delete old cover if exists
+                    if ($material->getCoverPath()) {
+                        $this->storageService->delete($material->getCoverPath());
+                    }
+                    
                     $path = $managerId . '/materialsCover/' . date('Y-m');
-                    $updateData['cover_path'] = $this->storageService->store($coverFile, $path);
+                    $updateData['cover_path'] = $this->storageService->storeImageAsAvif($coverFile, $path);
                 }
             }
         }

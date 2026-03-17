@@ -75,7 +75,7 @@ class CreateMaterialAction extends Action
                 $type = $coverFile->getClientMediaType();
                 if (str_starts_with($type, 'image/')) {
                     $path = $managerId . '/materialsCover/' . date('Y-m');
-                    $materialData['cover_path'] = $this->storageService->store($coverFile, $path);
+                    $materialData['cover_path'] = $this->storageService->storeImageAsAvif($coverFile, $path);
                 }
             }
         }
