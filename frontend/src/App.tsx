@@ -15,7 +15,7 @@ import { OrgAdminAssignmentsPage } from './pages/org-admin/OrgAdminAssignmentsPa
 import { OrgAdminBrandsPage } from './pages/org-admin/OrgAdminBrandsPage'
 import { OrgAdminMetricsPage } from './pages/org-admin/OrgAdminMetricsPage'
 import { OrgAdminUsersPage } from './pages/org-admin/OrgAdminUsersPage'
-import PublicVisitPage from './pages/PublicVisitPage'
+import PublicVisitPage from './pages/public/PublicVisitPage'
 import RoleHomePage from './pages/RoleHomePage'
 import { SuperAdminMetricsPage, SuperAdminOrgAdminsPage, SuperAdminOrganizationsPage } from './pages/superadmin/SuperAdminPages'
 
