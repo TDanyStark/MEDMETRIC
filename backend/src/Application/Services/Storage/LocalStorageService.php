@@ -100,15 +100,9 @@ class LocalStorageService implements StorageServiceInterface
 
     private function generateFilename(?string $originalFilename): string
     {
-        if (!$originalFilename) {
-            return uniqid('file_', true);
-        }
-
-        $extension = pathinfo($originalFilename, PATHINFO_EXTENSION);
-        $basename = pathinfo($originalFilename, PATHINFO_FILENAME);
+        $extension = $originalFilename ? pathinfo($originalFilename, PATHINFO_EXTENSION) : 'bin';
         
-        $safeBasename = preg_replace('/[^a-zA-Z0-9_-]/', '_', $basename);
-        
-        return $safeBasename . '_' . time() . '.' . $extension;
+        // Use a unique ID (random hex string) for the filename to avoid collisions
+        return bin2hex(random_bytes(16)) . '.' . $extension;
     }
 }
