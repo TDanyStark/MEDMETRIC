@@ -116,6 +116,7 @@ export function ManagerMaterialsPage() {
           onSearchChange={value => setSearchParams(current => updateSearchParams(current, { q: value || null, page: 1 }))}
           onStatusChange={value => setSearchParams(current => updateSearchParams(current, { status: value === 'all' ? null : value, page: 1 }))}
           onTypeChange={value => setSearchParams(current => updateSearchParams(current, { type: value === 'all' ? null : value, page: 1 }))}
+          onClear={() => setSearchParams(current => updateSearchParams(current, { q: null, status: null, type: null, page: 1 }))}
         />
 
         {materialsQuery.isLoading && <LoadingState message="Cargando materiales..." />}
