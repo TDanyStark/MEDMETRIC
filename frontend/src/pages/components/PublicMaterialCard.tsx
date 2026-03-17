@@ -85,7 +85,7 @@ export function PublicMaterialCard({
           </TooltipContent>
         </Tooltip>
         {item.description && (
-          <p className="mt-1.5 text-[11px] text-muted-foreground line-clamp-1 leading-relaxed opacity-70">
+          <p className="mt-1.5 text-[10px] text-muted-foreground line-clamp-2 leading-[1.3] opacity-80 min-h-[2rem]">
             {item.description}
           </p>
         )}

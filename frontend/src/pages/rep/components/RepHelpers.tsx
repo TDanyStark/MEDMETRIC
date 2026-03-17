@@ -20,3 +20,11 @@ export function MaterialTypeLabel({ type }: { type: MaterialType }) {
     </Badge>
   )
 }
+
+export function formatDate(dateString: string) {
+  return new Intl.DateTimeFormat('es-ES', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  }).format(new Date(dateString)).replace('.', '')
+}

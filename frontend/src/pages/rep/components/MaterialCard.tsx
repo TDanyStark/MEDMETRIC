@@ -2,7 +2,7 @@ import { FileText, Eye } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Material } from "@/types/rep";
-import { MaterialTypeLabel } from "./RepHelpers";
+import { MaterialTypeLabel, formatDate } from "./RepHelpers";
 import {
   Tooltip,
   TooltipContent,
@@ -73,9 +73,10 @@ export function MaterialCard({
         </div>
       </div>
       <CardContent className="p-4 pt-3">
-        <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60 mb-1">
-          Cód. {item.id}
-        </p>
+        <div className="flex items-center justify-between text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60 mb-2">
+          <span>Cód. {item.id}</span>
+          <span>{formatDate(item.created_at)}</span>
+        </div>
         <Tooltip>
           <TooltipTrigger asChild>
             <h3 className="font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors cursor-default">
@@ -87,7 +88,7 @@ export function MaterialCard({
           </TooltipContent>
         </Tooltip>
         {item.description && (
-          <p className="mt-1.5 text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+          <p className="mt-1.5 text-xs text-muted-foreground line-clamp-2 leading-relaxed min-h-[2.5rem]">
             {item.description}
           </p>
         )}
