@@ -144,9 +144,14 @@ export function MaterialDialog({
           </div>
 
           <div className="rounded-2xl border border-border/50 bg-muted/20 p-4">
-            <label className="text-sm font-semibold text-foreground mb-2 block">
-              Imagen de Portada (Feed)
-            </label>
+            <div className="flex justify-between items-end mb-2">
+              <label className="text-sm font-semibold text-foreground block">
+                Banner para el Feed
+              </label>
+              <span className="text-[11px] font-medium text-primary bg-primary/5 px-2 py-0.5 rounded-full border border-primary/10">
+                1200 x 675px
+              </span>
+            </div>
             <div className="flex items-center gap-4">
               {editingMaterial?.cover_path && !form.cover_file && (
                 <img
