@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { ExternalLink, FileText, PlayCircle, Share2 } from 'lucide-react'
+import { ExternalLink, Share2 } from 'lucide-react'
 import { useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/Badge'
@@ -10,24 +10,8 @@ import { Skeleton } from '@/components/ui/Skeleton'
 import api from '@/services/api'
 import { formatDateTime } from '@/lib/utils'
 import { ApiResponse, MaterialResource, PublicMaterial, PublicVisitPayload } from '@/types'
+import { PublicMaterialCard } from './components/PublicMaterialCard'
 
-function MaterialTypeBadge({ type }: { type: PublicMaterial['type'] }) {
-  const config = {
-    pdf: { label: 'PDF', variant: 'outline' as const, icon: FileText },
-    video: { label: 'Video', variant: 'accent' as const, icon: PlayCircle },
-    link: { label: 'Link', variant: 'warm' as const, icon: ExternalLink },
-  }
-
-  const current = config[type]
-  const Icon = current.icon
-
-  return (
-    <Badge variant={current.variant} className="gap-2">
-      <Icon className="h-3.5 w-3.5" />
-      {current.label}
-    </Badge>
-  )
-}
 
 export default function PublicVisitPage() {
   const { token = '' } = useParams()
@@ -194,58 +178,21 @@ export default function PublicVisitPage() {
               <h2 className="text-xl font-bold tracking-tight text-foreground">Materiales de la visita</h2>
             </div>
             
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
               {sessionQuery.data?.materials && sessionQuery.data.materials.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-border bg-background p-6 text-sm leading-7 text-muted-foreground">
+                <div className="rounded-xl border border-dashed border-border bg-background p-6 text-sm leading-7 text-muted-foreground lg:col-span-1 sm:col-span-2">
                   Esta sesion no tiene materiales aprobados disponibles.
                 </div>
               ) : (
                 sessionQuery.data?.materials.map(material => (
-                  <div 
-                    key={material.id} 
-                    className="group relative cursor-pointer overflow-hidden rounded-xl border border-border bg-background transition-all hover:border-primary/50 hover:shadow-sm"
+                  <PublicMaterialCard
+                    key={material.id}
+                    item={material}
+                    isActive={activeMaterialId === material.id}
+                    isOpening={openingId === material.id}
                     onClick={() => handleOpenMaterial(material)}
-                  >
-                    <div className="flex flex-col sm:flex-row">
-                      {/* Cover Image Side */}
-                      <div className="relative h-40 w-full shrink-0 overflow-hidden bg-muted sm:h-auto sm:w-32">
-                        {material.cover_path ? (
-                          <img 
-                            src={`/api/v1/public/material/${material.id}/cover`} 
-                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" 
-                            alt={material.title} 
-                          />
-                        ) : (
-                          <div className="flex h-full w-full flex-col items-center justify-center opacity-20">
-                             <FileText className="h-8 w-8" />
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Content Side */}
-                      <div className="flex flex-1 flex-col p-5">
-                        <div className="flex flex-wrap items-start justify-between gap-3">
-                          <MaterialTypeBadge type={material.type} />
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant={activeMaterialId === material.id ? 'secondary' : 'outline'}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleOpenMaterial(material, true);
-                            }}
-                            loading={openingId === material.id}
-                          >
-                            Abrir material
-                          </Button>
-                        </div>
-                        <h2 className="mt-4 text-base font-semibold text-foreground">{material.title}</h2>
-                        <p className="mt-1 text-xs leading-relaxed text-muted-foreground line-clamp-2">
-                          {material.description || 'Material listo para la visita.'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+                    onOpenNew={() => handleOpenMaterial(material, true)}
+                  />
                 ))
               )}
             </div>
