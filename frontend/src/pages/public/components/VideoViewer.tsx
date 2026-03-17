@@ -20,7 +20,7 @@ export function VideoViewer({ material, resource }: VideoViewerProps) {
           allowFullScreen
         />
       </div>
-      <Card className="rounded-2xl border-none bg-background/40 backdrop-blur-md">
+      <Card className="rounded-2xl border-none bg-background/20 backdrop-blur-md">
         <CardContent className="p-8">
           <h3 className="text-2xl font-bold text-foreground">{resource.title || material.title}</h3>
           <p className="mt-3 text-base leading-relaxed text-muted-foreground">

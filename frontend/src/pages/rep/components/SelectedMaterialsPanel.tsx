@@ -1,18 +1,16 @@
-import { Stethoscope, Plus, PackagePlus } from 'lucide-react'
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/Sheet'
-import { Button } from '@/components/ui/Button'
-import { Material } from '@/types/rep'
-import { MaterialTypeLabel } from './RepHelpers'
+import { Stethoscope, Plus, PackagePlus } from "lucide-react";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/Sheet";
+import { Button } from "@/components/ui/Button";
+import { Material } from "@/types/rep";
+import { MaterialTypeLabel } from "./RepHelpers";
 
 export function SelectedMaterialsPanel({
   selected,
   onNewSession,
-  onAddToExisting,
   onRemove,
 }: {
   selected: Material[];
   onNewSession: () => void;
-  onAddToExisting: () => void;
   onRemove: (id: number) => void;
 }) {
   const count = selected.length;
@@ -74,13 +72,6 @@ export function SelectedMaterialsPanel({
         >
           <Plus className="mr-2 h-5 w-5" /> Nueva sesión
         </Button>
-        <Button
-          variant="outline"
-          className="w-full rounded-2xl h-11 text-sm font-semibold"
-          onClick={onAddToExisting}
-        >
-          <PackagePlus className="mr-2 h-5 w-5" /> Agregar a existente
-        </Button>
       </div>
     </div>
   );
@@ -88,42 +79,45 @@ export function SelectedMaterialsPanel({
   return (
     <>
       {/* Desktop View: Absoluto a la izquierda (Fixed) */}
-      <div 
+      <div
         className="hidden lg:block fixed bottom-8 w-80 z-40 max-h-[calc(100vh-8rem)] min-h-[400px] transition-all duration-300"
-        style={{ left: 'calc(var(--sidebar-width, 18rem) + 2.5rem)' }}
+        style={{ left: "calc(var(--sidebar-width, 18rem) + 2.5rem)" }}
       >
-         {content}
+        {content}
       </div>
 
       {/* Mobile & Tablet View: Bottom Drawer */}
       <div className="lg:hidden fixed bottom-6 inset-x-0 px-6 z-40">
-         <Sheet>
-           <SheetTrigger asChild>
-             <button className="w-full h-16 bg-primary text-primary-foreground rounded-[1.5rem] shadow-[0_20px_50px_rgba(var(--primary-rgb),0.3)] flex items-center justify-between px-6 animate-in slide-in-from-bottom-8 duration-500 hover:scale-[1.02] active:scale-[0.98] transition-transform backdrop-blur-md">
-                <div className="flex items-center gap-4">
-                   <div className="bg-white/20 h-8 w-8 rounded-full flex items-center justify-center font-bold text-sm">
-                     {count}
-                   </div>
-                   <div className="flex flex-col items-start leading-none">
-                     <span className="font-bold text-base">Materiales listos</span>
-                     <span className="text-[10px] font-bold uppercase tracking-widest opacity-80 mt-1">Toca para gestionar</span>
-                   </div>
+        <Sheet>
+          <SheetTrigger asChild>
+            <button className="w-full h-16 bg-primary text-primary-foreground rounded-[1.5rem] shadow-[0_20px_50px_rgba(var(--primary-rgb),0.3)] flex items-center justify-between px-6 animate-in slide-in-from-bottom-8 duration-500 hover:scale-[1.02] active:scale-[0.98] transition-transform backdrop-blur-md">
+              <div className="flex items-center gap-4">
+                <div className="bg-white/20 h-8 w-8 rounded-full flex items-center justify-center font-bold text-sm">
+                  {count}
                 </div>
-                <div className="bg-white/10 p-2 rounded-xl">
-                  <PackagePlus className="h-5 w-5" />
+                <div className="flex flex-col items-start leading-none">
+                  <span className="font-bold text-base">Materiales listos</span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest opacity-80 mt-1">
+                    Toca para gestionar
+                  </span>
                 </div>
-             </button>
-           </SheetTrigger>
-           <SheetContent side="bottom" className="rounded-t-[3rem] p-0 h-[85vh] border-t-0 bg-transparent overflow-hidden">
-             <div className="h-full bg-background/95 backdrop-blur-2xl rounded-t-[3rem] border-t border-border/40 shadow-2xl flex flex-col">
-                <div className="w-16 h-1.5 bg-border/40 mx-auto mt-5 rounded-full mb-2 shrink-0" />
-                <div className="flex-1 min-h-0">
-                  {content}
-                </div>
-             </div>
-           </SheetContent>
-         </Sheet>
+              </div>
+              <div className="bg-white/10 p-2 rounded-xl">
+                <PackagePlus className="h-5 w-5" />
+              </div>
+            </button>
+          </SheetTrigger>
+          <SheetContent
+            side="bottom"
+            className="rounded-t-[3rem] p-0 h-[85vh] border-t-0 bg-transparent overflow-hidden"
+          >
+            <div className="h-full bg-background/95 backdrop-blur-2xl rounded-t-[3rem] border-t border-border/40 shadow-2xl flex flex-col">
+              <div className="w-16 h-1.5 bg-border/40 mx-auto mt-5 rounded-full mb-2 shrink-0" />
+              <div className="flex-1 min-h-0">{content}</div>
+            </div>
+          </SheetContent>
+        </Sheet>
       </div>
     </>
-  )
+  );
 }

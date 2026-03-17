@@ -87,7 +87,8 @@ export default function PublicVisitPage() {
       setResource(res.data)
 
       if (openInNewWindow || (res.data.type === 'link' && res.data.url)) {
-        const targetUrl = res.data.type === 'link' ? res.data.url : res.data.embed_url || res.data.url
+        // Use the original URL (e.g. YouTube watch URL) when opening in a new tab/window
+        const targetUrl = res.data.url || res.data.embed_url
         if (targetUrl) {
           window.open(targetUrl, '_blank', 'noopener,noreferrer')
         }

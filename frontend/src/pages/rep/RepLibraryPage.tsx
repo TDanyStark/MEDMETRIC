@@ -2,25 +2,16 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 
-import {
-  EmptyState,
-  PaginationBar,
-} from "@/components/backoffice/Workbench";
+import { EmptyState, PaginationBar } from "@/components/backoffice/Workbench";
 import {
   getNumberParam,
   getStringParam,
   updateSearchParams,
   getNullableNumberParam,
 } from "@/lib/search";
-import {
-  listRepMaterials,
-  listRepMaterialFilters,
-} from "@/services/rep";
+import { listRepMaterials, listRepMaterialFilters } from "@/services/rep";
 import { Material } from "@/types/rep";
-import {
-  LoadingState,
-  ErrorState,
-} from "./components/RepHelpers";
+import { LoadingState, ErrorState } from "./components/RepHelpers";
 import { SelectedMaterialsPanel } from "./components/SelectedMaterialsPanel";
 import { MaterialCard } from "./components/MaterialCard";
 import { MaterialFilters } from "./components/MaterialFilters";
@@ -92,7 +83,8 @@ export function RepLibraryPage() {
             Biblioteca de Materiales
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Explora contenido aprobado y selecciona piezas para tu visita médica.
+            Explora contenido aprobado y selecciona piezas para tu visita
+            médica.
           </p>
         </div>
       </div>
@@ -184,7 +176,6 @@ export function RepLibraryPage() {
         <SelectedMaterialsPanel
           selected={selectedMaterials}
           onNewSession={() => setIsSessionDialogOpen(true)}
-          onAddToExisting={() => setIsAddToExistingOpen(true)}
           onRemove={toggleMaterial}
         />
       </div>
