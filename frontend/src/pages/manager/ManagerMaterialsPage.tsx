@@ -15,6 +15,11 @@ import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/Dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 import { getNumberParam, getStringParam, updateSearchParams } from '@/lib/search'
 import {
@@ -235,7 +240,16 @@ export function ManagerMaterialsPage() {
                           </div>
                         )}
                         <div className="min-w-0">
-                          <p className="font-semibold truncate">{item.title}</p>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <p className="font-semibold line-clamp-2 leading-tight cursor-default">
+                                {item.title}
+                              </p>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="max-w-xs">{item.title}</p>
+                            </TooltipContent>
+                          </Tooltip>
                           <p className="text-xs text-muted-foreground truncate max-w-[200px]" title={item.description || ''}>{item.description}</p>
                         </div>
                       </div>

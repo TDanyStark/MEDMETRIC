@@ -3,6 +3,11 @@ import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Material } from "@/types/rep";
 import { MaterialTypeLabel } from "./RepHelpers";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface MaterialCardProps {
   item: Material;
@@ -26,11 +31,11 @@ export function MaterialCard({
       }`}
       onClick={() => onToggle(item.id)}
     >
-      <div className="relative aspect-5/4 bg-muted border-b border-border/10 overflow-hidden">
+      <div className="relative aspect-video bg-muted border-b border-border/10 overflow-hidden">
         {item.cover_path ? (
           <img
             src={`/api/v1/public/material/${item.id}/cover`}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+            className="w-full aspect-video object-cover transition-transform duration-500 group-hover:scale-110"
             alt={item.title}
           />
         ) : (
@@ -71,9 +76,16 @@ export function MaterialCard({
         <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60 mb-1">
           Cód. {item.id}
         </p>
-        <h3 className="font-semibold text-foreground line-clamp-1 group-hover:text-primary transition-colors">
-          {item.title}
-        </h3>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <h3 className="font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors cursor-default">
+              {item.title}
+            </h3>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p className="max-w-xs">{item.title}</p>
+          </TooltipContent>
+        </Tooltip>
         {item.description && (
           <p className="mt-1.5 text-xs text-muted-foreground line-clamp-2 leading-relaxed">
             {item.description}

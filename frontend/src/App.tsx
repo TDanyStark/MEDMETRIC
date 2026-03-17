@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { Toaster } from 'sonner'
+import { TooltipProvider } from './components/ui/tooltip'
 import { ProtectedRoute } from './components/auth/ProtectedRoute'
 import { AppLayout } from './components/layout/AppLayout'
 import { useAuth } from './contexts/useAuth'
@@ -56,74 +57,76 @@ function HomeRedirect() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Toaster position="top-right" richColors closeButton />
-      <BrowserRouter>
-        <SessionBootstrap />
-        <Routes>
-          <Route path="/" element={<HomeRedirect />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/public/visit/:token" element={<PublicVisitPage />} />
+      <TooltipProvider>
+        <Toaster position="top-right" richColors closeButton />
+        <BrowserRouter>
+          <SessionBootstrap />
+          <Routes>
+            <Route path="/" element={<HomeRedirect />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/public/visit/:token" element={<PublicVisitPage />} />
 
-          <Route
-            path="/superadmin"
-            element={
-              <ProtectedRoute roles={['superadmin']}>
-                <AppLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<RoleHomePage role="superadmin" />} />
-            <Route path="organizations" element={<SuperAdminOrganizationsPage />} />
-            <Route path="org-admins" element={<SuperAdminOrgAdminsPage />} />
-            <Route path="metrics" element={<SuperAdminMetricsPage />} />
-          </Route>
+            <Route
+              path="/superadmin"
+              element={
+                <ProtectedRoute roles={['superadmin']}>
+                  <AppLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<RoleHomePage role="superadmin" />} />
+              <Route path="organizations" element={<SuperAdminOrganizationsPage />} />
+              <Route path="org-admins" element={<SuperAdminOrgAdminsPage />} />
+              <Route path="metrics" element={<SuperAdminMetricsPage />} />
+            </Route>
 
-          <Route
-            path="/org-admin"
-            element={
-              <ProtectedRoute roles={['org_admin']}>
-                <AppLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<RoleHomePage role="org_admin" />} />
-            <Route path="users" element={<OrgAdminUsersPage />} />
-            <Route path="brands" element={<OrgAdminBrandsPage />} />
-            <Route path="assignments" element={<OrgAdminAssignmentsPage />} />
-            <Route path="metrics" element={<OrgAdminMetricsPage />} />
-          </Route>
+            <Route
+              path="/org-admin"
+              element={
+                <ProtectedRoute roles={['org_admin']}>
+                  <AppLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<RoleHomePage role="org_admin" />} />
+              <Route path="users" element={<OrgAdminUsersPage />} />
+              <Route path="brands" element={<OrgAdminBrandsPage />} />
+              <Route path="assignments" element={<OrgAdminAssignmentsPage />} />
+              <Route path="metrics" element={<OrgAdminMetricsPage />} />
+            </Route>
 
-          <Route
-            path="/manager"
-            element={
-              <ProtectedRoute roles={['manager']}>
-                <AppLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<RoleHomePage role="manager" />} />
-            <Route path="brands" element={<ManagerBrandsPage />} />
-            <Route path="materials" element={<ManagerMaterialsPage />} />
-            <Route path="reps" element={<ManagerRepsPage />} />
-            <Route path="metrics" element={<ManagerMetricsPage />} />
-          </Route>
+            <Route
+              path="/manager"
+              element={
+                <ProtectedRoute roles={['manager']}>
+                  <AppLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<RoleHomePage role="manager" />} />
+              <Route path="brands" element={<ManagerBrandsPage />} />
+              <Route path="materials" element={<ManagerMaterialsPage />} />
+              <Route path="reps" element={<ManagerRepsPage />} />
+              <Route path="metrics" element={<ManagerMetricsPage />} />
+            </Route>
 
-          <Route
-            path="/rep"
-            element={
-              <ProtectedRoute roles={['rep']}>
-                <AppLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<RoleHomePage role="rep" />} />
-            <Route path="library" element={<RepLibraryPage />} />
-            <Route path="history" element={<RepHistoryPage />} />
-          </Route>
+            <Route
+              path="/rep"
+              element={
+                <ProtectedRoute roles={['rep']}>
+                  <AppLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<RoleHomePage role="rep" />} />
+              <Route path="library" element={<RepLibraryPage />} />
+              <Route path="history" element={<RepHistoryPage />} />
+            </Route>
 
-          <Route path="*" element={<NotFoundPage />} />
-        </Routes>
-      </BrowserRouter>
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
     </QueryClientProvider>
   )
 }

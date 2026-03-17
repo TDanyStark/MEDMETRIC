@@ -14,6 +14,11 @@ import { listRepMaterials, addMaterialsToSession, listRepMaterialFilters } from 
 import { Material, RepSession } from '@/types/rep'
 import { LoadingState, ErrorState, MaterialTypeLabel } from './RepHelpers'
 import { Badge } from '@/components/ui/Badge'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface AddMaterialsDialogProps {
   session: RepSession
@@ -240,9 +245,18 @@ export function AddMaterialsDialog({ session, open, onOpenChange }: AddMaterials
 
                         <div className="flex-1 min-w-0 pr-1">
                           <div className="flex items-center gap-1.5 mb-0.5">
-                            <p className="text-sm font-semibold text-foreground truncate">{item.title}</p>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <p className="text-sm font-semibold text-foreground line-clamp-2 leading-tight cursor-default">
+                                  {item.title}
+                                </p>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="max-w-xs">{item.title}</p>
+                              </TooltipContent>
+                            </Tooltip>
                             {isExisting && (
-                              <Badge variant="outline" className="text-[9px] py-0 h-3.5 px-1.5 opacity-60">En sesión</Badge>
+                              <Badge variant="outline" className="text-[9px] py-0 h-3.5 px-1.5 opacity-60 shrink-0">En sesión</Badge>
                             )}
                           </div>
                           <div className="flex items-center gap-2">
