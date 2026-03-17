@@ -275,7 +275,7 @@ export function RepLibraryPage() {
                       }),
                     )
                   }
-                  className="h-11 w-full min-w-[120px] sm:w-auto"
+                  className="h-11 w-full min-w-30 sm:w-auto"
                 >
                   <option value="all">Tipos</option>
                   <option value="pdf">PDF</option>
@@ -295,7 +295,7 @@ export function RepLibraryPage() {
                       }),
                     );
                   }}
-                  className="h-11 w-full min-w-[180px] sm:w-auto"
+                  className="h-11 w-full min-w-45 sm:w-auto"
                   disabled={filtersOptionsQuery.isLoading}
                 >
                   <option value="">Gerentes</option>
@@ -316,7 +316,7 @@ export function RepLibraryPage() {
                       }),
                     )
                   }
-                  className="h-11 w-full min-w-[160px] sm:w-auto"
+                  className="h-11 w-full min-w-40 sm:w-auto"
                   disabled={filtersOptionsQuery.isLoading}
                 >
                   <option value="">Marcas</option>
@@ -360,7 +360,7 @@ export function RepLibraryPage() {
                       className={`group cursor-pointer overflow-hidden transition-all duration-300 ${isSelected ? "ring-2 ring-primary bg-primary/5" : "hover:border-primary/50 hover:shadow-md"}`}
                       onClick={() => toggleMaterial(item.id)}
                     >
-                      <div className="relative aspect-[5/4] bg-muted border-b border-border/10 overflow-hidden">
+                      <div className="relative aspect-5/4 bg-muted border-b border-border/10 overflow-hidden">
                         {item.cover_path ? (
                           <img
                             src={`/api/v1/public/material/${item.id}/cover`}
@@ -385,7 +385,7 @@ export function RepLibraryPage() {
                             <div className="h-2 w-2 rounded-full bg-background" />
                           )}
                         </div>
-                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-3 pt-8 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/60 to-transparent p-3 pt-8 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                           <Button
                             size="sm"
                             variant="secondary"
