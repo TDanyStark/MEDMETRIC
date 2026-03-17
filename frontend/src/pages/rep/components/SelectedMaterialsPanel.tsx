@@ -7,14 +7,16 @@ import { MaterialTypeLabel } from './RepHelpers'
 export function SelectedMaterialsPanel({
   selected,
   onNewSession,
-  onRemove
+  onAddToExisting,
+  onRemove,
 }: {
-  selected: Material[]
-  onNewSession: () => void
-  onRemove: (id: number) => void
+  selected: Material[];
+  onNewSession: () => void;
+  onAddToExisting: () => void;
+  onRemove: (id: number) => void;
 }) {
-  const count = selected.length
-  if (count === 0) return null
+  const count = selected.length;
+  if (count === 0) return null;
 
   const content = (
     <div className="flex flex-col bg-background/95 backdrop-blur-xl border border-border/50 shadow-2xl rounded-[2.5rem] overflow-hidden animate-in zoom-in-95 duration-300 ring-1 ring-primary/10 h-full">
@@ -24,43 +26,64 @@ export function SelectedMaterialsPanel({
         </div>
         <div className="flex items-center gap-2.5 mb-1.5 relative">
           <div className="h-2.5 w-2.5 rounded-full bg-primary animate-pulse" />
-          <h3 className="font-bold text-lg tracking-tight text-foreground">Selección Actual</h3>
+          <h3 className="font-bold text-lg tracking-tight text-foreground">
+            Selección Actual
+          </h3>
         </div>
         <p className="text-xs font-bold text-muted-foreground uppercase tracking-[0.15em] relative">
-          {count} material{count > 1 ? 'es' : ''} listo{count > 1 ? 's' : ''}
+          {count} material{count > 1 ? "es" : ""} listo{count > 1 ? "s" : ""}
         </p>
       </div>
-      
+
       <div className="flex-1 p-6 pt-4 overflow-y-auto space-y-3 custom-scrollbar min-h-0">
-        {selected.map(m => (
-          <div key={m.id} className="group relative text-sm bg-background/50 border border-border/50 p-3.5 rounded-2xl shadow-sm hover:border-primary/40 hover:bg-background transition-all">
-             <div className="flex items-start justify-between gap-3">
-               <div className="flex-1 space-y-1.5">
-                  <div className="flex items-center gap-2">
-                    <MaterialTypeLabel type={m.type} />
-                    <span className="text-[10px] font-mono text-muted-foreground">#{m.id}</span>
-                  </div>
-                  <span className="block font-semibold text-foreground leading-snug group-hover:text-primary transition-colors pr-2">{m.title}</span>
-               </div>
-               <button 
-                 onClick={(e) => { e.stopPropagation(); onRemove(m.id); }}
-                 className="h-7 w-7 rounded-full bg-muted/50 flex items-center justify-center text-muted-foreground hover:bg-destructive hover:text-white transition-colors shrink-0"
-                >
-                  <Plus className="h-3.5 w-3.5 rotate-45" />
-               </button>
-             </div>
+        {selected.map((m) => (
+          <div
+            key={m.id}
+            className="group relative text-sm bg-background/50 border border-border/50 p-3.5 rounded-2xl shadow-sm hover:border-primary/40 hover:bg-background transition-all"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1 space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <MaterialTypeLabel type={m.type} />
+                  <span className="text-[10px] font-mono text-muted-foreground">
+                    #{m.id}
+                  </span>
+                </div>
+                <span className="block font-semibold text-foreground leading-snug group-hover:text-primary transition-colors pr-2">
+                  {m.title}
+                </span>
+              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRemove(m.id);
+                }}
+                className="h-7 w-7 rounded-full bg-muted/50 flex items-center justify-center text-muted-foreground hover:bg-destructive hover:text-white transition-colors shrink-0"
+              >
+                <Plus className="h-3.5 w-3.5 rotate-45" />
+              </button>
+            </div>
           </div>
         ))}
       </div>
 
       <div className="p-6 bg-muted/30 border-t border-border/40 flex flex-col gap-3 mt-auto">
-        <Button className="w-full rounded-2xl shadow-xl shadow-primary/20 h-12 text-base font-semibold" onClick={onNewSession}>
+        <Button
+          className="w-full rounded-2xl shadow-xl shadow-primary/20 h-11 text-sm font-semibold"
+          onClick={onNewSession}
+        >
           <Plus className="mr-2 h-5 w-5" /> Nueva sesión
         </Button>
-        
+        <Button
+          variant="outline"
+          className="w-full rounded-2xl h-11 text-sm font-semibold"
+          onClick={onAddToExisting}
+        >
+          <PackagePlus className="mr-2 h-5 w-5" /> Agregar a existente
+        </Button>
       </div>
     </div>
-  )
+  );
 
   return (
     <>
