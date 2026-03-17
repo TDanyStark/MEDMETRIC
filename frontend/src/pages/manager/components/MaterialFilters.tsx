@@ -1,6 +1,6 @@
 import { X } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
-import { Select } from '@/components/ui/Select'
+import { CustomSelect } from '@/components/ui/CustomSelect'
 import { SearchToolbar } from '@/components/backoffice/Workbench'
 
 interface MaterialFiltersProps {
@@ -43,26 +43,32 @@ export function MaterialFilters({
             </Button>
           )}
 
-          <Select
-            value={status}
-            onChange={(e) => onStatusChange(e.target.value)}
-            className="h-11 w-full min-w-32 sm:w-auto"
-          >
-            <option value="all">Estados</option>
-            <option value="draft">Borrador</option>
-            <option value="approved">Aprobado</option>
-          </Select>
+          <CustomSelect
+            instanceId="status-filter"
+            value={{ label: status === 'all' ? 'Estados' : status === 'draft' ? 'Borrador' : 'Aprobado', value: status }}
+            onChange={(option) => onStatusChange((option as any).value)}
+            options={[
+              { label: 'Estados', value: 'all' },
+              { label: 'Borrador', value: 'draft' },
+              { label: 'Aprobado', value: 'approved' },
+            ]}
+            className="w-full min-w-32 sm:w-auto"
+            isSearchable={false}
+          />
 
-          <Select
-            value={type}
-            onChange={(e) => onTypeChange(e.target.value)}
-            className="h-11 w-full min-w-32 sm:w-auto"
-          >
-            <option value="all">Tipos</option>
-            <option value="pdf">PDF</option>
-            <option value="video">Video</option>
-            <option value="link">Link</option>
-          </Select>
+          <CustomSelect
+            instanceId="type-filter"
+            value={{ label: type === 'all' ? 'Tipos' : type.toUpperCase(), value: type }}
+            onChange={(option) => onTypeChange((option as any).value)}
+            options={[
+              { label: 'Tipos', value: 'all' },
+              { label: 'PDF', value: 'pdf' },
+              { label: 'Video', value: 'video' },
+              { label: 'Link', value: 'link' },
+            ]}
+            className="w-full min-w-32 sm:w-auto"
+            isSearchable={false}
+          />
         </div>
       }
     />

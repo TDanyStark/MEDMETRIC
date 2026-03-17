@@ -8,9 +8,9 @@ import {
   EmptyState,
   PaginationBar,
   SearchToolbar,
-  SegmentedControl,
   ToggleField,
 } from '@/components/backoffice/Workbench'
+import { CustomSelect } from '@/components/ui/CustomSelect'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -146,14 +146,17 @@ export function SuperAdminOrgAdminsPage() {
           onChange={value => setSearchParams(current => updateSearchParams(current, { q: value || null, page: 1 }))}
           placeholder="Buscar por nombre o correo..."
           extra={(
-            <SegmentedControl
-              value={organizationId ? String(organizationId) : 'all'}
-              onChange={value => setSearchParams(current => updateSearchParams(current, { organization_id: value === 'all' ? null : Number(value), page: 1 }))}
-              options={[
-                { label: 'Todas las Orgs', value: 'all' },
-                ...(organizationsQuery.data?.items ?? []).map(item => ({ label: item.name, value: String(item.id) })),
-              ]}
-            />
+          <CustomSelect
+            instanceId="org-filter"
+            value={organizationId ? { label: organizationsQuery.data?.items.find(o => o.id === organizationId)?.name ?? 'Todas las Orgs', value: organizationId } : { label: 'Todas las Orgs', value: 'all' }}
+            onChange={(option: any) => setSearchParams(current => updateSearchParams(current, { organization_id: option.value === 'all' ? null : Number(option.value), page: 1 }))}
+            options={[
+              { label: 'Todas las Orgs', value: 'all' },
+              ...(organizationsQuery.data?.items ?? []).map(item => ({ label: item.name, value: item.id })),
+            ]}
+            className="w-full min-w-48 sm:w-auto"
+            isLoading={organizationsQuery.isLoading}
+          />
           )}
         />
 
@@ -236,17 +239,16 @@ export function SuperAdminOrgAdminsPage() {
               onChange={event => setForm(current => ({ ...current, password: event.target.value }))}
               required={!editingAdmin}
             />
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-foreground">Asignar a Organización</label>
-              <SegmentedControl
-                value={form.organization_id ? String(form.organization_id) : 'none'}
-                onChange={value => setForm(current => ({ ...current, organization_id: value === 'none' ? null : Number(value) }))}
-                options={[
-                  { label: 'Sin asignar', value: 'none' },
-                  ...(organizationsQuery.data?.items ?? []).map(item => ({ label: item.name, value: String(item.id) })),
-                ]}
-              />
-            </div>
+            <CustomSelect
+              label="Asignar a Organización"
+              instanceId="org-assignment"
+              placeholder="Selecciona una organización"
+              value={form.organization_id ? { label: organizationsQuery.data?.items.find(o => o.id === form.organization_id)?.name ?? '', value: form.organization_id } : null}
+              onChange={(option: any) => setForm(current => ({ ...current, organization_id: option ? Number(option.value) : null }))}
+              options={organizationsQuery.data?.items.map(item => ({ label: item.name, value: item.id })) || []}
+              isLoading={organizationsQuery.isLoading}
+              required
+            />
             <ToggleField
               checked={form.active}
               onChange={active => setForm(current => ({ ...current, active }))}

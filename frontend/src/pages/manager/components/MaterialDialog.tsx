@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
 import { SegmentedControl } from '@/components/backoffice/Workbench'
 import { Material, MaterialType, Brand } from '@/types/backoffice'
+import { CustomSelect } from '@/components/ui/CustomSelect'
 
 interface MaterialFormState {
   title: string
@@ -122,26 +123,20 @@ export function MaterialDialog({
             onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
           />
 
-          <div className="space-y-2">
-            <label className="text-sm font-semibold text-foreground">Marca</label>
-            <select
-              className="w-full rounded-2xl border border-input bg-background px-4 py-2.5 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              value={form.brand_id ?? ''}
-              onChange={(event) =>
-                setForm((current) => ({ ...current, brand_id: Number(event.target.value) }))
-              }
-              required
-            >
-              <option value="" disabled>
-                Selecciona una marca
-              </option>
-              {brands.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
-          </div>
+<CustomSelect
+  label="Marca"
+  placeholder="Selecciona una marca"
+  value={brands.find((b) => b.id === form.brand_id)}
+  onChange={(option) => {
+    if (option) {
+      setForm((current) => ({ ...current, brand_id: (option as Brand).id }))
+    }
+  }}
+  options={brands}
+  getOptionLabel={(option) => (option as Brand).name}
+  getOptionValue={(option) => String((option as Brand).id)}
+  required
+/>
 
           <div className="rounded-2xl border border-border/50 bg-muted/20 p-4">
             <div className="flex justify-between items-end mb-2">

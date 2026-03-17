@@ -8,7 +8,7 @@ import {
 } from '@/components/backoffice/Workbench'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { Select } from '@/components/ui/Select'
+import { CustomSelect } from '@/components/ui/CustomSelect'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/Dialog'
 import { listRepMaterials, addMaterialsToSession, listRepMaterialFilters } from '@/services/rep'
 import { Material, RepSession } from '@/types/rep'
@@ -160,45 +160,48 @@ export function AddMaterialsDialog({ session, open, onOpenChange }: AddMaterials
                       </Button>
                     )}
 
-                    <Select
-                      value={type}
-                      onChange={e => setType(e.target.value)}
-                      className="h-10 w-full min-w-[110px] sm:w-auto text-xs"
-                    >
-                      <option value="all">Tipos</option>
-                      <option value="pdf">PDF</option>
-                      <option value="video">Video</option>
-                      <option value="link">Link</option>
-                    </Select>
+                    <CustomSelect
+                      instanceId="picker-type-filter"
+                      value={{ label: type === 'all' ? 'Tipos' : type.toUpperCase(), value: type }}
+                      onChange={(option: any) => setType(option.value)}
+                      options={[
+                        { label: 'Tipos', value: 'all' },
+                        { label: 'PDF', value: 'pdf' },
+                        { label: 'Video', value: 'video' },
+                        { label: 'Link', value: 'link' },
+                      ]}
+                      className="w-full min-w-[110px] sm:w-auto"
+                      isSearchable={false}
+                    />
 
-                    <Select
-                      value={managerId?.toString() ?? ''}
-                      onChange={e => {
-                        setManagerId(e.target.value ? Number(e.target.value) : null)
+                    <CustomSelect
+                      instanceId="picker-manager-filter"
+                      value={filtersOptionsQuery.data?.managers.find(m => m.manager_id === managerId) ? { label: filtersOptionsQuery.data?.managers.find(m => m.manager_id === managerId)?.manager_name ?? 'Gerentes', value: managerId } : { label: 'Gerentes', value: '' }}
+                      onChange={(option: any) => {
+                        setManagerId(option.value ? Number(option.value) : null)
                         setBrandId(null)
                       }}
-                      className="h-10 w-full min-w-[140px] sm:w-auto text-xs"
-                      disabled={filtersOptionsQuery.isLoading}
-                    >
-                      <option value="">Gerentes</option>
-                      {filtersOptionsQuery.data?.managers.map(m => (
-                        <option key={m.manager_id} value={m.manager_id}>{m.manager_name}</option>
-                      ))}
-                    </Select>
+                      options={[
+                        { label: 'Gerentes', value: '' },
+                        ...(filtersOptionsQuery.data?.managers.map(m => ({ label: m.manager_name, value: m.manager_id })) || [])
+                      ]}
+                      className="w-full min-w-[140px] sm:w-auto"
+                      isLoading={filtersOptionsQuery.isLoading}
+                    />
 
-                    <Select
-                      value={brandId?.toString() ?? ''}
-                      onChange={e => setBrandId(e.target.value ? Number(e.target.value) : null)}
-                      className="h-10 w-full min-w-[140px] sm:w-auto text-xs"
-                      disabled={filtersOptionsQuery.isLoading}
-                    >
-                      <option value="">Marcas</option>
-                      {filtersOptionsQuery.data?.brands
-                        .filter(b => !managerId || b.manager_id === managerId)
-                        .map(b => (
-                          <option key={`${b.id}-${b.manager_id}`} value={b.id}>{b.name}</option>
-                        ))}
-                    </Select>
+                    <CustomSelect
+                      instanceId="picker-brand-filter"
+                      value={brandId ? { label: filtersOptionsQuery.data?.brands.find(b => b.id === brandId)?.name ?? 'Marcas', value: brandId } : { label: 'Marcas', value: '' }}
+                      onChange={(option: any) => setBrandId(option.value ? Number(option.value) : null)}
+                      options={[
+                        { label: 'Marcas', value: '' },
+                        ...(filtersOptionsQuery.data?.brands
+                          .filter(b => !managerId || b.manager_id === managerId)
+                          .map(b => ({ label: b.name, value: b.id })) || [])
+                      ]}
+                      className="w-full min-w-[140px] sm:w-auto"
+                      isLoading={filtersOptionsQuery.isLoading}
+                    />
                   </div>
                 }
               />

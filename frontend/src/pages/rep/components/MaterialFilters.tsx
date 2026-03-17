@@ -1,7 +1,7 @@
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { SearchToolbar } from "@/components/backoffice/Workbench";
-import { Select } from "@/components/ui/Select";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 import { MaterialFilters as MaterialFiltersType } from "@/services/rep";
 
 interface MaterialFiltersProps {
@@ -52,52 +52,45 @@ export function MaterialFilters({
             </Button>
           )}
 
-          <Select
-            value={type}
-            onChange={(e) => onTypeChange(e.target.value)}
-            className="h-11 w-full min-w-30 sm:w-auto"
-          >
-            <option value="all">Tipos</option>
-            <option value="pdf">PDF</option>
-            <option value="video">Video</option>
-            <option value="link">Link</option>
-          </Select>
+          <CustomSelect
+            instanceId="type-filter"
+            value={{ label: type === 'all' ? 'Tipos' : type.toUpperCase(), value: type }}
+            onChange={(option: any) => onTypeChange(option.value)}
+            options={[
+              { label: 'Tipos', value: 'all' },
+              { label: 'PDF', value: 'pdf' },
+              { label: 'Video', value: 'video' },
+              { label: 'Link', value: 'link' },
+            ]}
+            className="w-full min-w-32 sm:w-auto"
+            isSearchable={false}
+          />
 
-          <Select
-            value={managerId?.toString() ?? ""}
-            onChange={(e) => {
-              const val = e.target.value ? Number(e.target.value) : null;
-              onManagerChange(val);
-            }}
-            className="h-11 w-full min-w-45 sm:w-auto"
-            disabled={isLoadingFilters}
-          >
-            <option value="">Gerentes</option>
-            {filtersOptions?.managers.map((m) => (
-              <option key={m.manager_id} value={m.manager_id}>
-                {m.manager_name}
-              </option>
-            ))}
-          </Select>
+          <CustomSelect
+            instanceId="manager-filter"
+            value={filtersOptions?.managers.find(m => m.manager_id === managerId) ? { label: filtersOptions?.managers.find(m => m.manager_id === managerId)?.manager_name ?? 'Gerentes', value: managerId } : { label: 'Gerentes', value: '' }}
+            onChange={(option: any) => onManagerChange(option.value ? Number(option.value) : null)}
+            options={[
+              { label: 'Gerentes', value: '' },
+              ...(filtersOptions?.managers.map((m) => ({ label: m.manager_name, value: m.manager_id })) || [])
+            ]}
+            className="w-full min-w-44 sm:w-auto"
+            isLoading={isLoadingFilters}
+          />
 
-          <Select
-            value={brandId?.toString() ?? ""}
-            onChange={(e) => {
-              const val = e.target.value ? Number(e.target.value) : null;
-              onBrandChange(val);
-            }}
-            className="h-11 w-full min-w-40 sm:w-auto"
-            disabled={isLoadingFilters}
-          >
-            <option value="">Marcas</option>
-            {filtersOptions?.brands
-              .filter((b) => !managerId || b.manager_id === managerId)
-              .map((b) => (
-                <option key={`${b.id}-${b.manager_id}`} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-          </Select>
+          <CustomSelect
+            instanceId="brand-filter"
+            value={brandId ? { label: filtersOptions?.brands.find(b => b.id === brandId)?.name ?? 'Marcas', value: brandId } : { label: 'Marcas', value: '' }}
+            onChange={(option: any) => onBrandChange(option.value ? Number(option.value) : null)}
+            options={[
+              { label: 'Marcas', value: '' },
+              ...(filtersOptions?.brands
+                .filter((b) => !managerId || b.manager_id === managerId)
+                .map((b) => ({ label: b.name, value: b.id })) || [])
+            ]}
+            className="w-full min-w-40 sm:w-auto"
+            isLoading={isLoadingFilters}
+          />
         </div>
       }
     />
