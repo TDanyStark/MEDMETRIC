@@ -106,8 +106,8 @@ export function MaterialDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl">
-        <DialogHeader>
+      <DialogContent className="max-w-xl p-0 overflow-hidden flex flex-col max-h-[90vh]">
+        <DialogHeader className="p-6 pb-2">
           <DialogTitle>
             {editingMaterial ? "Editar Material" : "Nuevo Material"}
           </DialogTitle>
@@ -117,138 +117,147 @@ export function MaterialDialog({
               : "Crea un nuevo material para tus visitadores."}
           </DialogDescription>
         </DialogHeader>
-        <form className="mt-2 space-y-5" onSubmit={handleSubmit}>
-          <Input
-            label="Título"
-            value={form.title}
-            onChange={(event) =>
-              setForm((current) => ({ ...current, title: event.target.value }))
-            }
-            required
-          />
-          <Textarea
-            label="Descripción"
-            value={form.description}
-            onChange={(event) =>
-              setForm((current) => ({
-                ...current,
-                description: event.target.value,
-              }))
-            }
-          />
 
-          <CustomSelect
-            label="Marca"
-            placeholder="Selecciona una marca"
-            value={brands.find((b) => b.id === form.brand_id)}
-            onChange={(option) => {
-              if (option) {
-                setForm((current) => ({
-                  ...current,
-                  brand_id: (option as Brand).id,
-                }));
-              }
-            }}
-            options={brands}
-            getOptionLabel={(option) => (option as Brand).name}
-            getOptionValue={(option) => String((option as Brand).id)}
-            required
-          />
-
-          <div className="rounded-2xl border border-border/50 bg-muted/20 p-4">
-            <div className="flex justify-between items-end mb-2">
-              <label className="text-sm font-semibold text-foreground block">
-                Banner para el Feed
-              </label>
-              <span className="text-[11px] font-medium text-primary bg-primary/5 px-2 py-0.5 rounded-full border border-primary/10">
-                1200 x 675px
-              </span>
-            </div>
-            <div className="flex items-center gap-4">
-              {editingMaterial?.cover_path && !form.cover_file && (
-                <img
-                  src={`/api/v1/public/material/${editingMaterial.id}/cover`}
-                  className="h-16 w-16 rounded-xl object-cover bg-background border border-border"
-                  alt="Current cover"
-                />
-              )}
-              <input
-                type="file"
-                accept="image/*"
-                className="block w-full text-sm text-foreground file:mr-4 file:rounded-full file:border-0 file:bg-primary/10 file:text-primary file:px-4 file:py-2 file:font-semibold hover:file:bg-primary/20 transition-colors"
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    cover_file: event.target.files?.[0] ?? null,
-                  }))
-                }
-              />
-            </div>
-          </div>
-
-          {!editingMaterial && (
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-foreground">
-                Tipo de material
-              </label>
-              <SegmentedControl
-                value={form.type}
-                onChange={(value) =>
-                  setForm((current) => ({
-                    ...current,
-                    type: value as MaterialType,
-                    file: null,
-                    external_url: "",
-                  }))
-                }
-                options={[
-                  { label: "PDF", value: "pdf" },
-                  { label: "Video", value: "video" },
-                  { label: "Link", value: "link" },
-                ]}
-              />
-            </div>
-          )}
-
-          {(editingMaterial?.type ?? form.type) === "pdf" && (
-            <div className="rounded-2xl border border-border/50 bg-muted/20 p-4">
-              <label className="text-sm font-semibold text-foreground mb-2 block">
-                Archivo PDF
-              </label>
-              <input
-                type="file"
-                accept="application/pdf"
-                className="block w-full text-sm text-foreground file:mr-4 file:rounded-full file:border-0 file:bg-primary/10 file:text-primary file:px-4 file:py-2 file:font-semibold hover:file:bg-primary/20 transition-colors"
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    file: event.target.files?.[0] ?? null,
-                  }))
-                }
-              />
-            </div>
-          )}
-
-          {(editingMaterial?.type ?? form.type) !== "pdf" && (
+        <form
+          className="flex flex-col flex-1 overflow-hidden"
+          onSubmit={handleSubmit}
+        >
+          <div className="flex-1 overflow-y-auto px-6 py-2 space-y-5">
             <Input
-              label={
-                (editingMaterial?.type ?? form.type) === "video"
-                  ? "URL de YouTube"
-                  : "URL externa"
-              }
-              value={form.external_url}
+              label="Título"
+              value={form.title}
               onChange={(event) =>
                 setForm((current) => ({
                   ...current,
-                  external_url: event.target.value,
+                  title: event.target.value,
                 }))
               }
-              placeholder="https://..."
               required
             />
-          )}
+            <Textarea
+              label="Descripción"
+              value={form.description}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  description: event.target.value,
+                }))
+              }
+            />
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-border/50 sticky bottom-0 bg-background/95 backdrop-blur-sm -mx-6 px-6 py-4 mt-8 -mb-6">
+            <CustomSelect
+              label="Marca"
+              placeholder="Selecciona una marca"
+              value={brands.find((b) => b.id === form.brand_id)}
+              onChange={(option) => {
+                if (option) {
+                  setForm((current) => ({
+                    ...current,
+                    brand_id: (option as Brand).id,
+                  }));
+                }
+              }}
+              options={brands}
+              getOptionLabel={(option) => (option as Brand).name}
+              getOptionValue={(option) => String((option as Brand).id)}
+              required
+            />
+
+            <div className="rounded-2xl border border-border/50 bg-muted/20 p-4">
+              <div className="flex justify-between items-end mb-2">
+                <label className="text-sm font-semibold text-foreground block">
+                  Banner para el Feed
+                </label>
+                <span className="text-[11px] font-medium text-primary bg-primary/5 px-2 py-0.5 rounded-full border border-primary/10">
+                  1200 x 675px
+                </span>
+              </div>
+              <div className="flex items-center gap-4">
+                {editingMaterial?.cover_path && !form.cover_file && (
+                  <img
+                    src={`/api/v1/public/material/${editingMaterial.id}/cover`}
+                    className="h-16 w-16 rounded-xl object-cover bg-background border border-border"
+                    alt="Current cover"
+                  />
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="block w-full text-sm text-foreground file:mr-4 file:rounded-full file:border-0 file:bg-primary/10 file:text-primary file:px-4 file:py-2 file:font-semibold hover:file:bg-primary/20 transition-colors"
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      cover_file: event.target.files?.[0] ?? null,
+                    }))
+                  }
+                />
+              </div>
+            </div>
+
+            {!editingMaterial && (
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-foreground">
+                  Tipo de material
+                </label>
+                <SegmentedControl
+                  value={form.type}
+                  onChange={(value) =>
+                    setForm((current) => ({
+                      ...current,
+                      type: value as MaterialType,
+                      file: null,
+                      external_url: "",
+                    }))
+                  }
+                  options={[
+                    { label: "PDF", value: "pdf" },
+                    { label: "Video", value: "video" },
+                    { label: "Link", value: "link" },
+                  ]}
+                />
+              </div>
+            )}
+
+            {(editingMaterial?.type ?? form.type) === "pdf" && (
+              <div className="rounded-2xl border border-border/50 bg-muted/20 p-4">
+                <label className="text-sm font-semibold text-foreground mb-2 block">
+                  Archivo PDF
+                </label>
+                <input
+                  type="file"
+                  accept="application/pdf"
+                  className="block w-full text-sm text-foreground file:mr-4 file:rounded-full file:border-0 file:bg-primary/10 file:text-primary file:px-4 file:py-2 file:font-semibold hover:file:bg-primary/20 transition-colors"
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      file: event.target.files?.[0] ?? null,
+                    }))
+                  }
+                />
+              </div>
+            )}
+
+            {(editingMaterial?.type ?? form.type) !== "pdf" && (
+              <Input
+                label={
+                  (editingMaterial?.type ?? form.type) === "video"
+                    ? "URL de YouTube"
+                    : "URL externa"
+                }
+                value={form.external_url}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    external_url: event.target.value,
+                  }))
+                }
+                placeholder="https://..."
+                required
+              />
+            )}
+          </div>
+
+          <div className="flex justify-end gap-3 p-6 border-t border-border/50 bg-background">
             <Button
               type="button"
               variant="outline"
