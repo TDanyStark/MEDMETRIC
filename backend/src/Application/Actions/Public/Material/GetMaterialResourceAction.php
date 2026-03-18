@@ -89,31 +89,31 @@ class GetMaterialResourceAction extends Action
     {
         $storagePath = $material->getStoragePath();
 
-        if (empty($storagePath)) {
-            return $this->respondWithData([
-                'error' => 'PDF file not found',
-            ], 404);
-        }
-
-        $fullPath = dirname(__DIR__, 5) . '/storage/materials/' . ltrim($storagePath, '/');
-
-        if (!file_exists($fullPath)) {
+        if (empty($storagePath) || !$this->storageService->exists($storagePath)) {
             return $this->respondWithData([
                 'error' => 'PDF file not found on storage',
             ], 404);
         }
 
-        // Stream PDF content
-        $fileSize = filesize($fullPath);
-        $mimeType = 'application/pdf';
+        $stream = $this->storageService->getStream($storagePath);
+        if (!$stream) {
+            return $this->respondWithData([
+                'error' => 'Could not open PDF file stream',
+            ], 500);
+        }
 
-        $stream = fopen($fullPath, 'r');
+        $mimeType = $this->storageService->getMimeType($storagePath) ?? 'application/pdf';
+        $fileSize = $this->storageService->getFileSize($storagePath);
 
-        return $this->response
+        $response = $this->response
             ->withHeader('Content-Type', $mimeType)
-            ->withHeader('Content-Length', (string) $fileSize)
-            ->withHeader('Content-Disposition', 'inline; filename="' . basename($fullPath) . '"')
-            ->withBody(new \Slim\Psr7\Stream($stream));
+            ->withHeader('Content-Disposition', 'inline; filename="' . basename($storagePath) . '"');
+
+        if ($fileSize !== null) {
+            $response = $response->withHeader('Content-Length', (string) $fileSize);
+        }
+
+        return $response->withBody(new \Slim\Psr7\Stream($stream));
     }
 
     private function serveVideo($material): Response

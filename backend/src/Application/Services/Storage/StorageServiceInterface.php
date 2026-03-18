@@ -14,4 +14,7 @@ interface StorageServiceInterface
     public function getUrl(string $path): string;
     public function exists(string $path): bool;
     public function storeImageAsAvif(UploadedFileInterface $file, string $path, int $width = 1200, int $height = 675): string;
+    public function getStream(string $path);
+    public function getMimeType(string $path): ?string;
+    public function getFileSize(string $path): ?int;
 }

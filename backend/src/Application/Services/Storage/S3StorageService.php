@@ -142,6 +142,45 @@ class S3StorageService extends AbstractStorageService
         }
     }
 
+    public function getStream(string $path)
+    {
+        try {
+            $result = $this->s3->getObject([
+                'Bucket' => $this->bucket,
+                'Key'    => ltrim($path, '/'),
+            ]);
+            return $result['Body']->detach();
+        } catch (\Exception) {
+            return null;
+        }
+    }
+
+    public function getMimeType(string $path): ?string
+    {
+        try {
+            $result = $this->s3->headObject([
+                'Bucket' => $this->bucket,
+                'Key'    => ltrim($path, '/'),
+            ]);
+            return $result['ContentType'] ?? null;
+        } catch (\Exception) {
+            return null;
+        }
+    }
+
+    public function getFileSize(string $path): ?int
+    {
+        try {
+            $result = $this->s3->headObject([
+                'Bucket' => $this->bucket,
+                'Key'    => ltrim($path, '/'),
+            ]);
+            return (int) ($result['ContentLength'] ?? 0);
+        } catch (\Exception) {
+            return null;
+        }
+    }
+
     // -------------------------------------------------------------------------
 
     private function buildKey(string $path, ?string $originalFilename): string

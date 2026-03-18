@@ -104,4 +104,32 @@ class LocalStorageService extends AbstractStorageService
 
         return $relativePath . '/' . $filename;
     }
+
+    public function getStream(string $path)
+    {
+        $fullPath = $this->basePath . '/' . ltrim($path, '/');
+        if (!file_exists($fullPath)) {
+            return null;
+        }
+        return fopen($fullPath, 'r');
+    }
+
+    public function getMimeType(string $path): ?string
+    {
+        $fullPath = $this->basePath . '/' . ltrim($path, '/');
+        if (!file_exists($fullPath)) {
+            return null;
+        }
+        $finfo = new \finfo(FILEINFO_MIME_TYPE);
+        return $finfo->file($fullPath);
+    }
+
+    public function getFileSize(string $path): ?int
+    {
+        $fullPath = $this->basePath . '/' . ltrim($path, '/');
+        if (!file_exists($fullPath)) {
+            return null;
+        }
+        return (int) filesize($fullPath);
+    }
 }

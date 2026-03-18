@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Actions\Public\Material;
 
 use App\Application\Actions\Action;
+use App\Application\Services\Storage\StorageServiceInterface;
 use App\Domain\Material\MaterialRepositoryInterface;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Log\LoggerInterface;
@@ -17,13 +18,16 @@ use Psr\Log\LoggerInterface;
 class GetMaterialCoverAction extends Action
 {
     private MaterialRepositoryInterface $materialRepository;
+    private StorageServiceInterface $storageService;
 
     public function __construct(
         LoggerInterface $logger,
-        MaterialRepositoryInterface $materialRepository
+        MaterialRepositoryInterface $materialRepository,
+        StorageServiceInterface $storageService
     ) {
         parent::__construct($logger);
         $this->materialRepository = $materialRepository;
+        $this->storageService = $storageService;
     }
 
     protected function action(): Response
@@ -38,26 +42,25 @@ class GetMaterialCoverAction extends Action
 
         $coverPath = $material->getCoverPath();
 
-        if (empty($coverPath)) {
-            // Return a placeholder or 404
-            return $this->respondWithData(['error' => 'Cover image not found'], 404);
-        }
-
-        $fullPath = dirname(__DIR__, 5) . '/storage/materials/' . ltrim($coverPath, '/');
-
-        if (!file_exists($fullPath)) {
+        if (empty($coverPath) || !$this->storageService->exists($coverPath)) {
             return $this->respondWithData(['error' => 'Cover image file not found on storage'], 404);
         }
 
-        $fileSize = filesize($fullPath);
-        $finfo = new \finfo(FILEINFO_MIME_TYPE);
-        $mimeType = $finfo->file($fullPath);
+        $stream = $this->storageService->getStream($coverPath);
+        if (!$stream) {
+            return $this->respondWithData(['error' => 'Could not open cover image stream'], 500);
+        }
 
-        $stream = fopen($fullPath, 'r');
+        $mimeType = $this->storageService->getMimeType($coverPath) ?? 'image/avif';
+        $fileSize = $this->storageService->getFileSize($coverPath);
 
-        return $this->response
-            ->withHeader('Content-Type', $mimeType)
-            ->withHeader('Content-Length', (string) $fileSize)
-            ->withBody(new \Slim\Psr7\Stream($stream));
+        $response = $this->response
+            ->withHeader('Content-Type', $mimeType);
+
+        if ($fileSize !== null) {
+            $response = $response->withHeader('Content-Length', (string) $fileSize);
+        }
+
+        return $response->withBody(new \Slim\Psr7\Stream($stream));
     }
 }
