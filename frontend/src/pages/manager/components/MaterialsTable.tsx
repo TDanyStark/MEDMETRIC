@@ -51,9 +51,9 @@ export function MaterialsTable({
             >
               <TableCell className="font-medium text-foreground">
                 <div className="flex items-center gap-3">
-                  {item.cover_path ? (
+                  {item.cover_url || item.cover_path ? (
                     <img
-                      src={`/api/v1/public/material/${item.id}/cover`}
+                      src={item.cover_url || `/api/v1/public/material/${item.id}/cover`}
                       className="h-12 aspect-video shrink-0 rounded-lg object-cover bg-muted"
                       alt=""
                     />

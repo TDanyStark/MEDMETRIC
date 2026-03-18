@@ -32,9 +32,9 @@ export function MaterialCard({
       onClick={() => onToggle(item.id)}
     >
       <div className="relative aspect-video bg-muted border-b border-border/10 overflow-hidden">
-        {item.cover_path ? (
+        {item.cover_url || item.cover_path ? (
           <img
-            src={`/api/v1/public/material/${item.id}/cover`}
+            src={item.cover_url || `/api/v1/public/material/${item.id}/cover`}
             className="w-full aspect-video object-cover transition-transform duration-500 group-hover:scale-110"
             alt={item.title}
           />

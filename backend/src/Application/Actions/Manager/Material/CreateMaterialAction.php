@@ -115,6 +115,10 @@ class CreateMaterialAction extends Action
 
         $material = $this->materialRepository->create($materialData);
 
+        if ($material->getCoverPath()) {
+            $material->setCoverUrl($this->storageService->getUrl($material->getCoverPath()));
+        }
+
         return $this->respondWithData($material, 201);
     }
 }

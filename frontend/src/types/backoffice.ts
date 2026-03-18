@@ -57,6 +57,7 @@ export interface Material {
   title: string
   description: string | null
   cover_path: string | null
+  cover_url?: string | null
   type: MaterialType
   status: MaterialStatus
   storage_driver: string

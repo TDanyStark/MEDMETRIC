@@ -7,6 +7,7 @@ namespace App\Application\Actions\Public\Session;
 use App\Application\Actions\Action;
 use App\Domain\VisitSession\VisitSessionRepositoryInterface;
 use App\Domain\Material\MaterialRepositoryInterface;
+use App\Application\Services\Storage\StorageServiceInterface;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Log\LoggerInterface;
 
@@ -18,15 +19,18 @@ class GetPublicSessionAction extends Action
 {
     private VisitSessionRepositoryInterface $visitSessionRepository;
     private MaterialRepositoryInterface $materialRepository;
+    private StorageServiceInterface $storageService;
 
     public function __construct(
         LoggerInterface $logger,
         VisitSessionRepositoryInterface $visitSessionRepository,
-        MaterialRepositoryInterface $materialRepository
+        MaterialRepositoryInterface $materialRepository,
+        StorageServiceInterface $storageService
     ) {
         parent::__construct($logger);
         $this->visitSessionRepository = $visitSessionRepository;
         $this->materialRepository = $materialRepository;
+        $this->storageService = $storageService;
     }
 
     protected function action(): Response
@@ -45,13 +49,16 @@ class GetPublicSessionAction extends Action
         // Get materials for this session
         $materials = $this->visitSessionRepository->getSessionMaterials($session->getId());
 
-        // Filter only approved materials
-        $approvedMaterials = array_filter($materials, function ($material) {
-            return $material['status'] === 'approved';
-        });
-
-        // Re-index array
-        $approvedMaterials = array_values($approvedMaterials);
+        // Filter only approved materials and add cover_url
+        $approvedMaterials = [];
+        foreach ($materials as $material) {
+            if ($material['status'] === 'approved') {
+                $material['cover_url'] = !empty($material['cover_path']) 
+                    ? $this->storageService->getUrl($material['cover_path']) 
+                    : null;
+                $approvedMaterials[] = $material;
+            }
+        }
 
         return $this->respondWithData([
             'session' => [

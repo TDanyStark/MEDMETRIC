@@ -26,7 +26,8 @@ class Material implements JsonSerializable
         private string   $createdAt,
         private string   $updatedAt,
         private ?string  $brandName = null,
-        private ?string  $managerName = null
+        private ?string  $managerName = null,
+        private ?string  $coverUrl = null
     ) {}
 
     public function getId(): int           { return $this->id; }
@@ -47,6 +48,9 @@ class Material implements JsonSerializable
     public function getUpdatedAt(): string { return $this->updatedAt; }
     public function getBrandName(): ?string { return $this->brandName; }
     public function getManagerName(): ?string { return $this->managerName; }
+    public function getCoverUrl(): ?string  { return $this->coverUrl; }
+
+    public function setCoverUrl(?string $url): void { $this->coverUrl = $url; }
 
     public function isPdf(): bool    { return $this->type === 'pdf'; }
     public function isVideo(): bool  { return $this->type === 'video'; }
@@ -75,6 +79,7 @@ class Material implements JsonSerializable
             'updated_at'      => $this->updatedAt,
             'brand_name'      => $this->brandName,
             'manager_name'    => $this->managerName,
+            'cover_url'       => $this->coverUrl,
         ];
     }
 

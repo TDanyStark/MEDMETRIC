@@ -42,25 +42,15 @@ class GetMaterialCoverAction extends Action
 
         $coverPath = $material->getCoverPath();
 
-        if (empty($coverPath) || !$this->storageService->exists($coverPath)) {
-            return $this->respondWithData(['error' => 'Cover image file not found on storage'], 404);
+        if (empty($coverPath)) {
+            return $this->respondWithData(['error' => 'Cover image not found'], 404);
         }
 
-        $stream = $this->storageService->getStream($coverPath);
-        if (!$stream) {
-            return $this->respondWithData(['error' => 'Could not open cover image stream'], 500);
-        }
-
-        $mimeType = $this->storageService->getMimeType($coverPath) ?? 'image/avif';
-        $fileSize = $this->storageService->getFileSize($coverPath);
-
-        $response = $this->response
-            ->withHeader('Content-Type', $mimeType);
-
-        if ($fileSize !== null) {
-            $response = $response->withHeader('Content-Length', (string) $fileSize);
-        }
-
-        return $response->withBody(new \Slim\Psr7\Stream($stream));
+        // Return a redirect to the direct CloudFront URL (or local URL)
+        $url = $this->storageService->getUrl($coverPath);
+        
+        return $this->response
+            ->withHeader('Location', $url)
+            ->withStatus(302);
     }
 }

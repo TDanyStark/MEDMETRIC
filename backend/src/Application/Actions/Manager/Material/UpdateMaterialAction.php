@@ -104,6 +104,10 @@ class UpdateMaterialAction extends Action
 
         $updatedMaterial = $this->materialRepository->update($materialId, $updateData);
 
+        if ($updatedMaterial->getCoverPath()) {
+            $updatedMaterial->setCoverUrl($this->storageService->getUrl($updatedMaterial->getCoverPath()));
+        }
+
         return $this->respondWithData($updatedMaterial);
     }
 }
