@@ -1,4 +1,4 @@
-import { FileStack, Pencil } from 'lucide-react'
+import { FileStack, Pencil } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -6,22 +6,22 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/Table'
+} from "@/components/ui/Table";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/components/ui/tooltip"
-import { Button } from '@/components/ui/Button'
-import { Material } from '@/types/backoffice'
-import { MaterialTypeLabel, StatusBadge } from './ManagerHelpers'
+} from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/Button";
+import { Material } from "@/types/backoffice";
+import { MaterialTypeLabel, StatusBadge } from "./ManagerHelpers";
 
 interface MaterialsTableProps {
-  materials: Material[]
-  brandMap: Map<number, string>
-  onEdit: (material: Material) => void
-  onApprove: (materialId: number) => void
-  isApproving: (materialId: number) => boolean
+  materials: Material[];
+  brandMap: Map<number, string>;
+  onEdit: (material: Material) => void;
+  onApprove: (materialId: number) => void;
+  isApproving: (materialId: number) => boolean;
 }
 
 export function MaterialsTable({
@@ -45,17 +45,20 @@ export function MaterialsTable({
         </TableHeader>
         <TableBody>
           {materials.map((item) => (
-            <TableRow key={item.id} className="group transition-colors hover:bg-muted/20">
+            <TableRow
+              key={item.id}
+              className="group transition-colors hover:bg-muted/20"
+            >
               <TableCell className="font-medium text-foreground">
                 <div className="flex items-center gap-3">
                   {item.cover_path ? (
                     <img
                       src={`/api/v1/public/material/${item.id}/cover`}
-                      className="h-10 w-10 shrink-0 rounded-lg object-cover bg-muted"
+                      className="h-12 aspect-video shrink-0 rounded-lg object-cover bg-muted"
                       alt=""
                     />
                   ) : (
-                    <div className="h-10 w-10 shrink-0 rounded-lg bg-muted flex items-center justify-center">
+                    <div className="h-12 aspect-video shrink-0 rounded-lg bg-muted flex items-center justify-center">
                       <FileStack className="h-5 w-5 opacity-20" />
                     </div>
                   )}
@@ -72,7 +75,7 @@ export function MaterialsTable({
                     </Tooltip>
                     <p
                       className="text-xs text-muted-foreground truncate max-w-[200px]"
-                      title={item.description || ''}
+                      title={item.description || ""}
                     >
                       {item.description}
                     </p>
@@ -98,7 +101,7 @@ export function MaterialsTable({
                   >
                     <Pencil className="h-4 w-4" />
                   </Button>
-                  {item.status === 'draft' && (
+                  {item.status === "draft" && (
                     <Button
                       variant="outline"
                       size="sm"
@@ -115,5 +118,5 @@ export function MaterialsTable({
         </TableBody>
       </Table>
     </div>
-  )
+  );
 }

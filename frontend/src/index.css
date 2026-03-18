@@ -31,14 +31,14 @@
   --radius: 0.75rem;
   --fuchsia: #9f38a4;
   --purple: #602982;
-  
+
   --background: #f3f4f6; /* Gray 100 for clear separation */
   --foreground: #111827; /* Gray 900 */
   --card: #ffffff;
   --card-foreground: #111827;
   --popover: #ffffff;
   --popover-foreground: #111827;
-  
+
   --primary: var(--purple);
   --primary-foreground: #ffffff;
   --secondary: #f3f4f6;
@@ -51,7 +51,7 @@
   --border: #e5e7eb;
   --input: #ffffff;
   --ring: rgba(96, 41, 130, 0.3); /* Purple with opacity */
-  
+
   --sidebar: #ffffff;
   --sidebar-foreground: #111827;
 }
@@ -105,5 +105,9 @@
   * {
     scrollbar-width: thin;
     scrollbar-color: rgba(96, 41, 130, 0.2) transparent;
+  }
+
+  button {
+    cursor: pointer;
   }
 }
