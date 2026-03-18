@@ -6,6 +6,7 @@ namespace App\Application\Actions\Public\Material;
 
 use App\Application\Actions\Action;
 use App\Application\Services\Storage\StorageServiceInterface;
+use App\Domain\Material\Material;
 use App\Domain\Material\MaterialRepositoryInterface;
 use App\Domain\MaterialView\MaterialViewRepositoryInterface;
 use App\Domain\VisitSession\VisitSessionRepositoryInterface;
@@ -77,6 +78,9 @@ class GetMaterialResourceAction extends Action
 
         $type = $material->getType();
 
+        // Record view metrics for all types when accessed via this endpoint
+        $this->recordResourceView($material, $sessionId);
+
         return match ($type) {
             'pdf'   => $this->servePdf($material),
             'video' => $this->serveVideo($material),
@@ -85,35 +89,45 @@ class GetMaterialResourceAction extends Action
         };
     }
 
-    private function servePdf($material): Response
+    private function recordResourceView(Material $material, ?int $sessionId): void
+    {
+        try {
+            $serverParams = $this->request->getServerParams();
+            $userAgent = $serverParams['HTTP_USER_AGENT'] ?? null;
+            $ipAddress = $this->getClientIp();
+
+            $this->materialViewRepository->createView([
+                'material_id'      => $material->getId(),
+                'visit_session_id' => $sessionId,
+                'viewer_type'      => 'doctor', // Default to doctor for resource endpoint
+                'viewer_id'        => null,
+                'user_agent'       => $userAgent,
+                'ip_address'       => $ipAddress,
+            ]);
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to record resource view', [
+                'material_id' => $material->getId(),
+                'error'       => $e->getMessage(),
+            ]);
+        }
+    }
+
+    private function servePdf(Material $material): Response
     {
         $storagePath = $material->getStoragePath();
 
-        if (empty($storagePath) || !$this->storageService->exists($storagePath)) {
+        if (empty($storagePath)) {
             return $this->respondWithData([
-                'error' => 'PDF file not found on storage',
+                'error' => 'PDF file path not found',
             ], 404);
         }
 
-        $stream = $this->storageService->getStream($storagePath);
-        if (!$stream) {
-            return $this->respondWithData([
-                'error' => 'Could not open PDF file stream',
-            ], 500);
-        }
+        // Return a 302 redirect to the CloudFront URL
+        $url = $this->storageService->getUrl($storagePath);
 
-        $mimeType = $this->storageService->getMimeType($storagePath) ?? 'application/pdf';
-        $fileSize = $this->storageService->getFileSize($storagePath);
-
-        $response = $this->response
-            ->withHeader('Content-Type', $mimeType)
-            ->withHeader('Content-Disposition', 'inline; filename="' . basename($storagePath) . '"');
-
-        if ($fileSize !== null) {
-            $response = $response->withHeader('Content-Length', (string) $fileSize);
-        }
-
-        return $response->withBody(new \Slim\Psr7\Stream($stream));
+        return $this->response
+            ->withHeader('Location', $url)
+            ->withStatus(302);
     }
 
     private function serveVideo($material): Response
