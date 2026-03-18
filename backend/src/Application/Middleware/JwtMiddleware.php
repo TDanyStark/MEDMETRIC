@@ -6,7 +6,7 @@ namespace App\Application\Middleware;
 
 use App\Application\Actions\ActionError;
 use App\Application\Actions\ActionPayload;
-use App\Application\Services\JwtService;
+use App\Application\Services\Auth\JwtServiceInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -24,7 +24,7 @@ use Psr\Http\Server\RequestHandlerInterface as Handler;
 class JwtMiddleware implements MiddlewareInterface
 {
     public function __construct(
-        private JwtService $jwtService,
+        private JwtServiceInterface $jwtService,
         private ResponseFactoryInterface $responseFactory
     ) {}
 

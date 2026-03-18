@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Application\Services\Storage;
+namespace App\Infrastructure\Storage;
 
 use Aws\S3\S3Client;
 use Psr\Http\Message\UploadedFileInterface;

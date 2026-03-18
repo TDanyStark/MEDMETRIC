@@ -2,13 +2,14 @@
 
 declare(strict_types=1);
 
-namespace App\Application\Services;
+namespace App\Infrastructure\Auth;
 
+use App\Application\Services\Auth\JwtServiceInterface;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 use stdClass;
 
-class JwtService
+class JwtService implements JwtServiceInterface
 {
     private string $secret;
     private string $algorithm = 'HS256';
@@ -23,9 +24,7 @@ class JwtService
     }
 
     /**
-     * Generate a signed JWT for the given user payload.
-     *
-     * @param array{id:int, email:string, name:string, role:string, organization_id:int} $user
+     * {@inheritdoc}
      */
     public function generate(array $user): string
     {
@@ -42,7 +41,7 @@ class JwtService
                 'email'           => $user['email'],
                 'name'            => $user['name'],
                 'role'            => $user['role'],
-                'organization_id' => $user['organization_id'],
+                'organization_id' => $user['organization_id'] ?? null,
             ],
         ];
 
@@ -50,12 +49,7 @@ class JwtService
     }
 
     /**
-     * Decode and validate a JWT string.
-     * Returns the decoded stdClass payload or throws on failure.
-     *
-     * @throws \Firebase\JWT\ExpiredException
-     * @throws \Firebase\JWT\SignatureInvalidException
-     * @throws \UnexpectedValueException
+     * {@inheritdoc}
      */
     public function decode(string $token): stdClass
     {

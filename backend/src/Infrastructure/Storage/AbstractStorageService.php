@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Application\Services\Storage;
+namespace App\Infrastructure\Storage;
 
+use App\Application\Services\Storage\StorageServiceInterface;
 use Psr\Http\Message\UploadedFileInterface;
 
 abstract class AbstractStorageService implements StorageServiceInterface
@@ -103,4 +104,3 @@ abstract class AbstractStorageService implements StorageServiceInterface
         );
     }
 }
-

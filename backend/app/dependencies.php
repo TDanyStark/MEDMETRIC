@@ -3,12 +3,13 @@
 declare(strict_types=1);
 
 use App\Application\Middleware\JwtMiddleware;
-use App\Application\Services\JwtService;
-use App\Application\Services\Storage\ImageProcessorService;
-use App\Application\Services\Storage\LocalStorageService;
-use App\Application\Services\Storage\PdfProcessorService;
-use App\Application\Services\Storage\S3StorageService;
+use App\Application\Services\Auth\JwtServiceInterface;
 use App\Application\Services\Storage\StorageServiceInterface;
+use App\Infrastructure\Auth\JwtService;
+use App\Infrastructure\Storage\ImageProcessorService;
+use App\Infrastructure\Storage\LocalStorageService;
+use App\Infrastructure\Storage\PdfProcessorService;
+use App\Infrastructure\Storage\S3StorageService;
 use App\Application\Settings\SettingsInterface;
 use App\Domain\Brand\BrandRepositoryInterface;
 use App\Domain\Material\MaterialRepositoryInterface;
@@ -50,7 +51,7 @@ return function (ContainerBuilder $containerBuilder) {
         ResponseFactoryInterface::class => \DI\autowire(ResponseFactory::class),
 
         // JWT Service (reads JWT_SECRET from $_ENV)
-        JwtService::class => \DI\autowire(JwtService::class),
+        JwtServiceInterface::class => \DI\autowire(JwtService::class),
 
         // JWT Middleware (auto-wired: JwtService + ResponseFactoryInterface)
         JwtMiddleware::class => \DI\autowire(JwtMiddleware::class),

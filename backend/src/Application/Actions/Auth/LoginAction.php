@@ -7,19 +7,17 @@ namespace App\Application\Actions\Auth;
 use App\Application\Actions\Action;
 use App\Application\Actions\ActionError;
 use App\Application\Actions\ActionPayload;
-use App\Application\Services\JwtService;
+use App\Application\Services\Auth\JwtServiceInterface;
 use App\Domain\Auth\AuthRepositoryInterface;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Log\LoggerInterface;
-use Slim\Exception\HttpBadRequestException;
-use Slim\Exception\HttpUnauthorizedException;
 
 class LoginAction extends Action
 {
     public function __construct(
         LoggerInterface $logger,
         private AuthRepositoryInterface $authRepository,
-        private JwtService $jwtService
+        private JwtServiceInterface $jwtService
     ) {
         parent::__construct($logger);
     }
