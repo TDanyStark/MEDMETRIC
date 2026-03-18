@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Application\Middleware\JwtMiddleware;
 use App\Application\Services\JwtService;
+use App\Application\Services\Storage\ImageProcessorService;
 use App\Application\Services\Storage\LocalStorageService;
 use App\Application\Services\Storage\PdfProcessorService;
 use App\Application\Services\Storage\S3StorageService;
@@ -54,8 +55,9 @@ return function (ContainerBuilder $containerBuilder) {
         // JWT Middleware (auto-wired: JwtService + ResponseFactoryInterface)
         JwtMiddleware::class => \DI\autowire(JwtMiddleware::class),
 
-        // PDF Processor (shared between local and S3 services)
+        // Processors (shared between local and S3 services)
         PdfProcessorService::class => \DI\autowire(PdfProcessorService::class),
+        ImageProcessorService::class => \DI\autowire(ImageProcessorService::class),
 
         // Storage Service — switch between local disk and AWS S3 via STORAGE_DRIVER env var
         StorageServiceInterface::class => function (ContainerInterface $c) {

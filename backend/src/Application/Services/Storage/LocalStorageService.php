@@ -10,9 +10,11 @@ class LocalStorageService extends AbstractStorageService
 {
     private string $basePath;
 
-    public function __construct(PdfProcessorService $pdfProcessor)
-    {
-        parent::__construct($pdfProcessor);
+    public function __construct(
+        PdfProcessorService $pdfProcessor,
+        ImageProcessorService $imageProcessor
+    ) {
+        parent::__construct($pdfProcessor, $imageProcessor);
         $this->basePath = dirname(__DIR__, 4) . '/storage/materials';
 
         if (!is_dir($this->basePath)) {

@@ -20,9 +20,11 @@ class S3StorageService extends AbstractStorageService
     private string $bucket;
     private string $cloudfrontDomain;
 
-    public function __construct(PdfProcessorService $pdfProcessor)
-    {
-        parent::__construct($pdfProcessor);
+    public function __construct(
+        PdfProcessorService $pdfProcessor,
+        ImageProcessorService $imageProcessor
+    ) {
+        parent::__construct($pdfProcessor, $imageProcessor);
         $this->bucket = $_ENV['AWS_BUCKET'] ?? '';
         $this->cloudfrontDomain = rtrim($_ENV['CLOUDFRONT_DOMAIN'] ?? '', '/');
 

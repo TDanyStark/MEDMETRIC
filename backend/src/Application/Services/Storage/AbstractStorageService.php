@@ -8,8 +8,10 @@ use Psr\Http\Message\UploadedFileInterface;
 
 abstract class AbstractStorageService implements StorageServiceInterface
 {
-    public function __construct(protected PdfProcessorService $pdfProcessor)
-    {
+    public function __construct(
+        protected PdfProcessorService $pdfProcessor,
+        protected ImageProcessorService $imageProcessor
+    ) {
     }
 
     /**
@@ -27,6 +29,28 @@ abstract class AbstractStorageService implements StorageServiceInterface
     protected function getTempPath(string $prefix, string $extension = ''): string
     {
         return sys_get_temp_dir() . '/' . uniqid($prefix, true) . ($extension ? '.' . ltrim($extension, '.') : '');
+    }
+
+    /**
+     * Helper to wrap a processing step with temporary files.
+     */
+    protected function withProcessed(
+        UploadedFileInterface $file,
+        string $outputExtension,
+        callable $processor,
+        callable $finalAction
+    ): mixed {
+        return $this->withTemporaryFile($file, function (string $tmpInput) use ($outputExtension, $processor, $finalAction) {
+            $tmpOutput = $this->getTempPath('processed_out_', $outputExtension);
+            try {
+                $processor($tmpInput, $tmpOutput);
+                return $finalAction($tmpOutput);
+            } finally {
+                if (file_exists($tmpOutput)) {
+                    unlink($tmpOutput);
+                }
+            }
+        });
     }
 
     /**
@@ -53,17 +77,12 @@ abstract class AbstractStorageService implements StorageServiceInterface
      */
     protected function withProcessedPdf(UploadedFileInterface $file, callable $callback): mixed
     {
-        return $this->withTemporaryFile($file, function (string $tmpInput) use ($callback) {
-            $tmpOutput = $this->getTempPath('pdf_out_', 'pdf');
-            try {
-                $this->pdfProcessor->process($tmpInput, $tmpOutput);
-                return $callback($tmpOutput);
-            } finally {
-                if (file_exists($tmpOutput)) {
-                    unlink($tmpOutput);
-                }
-            }
-        });
+        return $this->withProcessed(
+            $file,
+            'pdf',
+            fn(string $src, string $dst) => $this->pdfProcessor->process($src, $dst),
+            $callback
+        );
     }
 
     /**
@@ -76,23 +95,12 @@ abstract class AbstractStorageService implements StorageServiceInterface
         int $height,
         callable $callback
     ): mixed {
-        return $this->withTemporaryFile($file, function (string $tmpInput) use ($callback, $width, $height) {
-            $tmpOutput = $this->getTempPath('img_out_', 'avif');
-            try {
-                $imagick = new \Imagick($tmpInput);
-                $imagick->cropThumbnailImage($width, $height);
-                $imagick->setImageFormat('avif');
-                $imagick->setCompressionQuality(60);
-                $imagick->writeImage($tmpOutput);
-                $imagick->clear();
-                $imagick->destroy();
-
-                return $callback($tmpOutput);
-            } finally {
-                if (file_exists($tmpOutput)) {
-                    unlink($tmpOutput);
-                }
-            }
-        });
+        return $this->withProcessed(
+            $file,
+            'avif',
+            fn(string $src, string $dst) => $this->imageProcessor->processToAvif($src, $dst, $width, $height),
+            $callback
+        );
     }
 }
+
