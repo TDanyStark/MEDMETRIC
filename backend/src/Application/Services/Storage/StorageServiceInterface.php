@@ -9,6 +9,7 @@ use Psr\Http\Message\UploadedFileInterface;
 interface StorageServiceInterface
 {
     public function store(UploadedFileInterface $file, string $path): string;
+    public function storePdf(UploadedFileInterface $file, string $path): string;
     public function delete(string $path): bool;
     public function getUrl(string $path): string;
     public function exists(string $path): bool;

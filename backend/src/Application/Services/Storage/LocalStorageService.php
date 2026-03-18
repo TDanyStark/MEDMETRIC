@@ -6,14 +6,15 @@ namespace App\Application\Services\Storage;
 
 use Psr\Http\Message\UploadedFileInterface;
 
-class LocalStorageService implements StorageServiceInterface
+class LocalStorageService extends AbstractStorageService
 {
     private string $basePath;
 
-    public function __construct()
+    public function __construct(PdfProcessorService $pdfProcessor)
     {
+        parent::__construct($pdfProcessor);
         $this->basePath = dirname(__DIR__, 4) . '/storage/materials';
-        
+
         if (!is_dir($this->basePath)) {
             mkdir($this->basePath, 0755, true);
         }
@@ -36,10 +37,29 @@ class LocalStorageService implements StorageServiceInterface
         return $relativePath . '/' . $filename;
     }
 
+    public function storePdf(UploadedFileInterface $file, string $path): string
+    {
+        $relativePath = ltrim($path, '/');
+        $dir = $this->basePath . '/' . $relativePath;
+
+        if (!is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+
+        $filename = $this->generateFilename($file->getClientFilename());
+        $destination = $dir . '/' . $filename;
+
+        $this->withProcessedPdf($file, function (string $tmpOutput) use ($destination) {
+            copy($tmpOutput, $destination);
+        });
+
+        return $relativePath . '/' . $filename;
+    }
+
     public function delete(string $path): bool
     {
         $fullPath = $this->basePath . '/' . ltrim($path, '/');
-        
+
         if (file_exists($fullPath) && is_file($fullPath)) {
             return unlink($fullPath);
         }
@@ -59,8 +79,12 @@ class LocalStorageService implements StorageServiceInterface
         return file_exists($fullPath) && is_file($fullPath);
     }
 
-    public function storeImageAsAvif(UploadedFileInterface $file, string $path, int $width = 1200, int $height = 675): string
-    {
+    public function storeImageAsAvif(
+        UploadedFileInterface $file,
+        string $path,
+        int $width = 1200,
+        int $height = 675
+    ): string {
         $relativePath = ltrim($path, '/');
         $dir = $this->basePath . '/' . $relativePath;
 
@@ -72,37 +96,10 @@ class LocalStorageService implements StorageServiceInterface
         $filename = pathinfo($filename, PATHINFO_FILENAME) . '.avif';
         $destination = $dir . '/' . $filename;
 
-        // Create temporary file to use with Imagick
-        $tmpPath = sys_get_temp_dir() . '/' . uniqid('imagick_');
-        $file->moveTo($tmpPath);
-
-        try {
-            $imagick = new \Imagick($tmpPath);
-            
-            // Resize and crop to 1200x675 (aspect ratio 16:9)
-            $imagick->cropThumbnailImage($width, $height);
-            
-            // Convert to AVIF
-            $imagick->setImageFormat('avif');
-            $imagick->setCompressionQuality(60); // Good balance for AVIF
-            
-            $imagick->writeImage($destination);
-            $imagick->clear();
-            $imagick->destroy();
-        } finally {
-            if (file_exists($tmpPath)) {
-                unlink($tmpPath);
-            }
-        }
+        $this->withProcessedImageAsAvif($file, $width, $height, function (string $tmpOutput) use ($destination) {
+            copy($tmpOutput, $destination);
+        });
 
         return $relativePath . '/' . $filename;
-    }
-
-    private function generateFilename(?string $originalFilename): string
-    {
-        $extension = $originalFilename ? pathinfo($originalFilename, PATHINFO_EXTENSION) : 'bin';
-        
-        // Use a unique ID (random hex string) for the filename to avoid collisions
-        return bin2hex(random_bytes(16)) . '.' . $extension;
     }
 }

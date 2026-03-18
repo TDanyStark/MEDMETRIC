@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 use App\Application\Middleware\JwtMiddleware;
 use App\Application\Services\JwtService;
-use App\Application\Services\Storage\StorageServiceInterface;
 use App\Application\Services\Storage\LocalStorageService;
+use App\Application\Services\Storage\PdfProcessorService;
+use App\Application\Services\Storage\S3StorageService;
+use App\Application\Services\Storage\StorageServiceInterface;
 use App\Application\Settings\SettingsInterface;
 use App\Domain\Brand\BrandRepositoryInterface;
 use App\Domain\Material\MaterialRepositoryInterface;
@@ -52,8 +54,19 @@ return function (ContainerBuilder $containerBuilder) {
         // JWT Middleware (auto-wired: JwtService + ResponseFactoryInterface)
         JwtMiddleware::class => \DI\autowire(JwtMiddleware::class),
 
-        // Storage Services
-        StorageServiceInterface::class => \DI\autowire(LocalStorageService::class),
+        // PDF Processor (shared between local and S3 services)
+        PdfProcessorService::class => \DI\autowire(PdfProcessorService::class),
+
+        // Storage Service — switch between local disk and AWS S3 via STORAGE_DRIVER env var
+        StorageServiceInterface::class => function (ContainerInterface $c) {
+            $driver = $_ENV['STORAGE_DRIVER'] ?? 'local';
+
+            if ($driver === 's3') {
+                return $c->get(S3StorageService::class);
+            }
+
+            return $c->get(LocalStorageService::class);
+        },
 
         // Repositories
         BrandRepositoryInterface::class => \DI\autowire(DbBrandRepository::class),

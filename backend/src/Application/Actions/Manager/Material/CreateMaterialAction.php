@@ -60,7 +60,7 @@ class CreateMaterialAction extends Action
             'cover_path'     => null,
             'type'           => $data['type'],
             'status'         => 'draft',
-            'storage_driver' => 'local',
+            'storage_driver' => $_ENV['STORAGE_DRIVER'] ?? 'local',
             'storage_path'   => null,
             'external_url'   => null,
         ];
@@ -96,8 +96,7 @@ class CreateMaterialAction extends Action
             }
 
             $path = $managerId . '/materials/' . date('Y-m');
-            $materialData['storage_path'] = $this->storageService->store($file, $path);
-            $materialData['storage_driver'] = 'local';
+            $materialData['storage_path'] = $this->storageService->storePdf($file, $path);
 
         } elseif ($data['type'] === 'video') {
             if (empty($data['external_url'])) {

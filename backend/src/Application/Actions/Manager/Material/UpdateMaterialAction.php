@@ -94,7 +94,7 @@ class UpdateMaterialAction extends Action
             $file = $uploadedFiles['file'];
             if ($file->getError() === UPLOAD_ERR_OK && $material->isPdf()) {
                 $path = $managerId . '/materials/' . date('Y-m');
-                $updateData['storage_path'] = $this->storageService->store($file, $path);
+                $updateData['storage_path'] = $this->storageService->storePdf($file, $path);
             }
         }
 
