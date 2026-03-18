@@ -16,12 +16,17 @@ abstract class AbstractStorageService implements StorageServiceInterface
     }
 
     /**
-     * Generate a unique filename while preserving the original extension.
+     * Generate a filename while preserving the original name if possible.
      */
     protected function generateFilename(?string $originalFilename): string
     {
-        $extension = $originalFilename ? pathinfo($originalFilename, PATHINFO_EXTENSION) : 'bin';
-        return bin2hex(random_bytes(16)) . '.' . $extension;
+        if (empty($originalFilename)) {
+            return bin2hex(random_bytes(16)) . '.bin';
+        }
+
+        // Sanitize the filename to be safe for file systems and cloud storage
+        // Keep the original name as per user request
+        return preg_replace('/[^a-zA-Z0-9_\.-]/', '_', $originalFilename);
     }
 
     /**

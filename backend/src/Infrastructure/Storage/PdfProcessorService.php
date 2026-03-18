@@ -27,31 +27,41 @@ class PdfProcessorService
      */
     public function process(string $sourcePath, string $outputPath): void
     {
-        $pdf = new \Imagick();
-
         // Set resolution BEFORE reading the PDF so GhostScript rasterises at the right PPI
+        $pdf = new \Imagick();
         $pdf->setResolution(self::TARGET_PPI, self::TARGET_PPI);
         $pdf->readImage($sourcePath);
-
-        $pageCount = $pdf->getNumberImages();
 
         $output = new \Imagick();
         $output->setResolution(self::TARGET_PPI, self::TARGET_PPI);
 
+        // Process each page
+        $pageCount = $pdf->getNumberImages();
         for ($i = 0; $i < $pageCount; $i++) {
             $pdf->setIteratorIndex($i);
-            $page = $pdf->getImage();
+            $page = $pdf->getImage(); // Get a copy of the current page
 
             // Flatten transparent backgrounds (PDFs may have transparency)
             $page->setImageBackgroundColor('white');
-            $page->flattenImages();
+            // Using flattenImages() as it is present in _ide_helper.php
+            $flat = $page->flattenImages(); 
+            $page->destroy();
+            $page = $flat;
 
-            // Resize only if the page exceeds the max dimensions (never upscale)
+            // Determine dimensions and orientation
             $w = $page->getImageWidth();
             $h = $page->getImageHeight();
+            
+            // Default target is Landscape (2420x1668)
+            // If page is Portrait (Height > Width), swap targets (1668x2420)
+            $isPortrait = $h > $w;
+            $maxWidth  = $isPortrait ? self::MAX_HEIGHT : self::MAX_WIDTH;
+            $maxHeight = $isPortrait ? self::MAX_WIDTH : self::MAX_HEIGHT;
 
-            if ($w > self::MAX_WIDTH || $h > self::MAX_HEIGHT) {
-                $page->thumbnailImage(self::MAX_WIDTH, self::MAX_HEIGHT, true, false);
+            // Resize only if the page exceeds the max dimensions (never upscale)
+            if ($w > $maxWidth || $h > $maxHeight) {
+                // thumbnailImage with bestfit=true
+                $page->thumbnailImage($maxWidth, $maxHeight, true);
             }
 
             // Set PPI metadata on each page
@@ -70,7 +80,9 @@ class PdfProcessorService
         $pdf->destroy();
 
         $output->setImageFormat('pdf');
+        // writeImages with adjoin=true (2nd param) ensures all pages are in one PDF
         $output->writeImages($outputPath, true);
         $output->destroy();
     }
 }
+
