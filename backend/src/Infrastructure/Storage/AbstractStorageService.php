@@ -24,9 +24,12 @@ abstract class AbstractStorageService implements StorageServiceInterface
             return bin2hex(random_bytes(16)) . '.bin';
         }
 
+        // Ensure we only have the filename, not a full path
+        $base = basename($originalFilename);
+
         // Sanitize the filename to be safe for file systems and cloud storage
         // Keep the original name as per user request
-        return preg_replace('/[^a-zA-Z0-9_\.-]/', '_', $originalFilename);
+        return preg_replace('/[^a-zA-Z0-9_\.-]/', '_', $base);
     }
 
     /**

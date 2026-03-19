@@ -48,7 +48,8 @@ class LocalStorageService extends AbstractStorageService
             mkdir($dir, 0755, true);
         }
 
-        $filename = $this->generateFilename($file->getClientFilename());
+        $originalName = $file->getClientFilename();
+        $filename = $this->generateFilename($originalName);
         $destination = $dir . '/' . $filename;
 
         $this->withProcessedPdf($file, function (string $tmpOutput) use ($destination) {
@@ -94,7 +95,8 @@ class LocalStorageService extends AbstractStorageService
             mkdir($dir, 0755, true);
         }
 
-        $filename = $this->generateFilename($file->getClientFilename());
+        $originalName = $file->getClientFilename();
+        $filename = $this->generateFilename($originalName);
         $filename = pathinfo($filename, PATHINFO_FILENAME) . '.avif';
         $destination = $dir . '/' . $filename;
 

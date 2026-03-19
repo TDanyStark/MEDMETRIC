@@ -66,8 +66,9 @@ class S3StorageService extends AbstractStorageService
      */
     public function storePdf(UploadedFileInterface $file, string $path): string
     {
-        return $this->withProcessedPdf($file, function (string $tmpOutput) use ($path, $file) {
-            $key = $this->buildKey($path, $file->getClientFilename());
+        $originalName = $file->getClientFilename();
+        return $this->withProcessedPdf($file, function (string $tmpOutput) use ($path, $originalName) {
+            $key = $this->buildKey($path, $originalName);
 
             $this->s3->putObject([
                 'Bucket'      => $this->bucket,
@@ -89,9 +90,9 @@ class S3StorageService extends AbstractStorageService
         int $width  = 1200,
         int $height = 675
     ): string {
-        return $this->withProcessedImageAsAvif($file, $width, $height, function (string $tmpOutput) use ($path, $file) {
-            $originalName = $file->getClientFilename();
-            $basename     = $originalName
+        $originalName = $file->getClientFilename();
+        return $this->withProcessedImageAsAvif($file, $width, $height, function (string $tmpOutput) use ($path, $originalName) {
+            $basename = $originalName
                 ? pathinfo($originalName, PATHINFO_FILENAME) . '.avif'
                 : uniqid('img_', true) . '.avif';
 
