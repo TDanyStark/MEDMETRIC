@@ -24,8 +24,8 @@ namespace App\Infrastructure\Storage;
  */
 class PdfProcessorService
 {
-    /** GhostScript PDFSETTINGS preset (/printer = 300 dpi for raster images). */
-    private const GS_PRESET = '/printer';
+    /** GhostScript PDFSETTINGS preset (/ebook = 150 dpi, ideal for tablets/mobile). */
+    private const GS_PRESET = '/ebook';
 
     /**
      * Processes a PDF file at $sourcePath and writes the result to $outputPath.
@@ -67,19 +67,17 @@ class PdfProcessorService
             '-dCompatibilityLevel=1.5',
             '-dCompressFonts=true',
             '-dSubsetFonts=true',
-            // Colour images — downsample only if above 264 DPI
+            // Color images — downsample to 150 DPI (standard for /ebook)
             '-dColorImageDownsampleType=/Bicubic',
-            '-dColorImageResolution=264',
-            '-dAutoFilterColorImages=false',
-            '-dColorImageFilter=/DCTEncode',
+            '-dColorImageResolution=150',
+            '-dAutoFilterColorImages=true', // Let GS decide the best filter
             // Grayscale images
             '-dGrayImageDownsampleType=/Bicubic',
-            '-dGrayImageResolution=264',
-            '-dAutoFilterGrayImages=false',
-            '-dGrayImageFilter=/DCTEncode',
-            // Monochrome / line art — keep crisp
+            '-dGrayImageResolution=150',
+            '-dAutoFilterGrayImages=true',
+            // Monochrome / line art — keep at 600 for crisp text
             '-dMonoImageDownsampleType=/Subsample',
-            '-dMonoImageResolution=1200',
+            '-dMonoImageResolution=600',
             '-sOutputFile=' . escapeshellarg($outputPath),
             escapeshellarg($sourcePath),
         ]);
