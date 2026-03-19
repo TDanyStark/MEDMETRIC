@@ -70,8 +70,10 @@ return function (App $app) {
             $execEnabled = function_exists('exec') &&
                 !in_array('exec', array_map('trim', explode(',', ini_get('disable_functions'))), true);
 
-            // Check GhostScript binary
+            // Check GhostScript binary (via exec PATH lookup and absolute path probe)
             $gsPath = null;
+
+            // 1. Try which/where if exec is available
             if ($execEnabled) {
                 foreach (['gs', 'gswin64c', 'gswin32c'] as $bin) {
                     $whereCmd = (PHP_OS_FAMILY === 'Windows') ? "where {$bin}" : "which {$bin}";
@@ -84,6 +86,34 @@ return function (App $app) {
                 }
             }
 
+            // 2. Probe common absolute paths regardless of exec (useful to diagnose
+            //    before enabling exec — if gs is installed, it will show here)
+            $absolutePaths = [
+                '/usr/bin/gs',
+                '/usr/local/bin/gs',
+                '/usr/bin/ghostscript',
+                '/usr/local/bin/ghostscript',
+            ];
+            $gsExecutable = null;
+            foreach ($absolutePaths as $p) {
+                if (is_executable($p)) {
+                    $gsExecutable = $p;
+                    break;
+                }
+            }
+
+            // Determine effective strategy
+            $gsFound = $gsPath ?? $gsExecutable;
+            if ($gsFound && $execEnabled) {
+                $strategy = 'ghostscript';
+            } elseif ($gsExecutable && !$execEnabled) {
+                $strategy = 'copy — gs found at ' . $gsExecutable . ' but exec() disabled';
+            } elseif ($execEnabled) {
+                $strategy = 'copy (gs not found)';
+            } else {
+                $strategy = 'copy (exec disabled)';
+            }
+
             $payload = [
                 'success' => $dbStatus['status'] === 'ok',
                 'data' => [
@@ -93,11 +123,12 @@ return function (App $app) {
                         'version'     => '1.0.0',
                         'environment' => $_ENV['APP_ENV'] ?? 'development',
                     ],
-                    'database'    => $dbStatus,
+                    'database'      => $dbStatus,
                     'pdf_processor' => [
-                        'exec_available' => $execEnabled,
-                        'ghostscript'    => $gsPath ?? 'not found',
-                        'strategy'       => $gsPath ? 'ghostscript' : ($execEnabled ? 'copy (gs not found)' : 'copy (exec disabled)'),
+                        'exec_available'  => $execEnabled,
+                        'gs_in_path'      => $gsPath ?? 'not found',
+                        'gs_on_disk'      => $gsExecutable ?? 'not found',
+                        'strategy'        => $strategy,
                     ],
                 ],
             ];
@@ -108,6 +139,8 @@ return function (App $app) {
                 ->withStatus($dbStatus['status'] === 'ok' ? 200 : 503)
                 ->withHeader('Content-Type', 'application/json');
         });
+
+
 
 
         // -------------------------------------------------------------------------

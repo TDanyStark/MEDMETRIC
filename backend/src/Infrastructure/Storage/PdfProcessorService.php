@@ -98,13 +98,36 @@ class PdfProcessorService
 
     private function findGhostScriptBinary(): ?string
     {
-        foreach (['gs', 'gswin64c', 'gswin32c'] as $bin) {
+        // Common names used on different OS
+        $names = ['gs', 'gswin64c', 'gswin32c'];
+
+        // Try PATH lookup first (works most of the time)
+        foreach ($names as $bin) {
             $whereCmd = (PHP_OS_FAMILY === 'Windows') ? "where {$bin}" : "which {$bin}";
             exec($whereCmd . ' 2>&1', $out, $code);
             if ($code === 0 && !empty($out[0])) {
                 return trim($out[0]);
             }
+            $out = [];
         }
+
+        // Fallback: probe common absolute paths (Hostinger / cPanel shared hosts
+        // sometimes install gs outside the web user's PATH)
+        $absolutePaths = [
+            '/usr/bin/gs',
+            '/usr/local/bin/gs',
+            '/usr/bin/ghostscript',
+            '/usr/local/bin/ghostscript',
+            '/opt/remi/php74/root/usr/bin/gs',
+            '/opt/cpanel/ea-php80/root/usr/bin/gs',
+        ];
+
+        foreach ($absolutePaths as $path) {
+            if (is_executable($path)) {
+                return $path;
+            }
+        }
+
         return null;
     }
 

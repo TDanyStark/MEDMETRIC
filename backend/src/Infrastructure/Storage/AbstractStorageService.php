@@ -16,20 +16,30 @@ abstract class AbstractStorageService implements StorageServiceInterface
     }
 
     /**
-     * Generate a filename while preserving the original name if possible.
+     * Generate a unique filename while preserving the original name.
+     *
+     * A short suffix (unix timestamp + 4 random hex bytes) is appended before
+     * the extension so that re-uploading the same file always produces a new
+     * S3 key.  Without this, CloudFront would serve the old cached object
+     * instead of the freshly uploaded one.
+     *
+     * Example: "report.pdf" → "report_1742398800_a3f9bc12.pdf"
      */
     protected function generateFilename(?string $originalFilename): string
     {
+        $unique = time() . '_' . bin2hex(random_bytes(4));
+
         if (empty($originalFilename)) {
-            return bin2hex(random_bytes(16)) . '.bin';
+            return $unique . '.bin';
         }
 
-        // Ensure we only have the filename, not a full path
-        $base = basename($originalFilename);
+        $base     = basename($originalFilename);
+        $ext      = pathinfo($base, PATHINFO_EXTENSION);
+        $nameOnly = pathinfo($base, PATHINFO_FILENAME);
 
-        // Sanitize the filename to be safe for file systems and cloud storage
-        // Keep the original name as per user request
-        return preg_replace('/[^a-zA-Z0-9_\.-]/', '_', $base);
+        $safeName = preg_replace('/[^a-zA-Z0-9_.-]/', '_', $nameOnly);
+
+        return $safeName . '_' . $unique . ($ext ? '.' . $ext : '');
     }
 
     /**
