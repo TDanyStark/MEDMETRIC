@@ -66,16 +66,39 @@ return function (App $app) {
         $group->get('/health', function (Request $request, Response $response) {
             $dbStatus = Connection::testConnection();
 
+            // Check exec() availability
+            $execEnabled = function_exists('exec') &&
+                !in_array('exec', array_map('trim', explode(',', ini_get('disable_functions'))), true);
+
+            // Check GhostScript binary
+            $gsPath = null;
+            if ($execEnabled) {
+                foreach (['gs', 'gswin64c', 'gswin32c'] as $bin) {
+                    $whereCmd = (PHP_OS_FAMILY === 'Windows') ? "where {$bin}" : "which {$bin}";
+                    exec($whereCmd . ' 2>&1', $out, $code);
+                    if ($code === 0 && !empty($out[0])) {
+                        $gsPath = trim($out[0]);
+                        break;
+                    }
+                    $out = [];
+                }
+            }
+
             $payload = [
                 'success' => $dbStatus['status'] === 'ok',
                 'data' => [
                     'api' => [
-                        'status' => 'ok',
-                        'name' => $_ENV['APP_NAME'] ?? 'MEDMETRIC',
-                        'version' => '1.0.0',
+                        'status'      => 'ok',
+                        'name'        => $_ENV['APP_NAME'] ?? 'MEDMETRIC',
+                        'version'     => '1.0.0',
                         'environment' => $_ENV['APP_ENV'] ?? 'development',
                     ],
-                    'database' => $dbStatus,
+                    'database'    => $dbStatus,
+                    'pdf_processor' => [
+                        'exec_available' => $execEnabled,
+                        'ghostscript'    => $gsPath ?? 'not found',
+                        'strategy'       => $gsPath ? 'ghostscript' : ($execEnabled ? 'copy (gs not found)' : 'copy (exec disabled)'),
+                    ],
                 ],
             ];
 
@@ -85,6 +108,7 @@ return function (App $app) {
                 ->withStatus($dbStatus['status'] === 'ok' ? 200 : 503)
                 ->withHeader('Content-Type', 'application/json');
         });
+
 
         // -------------------------------------------------------------------------
         // Auth routes (public — no JWT required)
