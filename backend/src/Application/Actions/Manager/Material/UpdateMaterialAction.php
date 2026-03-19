@@ -93,6 +93,10 @@ class UpdateMaterialAction extends Action
         if (!empty($uploadedFiles['file'])) {
             $file = $uploadedFiles['file'];
             if ($file->getError() === UPLOAD_ERR_OK && $material->isPdf()) {
+                // Delete old PDF from storage before uploading the new one
+                if ($material->getStoragePath()) {
+                    $this->storageService->delete($material->getStoragePath());
+                }
                 $path = $managerId . '/materials/' . date('Y-m');
                 $updateData['storage_path'] = $this->storageService->storePdf($file, $path);
             }
