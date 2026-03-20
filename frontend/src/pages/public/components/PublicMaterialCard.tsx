@@ -53,7 +53,7 @@ export function PublicMaterialCard({
           <MaterialTypeLabel type={item.type} />
         </div>
 
-        <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/60 to-transparent p-2.5 pt-6 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/60 to-transparent p-2.5 pt-6 flex justify-center lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
           <Button
             size="sm"
             variant="secondary"

@@ -1,5 +1,5 @@
 import api from '@/services/api'
-import { ApiResponse } from '@/types'
+import { ApiResponse, MaterialResource } from '@/types'
 import { Material, PaginatedData, RepSession, RepSessionPayload, RepSessionResponse } from '@/types/rep'
 
 function buildQuery(params: Record<string, string | number | boolean | null | undefined>) {
@@ -26,6 +26,10 @@ export function listRepMaterials(params: { q?: string; type?: string; page?: num
 
 export function listRepMaterialFilters() {
   return api.get<ApiResponse<MaterialFilters>>('/rep/materials/filters').then(unwrap)
+}
+
+export function getRepMaterialPreview(id: number) {
+  return api.get<ApiResponse<MaterialResource>>(`/rep/materials/${id}/preview`).then(unwrap)
 }
 
 export function createRepSession(payload: RepSessionPayload) {

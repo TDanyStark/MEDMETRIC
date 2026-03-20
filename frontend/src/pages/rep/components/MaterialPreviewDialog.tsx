@@ -9,8 +9,8 @@ import {
 } from "@/components/ui/Dialog";
 import { Button } from "@/components/ui/Button";
 import { Material } from "@/types/rep";
-import { ApiResponse, MaterialResource } from "@/types";
-import api from "@/services/api";
+import { MaterialResource } from "@/types";
+import { getRepMaterialPreview } from "@/services/rep";
 
 interface MaterialPreviewDialogProps {
   material: Material | null;
@@ -30,17 +30,8 @@ export function MaterialPreviewDialog({
     }
     const fetchResource = async () => {
       try {
-        if (material.type === "pdf") {
-          setResource({
-            type: "pdf",
-            url: `/api/v1/public/material/${material.id}/resource`,
-          });
-          return;
-        }
-        const res = await api.get<ApiResponse<MaterialResource>>(
-          `/public/material/${material.id}/resource`,
-        );
-        setResource(res.data);
+        const data = await getRepMaterialPreview(material.id);
+        setResource(data);
       } catch (err) {
         toast.error("No se pudo cargar la previsualización");
       }

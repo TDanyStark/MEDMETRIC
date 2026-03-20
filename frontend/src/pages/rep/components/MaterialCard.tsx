@@ -58,7 +58,7 @@ export function MaterialCard({
         >
           {isSelected && <div className="h-2 w-2 rounded-full bg-background" />}
         </div>
-        <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/60 to-transparent p-3 pt-8 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/60 to-transparent p-2.5 pt-6 flex justify-center lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
           <Button
             size="sm"
             variant="secondary"

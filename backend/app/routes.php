@@ -266,6 +266,7 @@ return function (App $app) {
             // Materials - approved materials from subscribed managers
             $rep->get('/materials', RepListMaterialsAction::class);
             $rep->get('/materials/filters', \App\Application\Actions\Rep\Material\ListRepFilterOptionsAction::class);
+            $rep->get('/materials/{id}/preview', PreviewMaterialAction::class);
 
             // Visit Sessions
             $rep->group('/visit-sessions', function (RouteCollectorProxy $sessions) {
