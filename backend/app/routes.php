@@ -28,7 +28,7 @@ use App\Application\Actions\Manager\Material\ApproveMaterialAction;
 use App\Application\Actions\Manager\Material\CreateMaterialAction;
 use App\Application\Actions\Manager\Material\ListMaterialsAction;
 use App\Application\Actions\Manager\Material\UpdateMaterialAction;
-use App\Application\Actions\Manager\Material\PreviewMaterialAction;
+use App\Application\Actions\Material\PreviewMaterialAction;
 use App\Application\Actions\Manager\Rep\AssignRepAction;
 use App\Application\Actions\Manager\Rep\GetAvailableRepsAction;
 use App\Application\Actions\Manager\Rep\ListAssignedRepsAction;

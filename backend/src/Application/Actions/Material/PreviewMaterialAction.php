@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Application\Actions\Manager\Material;
+namespace App\Application\Actions\Material;
 
 use App\Application\Actions\Action;
 use App\Application\Services\Storage\StorageServiceInterface;
@@ -11,9 +11,9 @@ use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Log\LoggerInterface;
 
 /**
- * Preview material resource for manager consumption (no metrics)
+ * Preview material resource for staff consumption (manager/rep) without metrics.
  * 
- * GET /api/v1/manager/materials/{id}/preview
+ * Shared between manager and rep routes.
  */
 class PreviewMaterialAction extends Action
 {
@@ -46,14 +46,14 @@ class PreviewMaterialAction extends Action
             return $this->respondWithData(['error' => 'Material no encontrado'], 404);
         }
 
-        // Security: Ensure material belongs to the manager's organization
+        // Security: Ensure material belongs to the user's organization
         if ($material->getOrganizationId() !== $user->getOrganizationId()) {
             return $this->respondWithData([
                 'error' => 'No tienes permiso para previsualizar este material',
             ], 403);
         }
 
-        // Managers can preview both draft and approved materials
+        // Staff (managers/reps) can preview both draft and approved materials
         
         $type = $material->getType();
 
