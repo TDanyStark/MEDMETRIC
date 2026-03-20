@@ -224,21 +224,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             </button>
           )}
         </div>
-
-        {/* Toggle Button for Mobile - Hidden on Desktop */}
-        {isMobile && (
-          <div className="mt-4 flex justify-center pb-2">
-            <button
-              onClick={onClose}
-              className="w-full h-11 flex items-center justify-center gap-2 rounded-xl bg-white/5 text-slate-400 hover:text-white transition-colors"
-            >
-              <ChevronLeft className="h-4 w-4" />
-              <span className="text-xs font-semibold uppercase tracking-wider">
-                Cerrar Menú
-              </span>
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Desktop Toggle Button (Absolute positioned on the border) */}
