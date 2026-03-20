@@ -93,7 +93,7 @@ export function RepHistoryPage() {
                   )
                 }
                 placeholder="Seleccionar..."
-                className="w-48 h-10"
+                className="w-54 h-10"
               />
             </div>
           }

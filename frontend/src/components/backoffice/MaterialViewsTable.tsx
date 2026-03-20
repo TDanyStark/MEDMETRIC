@@ -84,9 +84,9 @@ export function MaterialViewsTable({
                   setPage(1);
                 }}
                 placeholder="Desde"
-                className="w-[200px]"
+                className="w-[220px]"
               />
-              <span className="ml-10 text-muted-foreground text-sm">-</span>
+              <span className="ml-6 text-muted-foreground text-sm">a</span>
               <DatePicker
                 value={endDate}
                 onChange={(val) => {
@@ -94,7 +94,7 @@ export function MaterialViewsTable({
                   setPage(1);
                 }}
                 placeholder="Hasta"
-                className="w-[200px]"
+                className="w-[220px]"
               />
             </div>
           </div>
