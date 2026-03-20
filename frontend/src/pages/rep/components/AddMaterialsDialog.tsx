@@ -146,7 +146,7 @@ export function AddMaterialsDialog({
 
         <div className="flex-1 overflow-y-auto px-6 py-2 min-h-0 custom-scrollbar">
           {done ? (
-            <div className="flex flex-col h-full items-center justify-center gap-6 py-8">
+            <div className="flex flex-col h-full items-center gap-6 py-8">
               <div className="p-4 bg-success/10 text-success rounded-full">
                 <CheckCircle2 className="h-10 w-10" />
               </div>
@@ -162,7 +162,7 @@ export function AddMaterialsDialog({
                 <Input
                   readOnly
                   value={`${window.location.origin}/public/visit/${createdToken}`}
-                  className="flex-1 w-full"
+                  className="w-[250px]"
                 />
                 <Button
                   variant="secondary"
@@ -175,7 +175,7 @@ export function AddMaterialsDialog({
                   <Copy className="h-4 w-4" />
                 </Button>
               </div>
-              <Button className="w-full max-w-sm mt-4" onClick={handleClose}>
+              <Button className="w-full max-w-sm mt-auto" onClick={handleClose}>
                 Cerrar biblioteca
               </Button>
             </div>
