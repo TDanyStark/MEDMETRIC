@@ -138,7 +138,7 @@ export function CreateSessionDialog({
               <Input
                 readOnly
                 value={`${window.location.origin}/public/visit/${createdSessionToken}`}
-                className="flex-1"
+                className="w-[250px]"
               />
               <Button
                 variant="secondary"
