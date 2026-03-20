@@ -37,21 +37,21 @@ export function PublicMaterialCard({
   };
 
   return (
-    <div className="relative isolate">
+    <div className="relative isolate h-full">
       <a
         href={href}
         target="_blank"
         rel="noopener noreferrer"
-        className="block group"
+        className="block group h-full"
       >
         <Card
-          className={`cursor-pointer overflow-hidden transition-all duration-300 ${
+          className={`cursor-pointer overflow-hidden transition-all duration-300 h-full flex flex-col ${
             isActive
               ? "ring-2 ring-primary bg-primary/5 shadow-lg shadow-primary/10"
               : "hover:border-primary/50 hover:shadow-md border-border/50 bg-background/50 backdrop-blur-sm"
           }`}
         >
-          <div className="relative aspect-video bg-muted border-b border-border/10 overflow-hidden">
+          <div className="relative aspect-video bg-muted border-b border-border/10 overflow-hidden shrink-0">
             {item.cover_url || item.cover_path ? (
               <img
                 src={item.cover_url || `/api/v1/public/material/${item.id}/cover`}
@@ -71,13 +71,13 @@ export function PublicMaterialCard({
               <MaterialTypeLabel type={item.type} />
             </div>
           </div>
-          <CardContent className="p-3">
+          <CardContent className="p-3 flex-1 flex flex-col">
             <p className="text-[9px] font-medium uppercase tracking-wider text-muted-foreground/60 mb-1">
               Material #{item.id}
             </p>
             <Tooltip>
               <TooltipTrigger asChild>
-                <h3 className={`text-sm font-semibold transition-colors line-clamp-2 leading-tight cursor-default ${
+                <h3 className={`text-sm font-semibold transition-colors line-clamp-2 leading-tight cursor-default min-h-[2.5rem] ${
                   isActive ? "text-primary" : "text-foreground group-hover:text-primary"
                 }`}>
                   {item.title}
@@ -88,7 +88,7 @@ export function PublicMaterialCard({
               </TooltipContent>
             </Tooltip>
             {item.description && (
-              <p className="mt-1.5 text-[10px] text-muted-foreground line-clamp-2 leading-[1.3] opacity-80 min-h-[2rem]">
+              <p className="mt-1.5 text-[10px] text-muted-foreground line-clamp-2 leading-[1.3] opacity-80 min-h-[2.25rem]">
                 {item.description}
               </p>
             )}

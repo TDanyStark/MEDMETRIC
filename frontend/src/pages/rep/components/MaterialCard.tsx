@@ -25,14 +25,14 @@ export function MaterialCard({
 }: MaterialCardProps) {
   return (
     <Card
-      className={`group cursor-pointer overflow-hidden transition-all duration-300 ${
+      className={`group cursor-pointer overflow-hidden transition-all duration-300 h-full flex flex-col ${
         isSelected
           ? "ring-2 ring-primary bg-primary/5 shadow-md"
           : "hover:border-primary/50 hover:shadow-lg border-border/40 bg-background/50 backdrop-blur-sm"
       }`}
       onClick={() => onToggle(item.id)}
     >
-      <div className="relative aspect-video bg-muted border-b border-border/10 overflow-hidden">
+      <div className="relative aspect-video bg-muted border-b border-border/10 overflow-hidden shrink-0">
         {item.cover_url || item.cover_path ? (
           <img
             src={item.cover_url || `/api/v1/public/material/${item.id}/cover`}
@@ -75,14 +75,14 @@ export function MaterialCard({
           </Button>
         </div>
       </div>
-      <CardContent className="p-4 pt-3">
+      <CardContent className="p-4 pt-3 flex-1 flex flex-col">
         <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50 mb-2">
           <span>MAT-{item.id}</span>
           <span>{formatDate(item.created_at)}</span>
         </div>
         <Tooltip>
           <TooltipTrigger asChild>
-            <h3 className="font-bold text-foreground line-clamp-2 group-hover:text-primary transition-colors cursor-default leading-tight">
+            <h3 className="font-bold text-foreground line-clamp-2 group-hover:text-primary transition-colors cursor-default leading-tight min-h-[2.5rem]">
               {item.title}
             </h3>
           </TooltipTrigger>
