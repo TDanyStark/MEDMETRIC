@@ -15,6 +15,7 @@ import {
 import { metricsApi } from "@/services/metrics";
 import { cn, formatDateTime } from "@/lib/utils";
 import { AsyncMaterialSelect } from "@/components/ui/AsyncMaterialSelect";
+import { DatePicker } from "@/components/ui/DatePicker";
 
 interface MaterialViewsTableProps {
   materialIdFilter: string;
@@ -81,26 +82,25 @@ export function MaterialViewsTable({
               />
             </div>
 
-            <div className="flex items-center gap-2 bg-background/50 rounded-xl border border-border/50 px-3 py-2">
-              <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-              <input
-                type="date"
-                className="bg-transparent text-sm outline-none text-foreground"
+            <div className="flex flex-wrap items-center gap-2">
+              <DatePicker
                 value={startDate}
-                onChange={(e) => {
-                  setStartDate(e.target.value);
+                onChange={(val) => {
+                  setStartDate(val || "");
                   setPage(1);
                 }}
+                placeholder="Desde"
+                className="w-[180px]"
               />
-              <span className="text-muted-foreground text-sm">-</span>
-              <input
-                type="date"
-                className="bg-transparent text-sm outline-none text-foreground"
+              <span className="text-muted-foreground text-sm">a</span>
+              <DatePicker
                 value={endDate}
-                onChange={(e) => {
-                  setEndDate(e.target.value);
+                onChange={(val) => {
+                  setEndDate(val || "");
                   setPage(1);
                 }}
+                placeholder="Hasta"
+                className="w-[180px]"
               />
             </div>
           </div>
