@@ -1,4 +1,4 @@
-import { FileStack, Pencil } from "lucide-react";
+import { Eye, FileStack, Pencil } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -22,6 +22,7 @@ interface MaterialsTableProps {
   onEdit: (material: Material) => void;
   onApprove: (materialId: number) => void;
   isApproving: (materialId: number) => boolean;
+  onPreview: (material: Material) => void;
 }
 
 export function MaterialsTable({
@@ -30,6 +31,7 @@ export function MaterialsTable({
   onEdit,
   onApprove,
   isApproving,
+  onPreview,
 }: MaterialsTableProps) {
   return (
     <div className="rounded-3xl border border-border/50 bg-background/50 shadow-sm overflow-hidden">
@@ -93,6 +95,14 @@ export function MaterialsTable({
               </TableCell>
               <TableCell className="text-right">
                 <div className="flex justify-end gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onPreview(item)}
+                    className="opacity-70 hover:opacity-100 transition-opacity p-2"
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
                   <Button
                     variant="ghost"
                     size="sm"

@@ -23,12 +23,15 @@ import { LoadingState, ErrorState } from './components/ManagerHelpers'
 import { MaterialsTable } from './components/MaterialsTable'
 import { MaterialDialog } from './components/MaterialDialog'
 import { MaterialFilters } from './components/MaterialFilters'
+import { PreviewDialog } from './components/PreviewDialog'
 
 export function ManagerMaterialsPage() {
   const queryClient = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
   const [editingMaterial, setEditingMaterial] = useState<Material | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [previewingMaterial, setPreviewingMaterial] = useState<Material | null>(null)
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false)
 
   const q = getStringParam(searchParams, 'q')
   const page = getNumberParam(searchParams, 'page')
@@ -96,6 +99,11 @@ export function ManagerMaterialsPage() {
     setIsDialogOpen(true)
   }
 
+  const handlePreview = (material: Material) => {
+    setPreviewingMaterial(material)
+    setIsPreviewOpen(true)
+  }
+
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8 animate-in fade-in duration-500">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -133,6 +141,7 @@ export function ManagerMaterialsPage() {
             onEdit={handleEdit}
             onApprove={id => void approveMutation.mutateAsync(id)}
             isApproving={id => approveMutation.isPending && approveMutation.variables === id}
+            onPreview={handlePreview}
           />
         )}
 
@@ -151,6 +160,12 @@ export function ManagerMaterialsPage() {
         brands={brandsQuery.data?.items ?? []}
         onSave={async payload => { await saveMutation.mutateAsync(payload) }}
         isSaving={saveMutation.isPending}
+      />
+
+      <PreviewDialog
+        isOpen={isPreviewOpen}
+        onOpenChange={setIsPreviewOpen}
+        material={previewingMaterial}
       />
     </div>
   )

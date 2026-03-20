@@ -1,5 +1,5 @@
 import api from '@/services/api'
-import { ApiResponse } from '@/types'
+import { ApiResponse, MaterialResource } from '@/types'
 import {
   AdminUser,
   Brand,
@@ -149,6 +149,10 @@ export function updateManagerMaterial(
 
 export function approveManagerMaterial(id: number) {
   return api.post<ApiResponse<Material>>(`/manager/materials/${id}/approve`).then(unwrap)
+}
+
+export function getManagerMaterialPreview(id: number) {
+  return api.get<ApiResponse<MaterialResource>>(`/manager/materials/${id}/preview`).then(unwrap)
 }
 
 export function listManagerReps(params: { q?: string; active?: boolean | null; page?: number }) {

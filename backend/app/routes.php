@@ -28,6 +28,7 @@ use App\Application\Actions\Manager\Material\ApproveMaterialAction;
 use App\Application\Actions\Manager\Material\CreateMaterialAction;
 use App\Application\Actions\Manager\Material\ListMaterialsAction;
 use App\Application\Actions\Manager\Material\UpdateMaterialAction;
+use App\Application\Actions\Manager\Material\PreviewMaterialAction;
 use App\Application\Actions\Manager\Rep\AssignRepAction;
 use App\Application\Actions\Manager\Rep\GetAvailableRepsAction;
 use App\Application\Actions\Manager\Rep\ListAssignedRepsAction;
@@ -241,6 +242,7 @@ return function (App $app) {
                 $materials->post('',           CreateMaterialAction::class);
                 $materials->put('/{id}',       UpdateMaterialAction::class);
                 $materials->post('/{id}/approve', ApproveMaterialAction::class);
+                $materials->get('/{id}/preview', PreviewMaterialAction::class);
             });
 
             // Reps (visitadores médicos)
