@@ -115,9 +115,11 @@ class DbVisitSessionRepository implements VisitSessionRepositoryInterface
     public function findByDoctorToken(string $token): ?VisitSession
     {
         $stmt = $this->pdo->prepare(
-            'SELECT id, organization_id, rep_id, doctor_token, doctor_name, notes, active, created_at, updated_at
-             FROM visit_sessions
-             WHERE doctor_token = :token AND active = 1
+            'SELECT vs.id, vs.organization_id, vs.rep_id, vs.doctor_token, vs.doctor_name, vs.notes, vs.active, vs.created_at, vs.updated_at,
+                    u.name as rep_name
+             FROM visit_sessions vs
+             LEFT JOIN users u ON vs.rep_id = u.id
+             WHERE vs.doctor_token = :token AND vs.active = 1
              LIMIT 1'
         );
 

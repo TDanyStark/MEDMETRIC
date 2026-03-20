@@ -65,6 +65,7 @@ class GetPublicSessionAction extends Action
                 'id'           => $session->getId(),
                 'doctor_token' => $session->getDoctorToken(),
                 'doctor_name'  => $session->getDoctorName(),
+                'rep_name'     => $session->getRepName(),
                 'notes'        => $session->getNotes(),
                 'created_at'   => $session->getCreatedAt(),
             ],

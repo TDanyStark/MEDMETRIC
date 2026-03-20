@@ -26,6 +26,7 @@ export interface PublicSession {
   id: number
   doctor_token: string
   doctor_name: string | null
+  rep_name?: string | null
   notes: string | null
   created_at: string
 }
