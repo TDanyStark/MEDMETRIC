@@ -1,12 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import {
-  Calendar as CalendarIcon,
-  FileIcon,
-  Eye,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
+import { FileIcon, Eye, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -62,7 +56,7 @@ export function MaterialViewsTable({
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-500 mt-8">
       <div className="rounded-3xl border border-border/50 bg-background/50 p-6 shadow-sm">
-        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
+        <div className="flex flex-col justify-between sm:items-center gap-4 mb-6">
           <div className="flex items-center gap-2">
             <Eye className="h-5 w-5 text-muted-foreground" />
             <h3 className="text-xl font-display font-medium">
@@ -71,7 +65,7 @@ export function MaterialViewsTable({
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <div className="w-full sm:w-auto min-w-[250px] max-w-[250px]">
+            <div className="w-full sm:w-auto min-w-[300px] max-w-[300px]">
               <AsyncMaterialSelect
                 value={materialIdFilter}
                 onChange={(val) => {
@@ -90,9 +84,9 @@ export function MaterialViewsTable({
                   setPage(1);
                 }}
                 placeholder="Desde"
-                className="w-[180px]"
+                className="w-[200px]"
               />
-              <span className="text-muted-foreground text-sm">a</span>
+              <span className="ml-10 text-muted-foreground text-sm">-</span>
               <DatePicker
                 value={endDate}
                 onChange={(val) => {
@@ -100,7 +94,7 @@ export function MaterialViewsTable({
                   setPage(1);
                 }}
                 placeholder="Hasta"
-                className="w-[180px]"
+                className="w-[200px]"
               />
             </div>
           </div>

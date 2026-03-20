@@ -1,4 +1,3 @@
-import * as React from "react";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { Calendar as CalendarIcon, X } from "lucide-react";
