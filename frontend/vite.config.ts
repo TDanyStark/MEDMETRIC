@@ -22,29 +22,23 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks(id) {
-          if (id.includes('node_modules')) {
-            if (id.includes('react')) {
-              return 'vendor-react'
-            }
-            if (id.includes('@tanstack')) {
-              return 'vendor-tanstack'
-            }
-            if (id.includes('lucide-react')) {
-              return 'vendor-ui'
-            }
-            if (id.includes('@radix-ui') || id.includes('radix-ui')) {
-              return 'vendor-ui'
-            }
-            if (id.includes('react-select')) {
-              return 'vendor-forms'
-            }
-            if (id.includes('date-fns')) {
-              return 'vendor-utils'
-            }
-            return 'vendor'
-          }
-        },
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-tanstack': ['@tanstack/react-query'],
+          'vendor-ui': [
+            '@radix-ui/react-avatar', 
+            '@radix-ui/react-dialog', 
+            '@radix-ui/react-popover', 
+            '@radix-ui/react-separator', 
+            '@radix-ui/react-slot', 
+            'lucide-react', 
+            'class-variance-authority', 
+            'clsx', 
+            'tailwind-merge'
+          ],
+          'vendor-forms': ['react-hook-form', '@hookform/resolvers', 'zod', 'react-select', 'react-day-picker'],
+          'vendor-utils': ['date-fns', 'axios', 'sonner', 'zustand']
+        }
       },
     },
     chunkSizeWarningLimit: 1000,
