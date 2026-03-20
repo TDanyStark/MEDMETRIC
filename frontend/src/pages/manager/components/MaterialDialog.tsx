@@ -97,12 +97,30 @@ export function MaterialDialog({
     });
   }, [isOpen, editingMaterial, brands]);
 
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (form.cover_file) {
+      const url = URL.createObjectURL(form.cover_file);
+      setPreviewUrl(url);
+      return () => URL.revokeObjectURL(url);
+    }
+    setPreviewUrl(null);
+  }, [form.cover_file]);
+
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     if (!form.brand_id) return;
     const payload = buildMaterialPayload(form, editingMaterial);
     void onSave(payload);
   };
+
+  const currentCoverUrl = form.cover_file
+    ? previewUrl
+    : editingMaterial?.cover_url ||
+      (editingMaterial?.cover_path
+        ? `/api/v1/public/material/${editingMaterial.id}/cover`
+        : null);
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -173,12 +191,14 @@ export function MaterialDialog({
                 </span>
               </div>
               <div className="flex items-center gap-4">
-                {editingMaterial?.cover_path && !form.cover_file && (
-                  <img
-                    src={`/api/v1/public/material/${editingMaterial.id}/cover`}
-                    className="h-16 w-16 rounded-xl object-cover bg-background border border-border"
-                    alt="Current cover"
-                  />
+                {currentCoverUrl && (
+                  <div className="relative aspect-video w-28 overflow-hidden rounded-xl bg-background border border-border flex-shrink-0">
+                    <img
+                      src={currentCoverUrl}
+                      className="h-full w-full object-cover"
+                      alt="Cover preview"
+                    />
+                  </div>
                 )}
                 <input
                   type="file"
