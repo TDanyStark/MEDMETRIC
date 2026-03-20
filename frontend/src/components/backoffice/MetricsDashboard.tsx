@@ -3,6 +3,11 @@ import { useQuery } from '@tanstack/react-query'
 import { LogIn, TrendingUp, Presentation, FileText, CheckCircle2 } from 'lucide-react'
 import { metricsApi } from '@/services/metrics'
 import { cn } from '@/lib/utils'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { MaterialViewsTable } from './MaterialViewsTable'
 
 export function MetricsDashboard() {
@@ -102,7 +107,18 @@ export function MetricsDashboard() {
                 ) : (
                   topMaterials?.map((item) => (
                     <tr key={item.id} className="hover:bg-muted/30 transition-colors">
-                      <td className="px-4 py-3 font-medium text-foreground">{item.title}</td>
+                      <td className="px-4 py-3 font-medium text-foreground">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="truncate max-w-[200px] block cursor-default">
+                              {item.title}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="max-w-xs">{item.title}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </td>
                       <td className="px-4 py-3 text-center">
                         <span className={cn(
                           "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",

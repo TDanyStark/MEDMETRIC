@@ -7,6 +7,11 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { metricsApi } from "@/services/metrics";
 import { cn } from "@/lib/utils";
 import { AsyncMaterialSelect } from "@/components/ui/AsyncMaterialSelect";
@@ -110,14 +115,13 @@ export function MaterialViewsTable({
                 <th className="px-4 py-3 font-medium">Visualizador</th>
                 <th className="px-4 py-3 font-medium">Representante</th>
                 <th className="px-4 py-3 font-medium">Médico</th>
-                <th className="px-4 py-3 font-medium text-right">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/50">
               {isLoading ? (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={5}
                     className="px-4 py-12 text-center text-muted-foreground"
                   >
                     Cargando datos...
@@ -126,7 +130,7 @@ export function MaterialViewsTable({
               ) : viewsList?.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={5}
                     className="px-4 py-12 text-center text-muted-foreground"
                   >
                     No hay registros de visualizaciones para este filtro
@@ -151,19 +155,25 @@ export function MaterialViewsTable({
                           <img
                             src={`/api/v1/public/material/${item.material_id}/cover`}
                             alt="cover"
-                            className="h-8 w-8 object-cover rounded-md"
+                            className="h-8 aspect-video object-cover rounded-md"
                           />
                         ) : (
-                          <div className="h-8 w-8 rounded-md bg-muted/50 flex items-center justify-center shrink-0">
+                          <div className="h-8 aspect-video rounded-md bg-muted/50 flex items-center justify-center shrink-0">
                             <FileIcon className="h-4 w-4 text-muted-foreground" />
                           </div>
                         )}
-                        <span
-                          className="truncate max-w-[200px]"
-                          title={item.material_title}
-                        >
-                          {item.material_title}
-                        </span>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span
+                              className="truncate max-w-[200px] cursor-default"
+                            >
+                              {item.material_title}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="max-w-xs">{item.material_title}</p>
+                          </TooltipContent>
+                        </Tooltip>
                       </div>
                     </td>
                     <td className="px-4 py-3">
@@ -183,16 +193,6 @@ export function MaterialViewsTable({
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">
                       {item.doctor_name || "-"}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <a
-                        href={`/api/v1/public/material/${item.material_id}/resource`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center justify-center h-8 px-3 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors text-xs font-medium"
-                      >
-                        Preview
-                      </a>
                     </td>
                   </tr>
                 ))
