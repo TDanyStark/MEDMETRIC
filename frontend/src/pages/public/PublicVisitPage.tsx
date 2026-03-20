@@ -19,12 +19,17 @@ export default function PublicVisitPage() {
       if (authUserStr) {
         const user = JSON.parse(authUserStr)
         if (user && user.role) {
+          // If we have a rep session, we are ALWAYS a rep, even if the URL says otherwise.
+          // This ensures metric integrity for the representative's PC.
           return { type: 'rep' as const }
         }
       }
     } catch(e) {
       // Ignore
     }
+    
+    // Only use 'doctor' if we are not logged in, but check if the URL explicitly says 'doctor' 
+    // or if it's the default (if not logged in, it's always doctor or public)
     return { type: 'doctor' as const }
   }, [])
 

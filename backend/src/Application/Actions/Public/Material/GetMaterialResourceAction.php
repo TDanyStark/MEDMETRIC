@@ -10,6 +10,7 @@ use App\Domain\Material\Material;
 use App\Domain\Material\MaterialRepositoryInterface;
 use App\Domain\MaterialView\MaterialViewRepositoryInterface;
 use App\Domain\VisitSession\VisitSessionRepositoryInterface;
+use App\Application\Services\Auth\JwtServiceInterface;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Log\LoggerInterface;
 
@@ -27,19 +28,22 @@ class GetMaterialResourceAction extends Action
     private MaterialViewRepositoryInterface $materialViewRepository;
     private VisitSessionRepositoryInterface $visitSessionRepository;
     private StorageServiceInterface $storageService;
+    private JwtServiceInterface $jwtService;
 
     public function __construct(
         LoggerInterface $logger,
         MaterialRepositoryInterface $materialRepository,
         MaterialViewRepositoryInterface $materialViewRepository,
         VisitSessionRepositoryInterface $visitSessionRepository,
-        StorageServiceInterface $storageService
+        StorageServiceInterface $storageService,
+        JwtServiceInterface $jwtService
     ) {
         parent::__construct($logger);
         $this->materialRepository = $materialRepository;
         $this->materialViewRepository = $materialViewRepository;
         $this->visitSessionRepository = $visitSessionRepository;
         $this->storageService = $storageService;
+        $this->jwtService = $jwtService;
     }
 
     protected function action(): Response
@@ -77,13 +81,32 @@ class GetMaterialResourceAction extends Action
 
         $type = $material->getType();
 
-        // Determine viewer type: anything not explicitly 'doctor' is treated as 'rep'
-        $requestedType = $queryParams['viewer_type'] ?? 'doctor';
-        $viewerType = ($requestedType === 'doctor') ? 'doctor' : 'rep';
+        // Security check: If there's a valid rep session in headers, FORCE viewer_type = 'rep'
+        // This prevents the representative from spoofing being a doctor in their own browser.
+        $viewerType = 'doctor';
         $viewerId = null;
 
-        // If it's a representative view, we always fetch their ID from the session context
-        if ($viewerType === 'rep' && $session !== null) {
+        $authHeader = $this->request->getHeaderLine('Authorization');
+        if (str_starts_with($authHeader, 'Bearer ')) {
+            $tokenStr = substr($authHeader, 7);
+            try {
+                $decoded = $this->jwtService->decode($tokenStr);
+                $viewerType = 'rep';
+                $viewerId = $decoded->user->id ?? null;
+            } catch (\Exception $e) {
+                // Invalid token? Default back to URL param logic or doctor
+                $requestedType = $queryParams['viewer_type'] ?? 'doctor';
+                $viewerType = ($requestedType === 'doctor') ? 'doctor' : 'rep';
+            }
+        } else {
+            // No auth header, use URL parameter
+            $requestedType = $queryParams['viewer_type'] ?? 'doctor';
+            $viewerType = ($requestedType === 'doctor') ? 'doctor' : 'rep';
+        }
+
+        // If it's a representative view but we didn't get an ID from JWT, 
+        // try to get it from the visit session context (optional fallback)
+        if ($viewerType === 'rep' && $viewerId === null && $session !== null) {
             $viewerId = $session->getRepId();
         }
 

@@ -37,7 +37,9 @@ class GetMaterialViewsListAction extends MetricsAction
             $filters['end_date'] = $endDate;
         }
 
-        $metrics = $this->metricsRepository->getMaterialViewsList($organizationId, $managerId, $filters);
+        $page = (int)($this->request->getQueryParams()['page'] ?? 1);
+
+        $metrics = $this->metricsRepository->getMaterialViewsList($organizationId, $managerId, $filters, $page);
 
         return $this->respondWithData($metrics);
     }

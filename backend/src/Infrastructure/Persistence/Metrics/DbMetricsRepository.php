@@ -88,6 +88,30 @@ class DbMetricsRepository implements MetricsRepositoryInterface
             $params[':manager_id'] = $managerId;
         }
 
+        if (!empty($filters['material_id'])) {
+            $where[] = 'm.id = :material_id';
+            $params[':material_id'] = $filters['material_id'];
+        }
+
+        if (!empty($filters['q'])) {
+            $where[] = 'm.title LIKE :q';
+            $params[':q'] = '%' . $filters['q'] . '%';
+        }
+
+        // We apply date filters to the ON clause or WHERE clause for the material_views join
+        // If we want materials with 0 views to show up if they match material_id, but the views are filtered by date, we need to handle that.
+        // Actually, TopMaterials should probably only count views within the date range, but still show materials.
+        // Let's modify the JOIN or create an additional views join condition.
+        $viewsJoinCondition = "mv.material_id = m.id";
+        if (!empty($filters['start_date'])) {
+            $viewsJoinCondition .= " AND DATE(mv.opened_at) >= :start_date";
+            $params[':start_date'] = $filters['start_date'];
+        }
+        if (!empty($filters['end_date'])) {
+            $viewsJoinCondition .= " AND DATE(mv.opened_at) <= :end_date";
+            $params[':end_date'] = $filters['end_date'];
+        }
+
         $whereSql = implode(' AND ', $where);
 
         $sql = "SELECT 
@@ -98,7 +122,7 @@ class DbMetricsRepository implements MetricsRepositoryInterface
                     SUM(CASE WHEN mv.viewer_type = 'rep' THEN 1 ELSE 0 END) as rep_views,
                     SUM(CASE WHEN mv.viewer_type = 'doctor' THEN 1 ELSE 0 END) as doctor_views
                 FROM materials m
-                LEFT JOIN material_views mv ON mv.material_id = m.id
+                LEFT JOIN material_views mv ON {$viewsJoinCondition}
                 WHERE {$whereSql}
                 GROUP BY m.id, m.title, m.type
                 ORDER BY total_views DESC
@@ -110,7 +134,7 @@ class DbMetricsRepository implements MetricsRepositoryInterface
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function getMaterialViewsList(int $organizationId, ?int $managerId, array $filters = []): array
+    public function getMaterialViewsList(int $organizationId, ?int $managerId, array $filters = [], int $page = 1): array
     {
         $where = ['m.organization_id = :org_id'];
         $params = [':org_id' => $organizationId];
@@ -137,6 +161,19 @@ class DbMetricsRepository implements MetricsRepositoryInterface
 
         $whereSql = implode(' AND ', $where);
 
+        $countSql = "SELECT COUNT(*) FROM material_views mv
+                     JOIN materials m ON m.id = mv.material_id
+                     LEFT JOIN visit_sessions vs ON vs.id = mv.visit_session_id
+                     LEFT JOIN users rep ON rep.id = vs.rep_id OR rep.id = mv.viewer_id
+                     WHERE {$whereSql}";
+        
+        $countStmt = $this->pdo->prepare($countSql);
+        $countStmt->execute($params);
+        $total = (int)$countStmt->fetchColumn();
+
+        $pageSize = \App\Infrastructure\Config\PaginationConfig::PAGE_SIZE;
+        $offset = ($page - 1) * $pageSize;
+
         $sql = "SELECT 
                     mv.id,
                     m.id as material_id,
@@ -152,11 +189,27 @@ class DbMetricsRepository implements MetricsRepositoryInterface
                 LEFT JOIN visit_sessions vs ON vs.id = mv.visit_session_id
                 LEFT JOIN users rep ON rep.id = vs.rep_id OR rep.id = mv.viewer_id
                 WHERE {$whereSql}
-                ORDER BY mv.opened_at DESC";
+                ORDER BY mv.opened_at DESC
+                LIMIT :limit OFFSET :offset";
 
         $stmt = $this->pdo->prepare($sql);
-        $stmt->execute($params);
+        foreach ($params as $key => $val) {
+            $stmt->bindValue($key, $val);
+        }
+        $stmt->bindValue(':limit', $pageSize, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
 
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        return [
+            'items' => $items,
+            'meta' => [
+                'total' => $total,
+                'page' => $page,
+                'per_page' => $pageSize,
+                'last_page' => ceil($total / $pageSize)
+            ]
+        ];
     }
 }

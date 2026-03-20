@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { LogIn, TrendingUp, Presentation, FileText, CheckCircle2 } from 'lucide-react'
 import { metricsApi } from '@/services/metrics'
@@ -5,14 +6,21 @@ import { cn } from '@/lib/utils'
 import { MaterialViewsTable } from './MaterialViewsTable'
 
 export function MetricsDashboard() {
+  const [materialIdFilter, setMaterialIdFilter] = useState<string>('')
+  const [startDate, setStartDate] = useState<string>('')
+  const [endDate, setEndDate] = useState<string>('')
   const { data: viewsData, isLoading: isLoadingViews } = useQuery({
     queryKey: ['metrics', 'material-views'],
     queryFn: () => metricsApi.getMaterialViews().then(res => res.data)
   })
 
   const { data: topMaterials, isLoading: isLoadingTop } = useQuery({
-    queryKey: ['metrics', 'top-materials'],
-    queryFn: () => metricsApi.getTopMaterials(10).then(res => res.data)
+    queryKey: ['metrics', 'top-materials', materialIdFilter, startDate, endDate],
+    queryFn: () => metricsApi.getTopMaterials(10, {
+      material_id: materialIdFilter ? Number(materialIdFilter) : undefined,
+      start_date: startDate || undefined,
+      end_date: endDate || undefined
+    }).then(res => res.data)
   })
 
   const { data: repsLogin, isLoading: isLoadingLogins } = useQuery({
@@ -164,7 +172,14 @@ export function MetricsDashboard() {
       </div>
       
       {/* Tabla detallada de visualizaciones */}
-      <MaterialViewsTable />
+      <MaterialViewsTable 
+        materialIdFilter={materialIdFilter}
+        setMaterialIdFilter={setMaterialIdFilter}
+        startDate={startDate}
+        setStartDate={setStartDate}
+        endDate={endDate}
+        setEndDate={setEndDate}
+      />
     </div>
   )
 }

@@ -27,7 +27,26 @@ class GetTopMaterialsAction extends MetricsAction
             $limit = 50;
         }
 
-        $metrics = $this->metricsRepository->getTopMaterialsMetrics($organizationId, $managerId, [], $limit);
+        $materialId = $this->request->getQueryParams()['material_id'] ?? null;
+        $startDate = $this->request->getQueryParams()['start_date'] ?? null;
+        $endDate = $this->request->getQueryParams()['end_date'] ?? null;
+        $q = $this->request->getQueryParams()['q'] ?? null;
+
+        $filters = [];
+        if ($materialId !== null && $materialId !== '') {
+            $filters['material_id'] = (int)$materialId;
+        }
+        if ($startDate !== null && $startDate !== '') {
+            $filters['start_date'] = $startDate;
+        }
+        if ($endDate !== null && $endDate !== '') {
+            $filters['end_date'] = $endDate;
+        }
+        if ($q !== null && $q !== '') {
+            $filters['q'] = trim($q);
+        }
+
+        $metrics = $this->metricsRepository->getTopMaterialsMetrics($organizationId, $managerId, $filters, $limit);
 
         return $this->respondWithData($metrics);
     }

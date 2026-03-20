@@ -1,29 +1,41 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Calendar as CalendarIcon, FileIcon, Eye } from 'lucide-react'
+import { Calendar as CalendarIcon, FileIcon, Eye, ChevronLeft, ChevronRight } from 'lucide-react'
 import { metricsApi } from '@/services/metrics'
 import { cn } from '@/lib/utils'
-import { CustomSelect } from '@/components/ui/CustomSelect'
+import { AsyncMaterialSelect } from '@/components/ui/AsyncMaterialSelect'
 
-export function MaterialViewsTable() {
-  const [materialIdFilter, setMaterialIdFilter] = useState<string>('')
-  const [startDate, setStartDate] = useState<string>('')
-  const [endDate, setEndDate] = useState<string>('')
+interface MaterialViewsTableProps {
+  materialIdFilter: string
+  setMaterialIdFilter: (val: string) => void
+  startDate: string
+  setStartDate: (val: string) => void
+  endDate: string
+  setEndDate: (val: string) => void
+}
 
-  const { data: viewsList, isLoading } = useQuery({
-    queryKey: ['metrics', 'material-views-list', materialIdFilter, startDate, endDate],
+export function MaterialViewsTable({
+  materialIdFilter,
+  setMaterialIdFilter,
+  startDate,
+  setStartDate,
+  endDate,
+  setEndDate
+}: MaterialViewsTableProps) {
+  const [page, setPage] = useState(1)
+
+  const { data: viewsResponse, isLoading } = useQuery({
+    queryKey: ['metrics', 'material-views-list', materialIdFilter, startDate, endDate, page],
     queryFn: () => metricsApi.getMaterialViewsList({
       material_id: materialIdFilter ? Number(materialIdFilter) : undefined,
       start_date: startDate || undefined,
-      end_date: endDate || undefined
+      end_date: endDate || undefined,
+      page
     }).then(res => res.data)
   })
 
-  // We could also fetch materials to populate a select for materialIdFilter
-  const { data: topMaterials } = useQuery({
-    queryKey: ['metrics', 'top-materials-filters'],
-    queryFn: () => metricsApi.getTopMaterials(100).then(res => res.data)
-  })
+  const viewsList = viewsResponse?.items || []
+  const meta = viewsResponse?.meta
 
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-500 mt-8">
@@ -35,17 +47,16 @@ export function MaterialViewsTable() {
           </div>
           
           <div className="flex flex-wrap items-center gap-3">
-            <CustomSelect
-              instanceId="material-filter"
-              value={topMaterials?.find(m => String(m.id) === materialIdFilter) ? { label: topMaterials?.find(m => String(m.id) === materialIdFilter)?.title ?? 'Todos los materiales', value: materialIdFilter } : { label: 'Todos los materiales', value: '' }}
-              onChange={(option: any) => setMaterialIdFilter(option.value)}
-              options={[
-                { label: 'Todos los materiales', value: '' },
-                ...(topMaterials?.map(m => ({ label: m.title, value: String(m.id) })) || [])
-              ]}
-              className="w-full min-w-56"
-              placeholder="Materiales"
-            />
+            <div className="w-full sm:w-auto min-w-[250px]">
+              <AsyncMaterialSelect
+                value={materialIdFilter}
+                onChange={(val) => {
+                  setMaterialIdFilter(val)
+                  setPage(1)
+                }}
+                className="w-full"
+              />
+            </div>
             
             <div className="flex items-center gap-2 bg-background/50 rounded-xl border border-border/50 px-3 py-2">
               <CalendarIcon className="h-4 w-4 text-muted-foreground" />
@@ -53,14 +64,20 @@ export function MaterialViewsTable() {
                 type="date" 
                 className="bg-transparent text-sm outline-none text-foreground"
                 value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+                onChange={(e) => {
+                  setStartDate(e.target.value)
+                  setPage(1)
+                }}
               />
               <span className="text-muted-foreground text-sm">-</span>
               <input 
                 type="date" 
                 className="bg-transparent text-sm outline-none text-foreground"
                 value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
+                onChange={(e) => {
+                  setEndDate(e.target.value)
+                  setPage(1)
+                }}
               />
             </div>
           </div>
@@ -134,6 +151,33 @@ export function MaterialViewsTable() {
               )}
             </tbody>
           </table>
+
+          {/* Render Pagination if meta exists and has more than 1 page */}
+          {meta && meta.last_page > 1 && (
+            <div className="flex items-center justify-between px-4 py-3 border-t border-border/50 bg-background/50">
+              <div className="text-sm text-muted-foreground">
+                Mostrando página <span className="font-medium text-foreground">{meta.page}</span> de <span className="font-medium text-foreground">{meta.last_page}</span>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={meta.page === 1}
+                  className="inline-flex items-center justify-center rounded-lg border border-border bg-background p-2 text-sm font-medium hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+                  aria-label="Anterior"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => setPage(p => Math.min(meta.last_page, p + 1))}
+                  disabled={meta.page === meta.last_page}
+                  className="inline-flex items-center justify-center rounded-lg border border-border bg-background p-2 text-sm font-medium hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+                  aria-label="Siguiente"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

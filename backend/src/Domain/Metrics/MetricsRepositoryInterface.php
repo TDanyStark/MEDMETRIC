@@ -21,5 +21,5 @@ interface MetricsRepositoryInterface
     /**
      * @return array
      */
-    public function getMaterialViewsList(int $organizationId, ?int $managerId, array $filters = []): array;
+    public function getMaterialViewsList(int $organizationId, ?int $managerId, array $filters = [], int $page = 1): array;
 }
