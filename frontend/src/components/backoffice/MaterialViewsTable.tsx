@@ -164,9 +164,7 @@ export function MaterialViewsTable({
                         )}
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <span
-                              className="truncate max-w-[200px] cursor-default"
-                            >
+                            <span className="inline-block align-middle truncate max-w-[200px] cursor-default">
                               {item.material_title}
                             </span>
                           </TooltipTrigger>
@@ -189,10 +187,28 @@ export function MaterialViewsTable({
                       </span>
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">
-                      {item.rep_name || "-"}
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="inline-block align-middle truncate max-w-[200px] cursor-default">
+                            {item.rep_name}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="max-w-xs">{item.rep_name}</p>
+                        </TooltipContent>
+                      </Tooltip>
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">
-                      {item.doctor_name || "-"}
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="inline-block align-middle truncate max-w-[200px] cursor-default">
+                            {item.doctor_name}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="max-w-xs">{item.doctor_name}</p>
+                        </TooltipContent>
+                      </Tooltip>
                     </td>
                   </tr>
                 ))
