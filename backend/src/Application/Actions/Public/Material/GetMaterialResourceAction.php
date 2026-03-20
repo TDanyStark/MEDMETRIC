@@ -51,30 +51,26 @@ class GetMaterialResourceAction extends Action
         try {
             $material = $this->materialRepository->findById($materialId);
             if ($material->getStatus() !== 'approved') {
-                return $this->respondWithData([
-                    'error' => 'Material is not available',
-                ], 403);
+                return $this->redirectToError('Material no disponible', 'Lo sentimos, este contenido ya no se encuentra accesible.');
             }
         } catch (\Exception $e) {
-            return $this->respondWithData([
-                'error' => 'Material not found',
-            ], 404);
+            return $this->redirectToError('Material no encontrado', 'El recurso solicitado no existe o fue eliminado.');
         }
 
         // Validate session token (MANDATORY for public access)
         $token = $queryParams['session_token'] ?? '';
         if (empty($token)) {
-            return $this->respondWithData(['error' => 'Enlace no válido: falta el token de sesión'], 403);
+            return $this->redirectToError('Link inválido', 'Falta el token de seguridad para visualizar este material.');
         }
 
         $session = $this->visitSessionRepository->findByDoctorToken($token);
         if (!$session) {
-            return $this->respondWithData(['error' => 'Enlace no válido o expirado'], 403);
+            return $this->redirectToError('Link expirado', 'Esta sesión de visita ya no es válida o el enlace ha caducado.');
         }
 
         // Verify material is in this session
         if (!$this->materialViewRepository->isMaterialInSession($materialId, $session->getId())) {
-            return $this->respondWithData(['error' => 'Este material no está disponible en la sesión actual'], 403);
+            return $this->redirectToError('Acceso denegado', 'Este material no forma parte de la sesión de visita autorizada.');
         }
 
         $sessionId = $session->getId();
@@ -98,8 +94,20 @@ class GetMaterialResourceAction extends Action
             'pdf'   => $this->servePdf($material),
             'video' => $this->serveVideo($material),
             'link'  => $this->serveLink($material, $queryParams),
-            default => $this->respondWithData(['error' => 'Unknown material type'], 400),
+            default => $this->redirectToError('Error de sistema', 'El tipo de material no es compatible con el reproductor.'),
         };
+    }
+
+    private function redirectToError(string $title, string $message): Response
+    {
+        $query = http_build_query([
+            'title' => $title,
+            'msg'   => $message
+        ]);
+
+        return $this->response
+            ->withHeader('Location', '/public/error?' . $query)
+            ->withStatus(302);
     }
 
     private function recordResourceView(Material $material, ?int $sessionId, string $viewerType = 'doctor', ?int $viewerId = null): void

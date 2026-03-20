@@ -16,6 +16,7 @@ import { OrgAdminBrandsPage } from './pages/org-admin/OrgAdminBrandsPage'
 import { OrgAdminMetricsPage } from './pages/org-admin/OrgAdminMetricsPage'
 import { OrgAdminUsersPage } from './pages/org-admin/OrgAdminUsersPage'
 import PublicVisitPage from './pages/public/PublicVisitPage'
+import PublicErrorPage from './pages/public/PublicErrorPage'
 import RoleHomePage from './pages/RoleHomePage'
 import { SuperAdminMetricsPage, SuperAdminOrgAdminsPage, SuperAdminOrganizationsPage } from './pages/superadmin/SuperAdminPages'
 
@@ -65,6 +66,7 @@ function App() {
             <Route path="/" element={<HomeRedirect />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/public/visit/:token" element={<PublicVisitPage />} />
+            <Route path="/public/error" element={<PublicErrorPage />} />
 
             <Route
               path="/superadmin"
