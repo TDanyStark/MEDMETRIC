@@ -78,8 +78,12 @@ class GetMaterialResourceAction extends Action
 
         $type = $material->getType();
 
+        // Extract viewer info from query params
+        $viewerType = $queryParams['viewer_type'] ?? 'doctor';
+        $viewerId = !empty($queryParams['viewer_id']) ? (int) $queryParams['viewer_id'] : null;
+
         // Record view metrics for all types when accessed via this endpoint
-        $this->recordResourceView($material, $sessionId);
+        $this->recordResourceView($material, $sessionId, $viewerType, $viewerId);
 
         return match ($type) {
             'pdf'   => $this->servePdf($material),
@@ -89,7 +93,7 @@ class GetMaterialResourceAction extends Action
         };
     }
 
-    private function recordResourceView(Material $material, ?int $sessionId): void
+    private function recordResourceView(Material $material, ?int $sessionId, string $viewerType = 'doctor', ?int $viewerId = null): void
     {
         try {
             $serverParams = $this->request->getServerParams();
@@ -99,8 +103,8 @@ class GetMaterialResourceAction extends Action
             $this->materialViewRepository->createView([
                 'material_id'      => $material->getId(),
                 'visit_session_id' => $sessionId,
-                'viewer_type'      => 'doctor', // Default to doctor for resource endpoint
-                'viewer_id'        => null,
+                'viewer_type'      => $viewerType,
+                'viewer_id'        => $viewerId,
                 'user_agent'       => $userAgent,
                 'ip_address'       => $ipAddress,
             ]);
@@ -140,14 +144,10 @@ class GetMaterialResourceAction extends Action
             ], 404);
         }
 
-        // Return video URL for embedding
-        return $this->respondWithData([
-            'type'         => 'video',
-            'url'          => $externalUrl,
-            'embed_url'    => $this->getYoutubeEmbedUrl($externalUrl),
-            'title'        => $material->getTitle(),
-            'description'  => $material->getDescription(),
-        ]);
+        // Return a 302 redirect to the external video URL
+        return $this->response
+            ->withHeader('Location', $externalUrl)
+            ->withStatus(302);
     }
 
     private function serveLink($material, array $queryParams): Response
@@ -160,14 +160,10 @@ class GetMaterialResourceAction extends Action
             ], 404);
         }
 
-        // For links, we return the URL and let frontend handle it
-        return $this->respondWithData([
-            'type'         => 'link',
-            'url'          => $externalUrl,
-            'title'        => $material->getTitle(),
-            'description'  => $material->getDescription(),
-            'redirect'     => true,
-        ]);
+        // Return a 302 redirect to the external URL
+        return $this->response
+            ->withHeader('Location', $externalUrl)
+            ->withStatus(302);
     }
 
     private function getYoutubeEmbedUrl(string $url): ?string

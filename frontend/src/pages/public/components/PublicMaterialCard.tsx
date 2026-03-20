@@ -1,5 +1,4 @@
-import { Eye, FileText } from "lucide-react";
-import { Button } from "@/components/ui/Button";
+import { FileText } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { PublicMaterial } from "@/types";
 import { MaterialTypeLabel } from "@/pages/rep/components/RepHelpers";
@@ -12,27 +11,28 @@ import {
 interface PublicMaterialCardProps {
   item: PublicMaterial;
   isActive: boolean;
-  isOpening: boolean;
-  onClick: (item: PublicMaterial) => void;
-  onOpenNew: (item: PublicMaterial) => void;
+  href: string;
 }
 
 export function PublicMaterialCard({
   item,
   isActive,
-  isOpening,
-  onClick,
-  onOpenNew,
+  href,
 }: PublicMaterialCardProps) {
   return (
-    <Card
-      className={`group cursor-pointer overflow-hidden transition-all duration-300 ${
-        isActive
-          ? "ring-2 ring-primary bg-primary/5 shadow-lg shadow-primary/10"
-          : "hover:border-primary/50 hover:shadow-md border-border/50 bg-background/50 backdrop-blur-sm"
-      }`}
-      onClick={() => onOpenNew(item)}
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="block group"
     >
+      <Card
+        className={`cursor-pointer overflow-hidden transition-all duration-300 ${
+          isActive
+            ? "ring-2 ring-primary bg-primary/5 shadow-lg shadow-primary/10"
+            : "hover:border-primary/50 hover:shadow-md border-border/50 bg-background/50 backdrop-blur-sm"
+        }`}
+      >
       <div className="relative aspect-video bg-muted border-b border-border/10 overflow-hidden">
         {item.cover_url || item.cover_path ? (
           <img
@@ -51,21 +51,6 @@ export function PublicMaterialCard({
         
         <div className="absolute top-2.5 left-2.5 scale-90 origin-top-left">
           <MaterialTypeLabel type={item.type} />
-        </div>
-
-        <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/60 to-transparent p-2.5 pt-6 flex justify-center lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-          <Button
-            size="sm"
-            variant="secondary"
-            className="h-8 w-full shadow-lg border-none hover:bg-white hover:text-black text-[11px]"
-            loading={isOpening}
-            onClick={(e) => {
-              e.stopPropagation();
-              onClick(item);
-            }}
-          >
-            <Eye className="mr-1.5 h-3 w-3" /> Vista Previa
-          </Button>
         </div>
       </div>
       <CardContent className="p-3">
@@ -91,5 +76,6 @@ export function PublicMaterialCard({
         )}
       </CardContent>
     </Card>
+    </a>
   );
 }

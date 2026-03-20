@@ -1,22 +1,17 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useParams } from 'react-router-dom'
-import { toast } from 'sonner'
 import api from '@/services/api'
-import { ApiResponse, MaterialResource, PublicMaterial, PublicVisitPayload } from '@/types'
+import { ApiResponse, PublicMaterial, PublicVisitPayload } from '@/types'
 
 // Sub-components
 import { PublicVisitLoading } from './components/PublicVisitLoading'
 import { PublicVisitError } from './components/PublicVisitError'
 import { PublicVisitHeader } from './components/PublicVisitHeader'
 import { PublicVisitSidebar } from './components/PublicVisitSidebar'
-import { PublicVisitContentView } from './components/PublicVisitContentView'
 
 export default function PublicVisitPage() {
   const { token = '' } = useParams()
-  const [activeMaterialId, setActiveMaterialId] = useState<number | null>(null)
-  const [resource, setResource] = useState<MaterialResource | null>(null)
-  const [openingId, setOpeningId] = useState<number | null>(null)
   
   const viewerInfo = useMemo(() => {
     try {
@@ -42,63 +37,18 @@ export default function PublicVisitPage() {
     },
   })
 
-  const activeMaterial = useMemo(
-    () => sessionQuery.data?.materials.find(item => item.id === activeMaterialId) ?? null,
-    [activeMaterialId, sessionQuery.data?.materials],
-  )
-
-  const handleOpenMaterial = async (material: PublicMaterial, openInNewWindow = false) => {
-    const pdfUrl = `/api/v1/public/material/${material.id}/resource?session_token=${encodeURIComponent(token)}`
-
-    // Early handling for PDF to avoid popup blockers
-    if (material.type === 'pdf') {
-      setActiveMaterialId(material.id)
-      setResource({ type: 'pdf', url: pdfUrl })
-      
-      if (openInNewWindow) {
-        window.open(pdfUrl, '_blank', 'noopener,noreferrer')
-      }
-
-      // Record hit in background
-      api.post(`/public/material/${material.id}/open`, {
-        session_token: token,
-        viewer_type: viewerInfo.type,
-        viewer_id: viewerInfo.id,
-      }).catch(err => console.error('Failed to record open:', err))
-      
-      return
+  const getMaterialHref = (material: PublicMaterial) => {
+    const baseUrl = `/api/v1/public/material/${material.id}/resource`
+    const params = new URLSearchParams({
+      session_token: token,
+      viewer_type: viewerInfo.type
+    })
+    
+    if (viewerInfo.id) {
+      params.append('viewer_id', viewerInfo.id.toString())
     }
 
-    // For other types, we need the resource details from API
-    setOpeningId(material.id)
-    try {
-      // Record hit first for non-PDF
-      await api.post(`/public/material/${material.id}/open`, {
-        session_token: token,
-        viewer_type: viewerInfo.type,
-        viewer_id: viewerInfo.id,
-      })
-
-      const res = await api.get<ApiResponse<MaterialResource>>(
-        `/public/material/${material.id}/resource?session_token=${encodeURIComponent(token)}`,
-      )
-
-      setActiveMaterialId(material.id)
-      setResource(res.data)
-
-      if (openInNewWindow || (res.data.type === 'link' && res.data.url)) {
-        // Use the original URL (e.g. YouTube watch URL) when opening in a new tab/window
-        const targetUrl = res.data.url || res.data.embed_url
-        if (targetUrl) {
-          window.open(targetUrl, '_blank', 'noopener,noreferrer')
-        }
-      }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'No se pudo abrir el material.'
-      toast.error(message)
-    } finally {
-      setOpeningId(null)
-    }
+    return `${baseUrl}?${params.toString()}`
   }
 
   if (sessionQuery.isLoading) {
@@ -121,19 +71,11 @@ export default function PublicVisitPage() {
           materialCount={sessionQuery.data.material_count}
         />
 
-        <div className="grid gap-8 lg:grid-cols-[420px_1fr]">
-          <PublicVisitSidebar 
-            materials={sessionQuery.data.materials}
-            activeMaterialId={activeMaterialId}
-            openingId={openingId}
-            onOpenMaterial={handleOpenMaterial}
-          />
-
-          <PublicVisitContentView 
-            activeMaterial={activeMaterial}
-            resource={resource}
-          />
-        </div>
+        <PublicVisitSidebar 
+          materials={sessionQuery.data.materials}
+          activeMaterialId={null}
+          getHref={getMaterialHref}
+        />
       </div>
     </div>
   )
