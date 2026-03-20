@@ -112,7 +112,7 @@ export function SelectedMaterialsPanel({
             className="rounded-t-[3rem] p-0 h-[85vh] border-t-0 bg-transparent overflow-hidden"
           >
             <div className="h-full bg-background/95 backdrop-blur-2xl rounded-t-[3rem] border-t border-border/40 shadow-2xl flex flex-col">
-              <div className="w-16 h-1.5 bg-border/40 mx-auto mt-5 rounded-full mb-2 shrink-0" />
+              <div className="w-16 h-1.5 bg-border mx-auto mt-5 rounded-full mb-2 shrink-0" />
               <div className="flex-1 min-h-0">{content}</div>
             </div>
           </SheetContent>
