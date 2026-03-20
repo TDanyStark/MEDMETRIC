@@ -1,6 +1,7 @@
 import { FileText, PlayCircle, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { MaterialType } from "@/types/rep";
+import { parseUTCDate } from "@/lib/utils";
 
 export function LoadingState({ message }: { message: string }) {
   return (
@@ -50,6 +51,6 @@ export function formatDate(dateString: string) {
     month: "short",
     year: "numeric",
   })
-    .format(new Date(dateString))
+    .format(parseUTCDate(dateString))
     .replace(".", "");
 }

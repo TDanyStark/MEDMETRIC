@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { LogIn, TrendingUp, Presentation, FileText, CheckCircle2 } from 'lucide-react'
 import { metricsApi } from '@/services/metrics'
-import { cn } from '@/lib/utils'
+import { cn, formatDateTime } from '@/lib/utils'
 import {
   Tooltip,
   TooltipContent,
@@ -172,7 +172,7 @@ export function MetricsDashboard() {
                       <td className="px-4 py-3 text-right">
                         {rep.last_login_at ? (
                           <span className="text-muted-foreground">
-                            {new Date(rep.last_login_at).toLocaleDateString()} a las {new Date(rep.last_login_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            {formatDateTime(rep.last_login_at)}
                           </span>
                         ) : (
                           <span className="text-muted-foreground/50 text-xs italic">Nunca</span>

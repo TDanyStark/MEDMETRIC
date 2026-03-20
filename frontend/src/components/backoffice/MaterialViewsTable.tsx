@@ -13,7 +13,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { metricsApi } from "@/services/metrics";
-import { cn } from "@/lib/utils";
+import { cn, formatDateTime } from "@/lib/utils";
 import { AsyncMaterialSelect } from "@/components/ui/AsyncMaterialSelect";
 
 interface MaterialViewsTableProps {
@@ -143,11 +143,7 @@ export function MaterialViewsTable({
                     className="hover:bg-muted/30 transition-colors"
                   >
                     <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
-                      {new Date(item.opened_at).toLocaleDateString()}{" "}
-                      {new Date(item.opened_at).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
+                      {formatDateTime(item.opened_at)}
                     </td>
                     <td className="px-4 py-3 font-medium text-foreground">
                       <div className="flex items-center gap-2">
