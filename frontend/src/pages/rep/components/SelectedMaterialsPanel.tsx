@@ -1,5 +1,5 @@
 import { Stethoscope, Plus, PackagePlus } from "lucide-react";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/Sheet";
+import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from "@/components/ui/Sheet";
 import { Button } from "@/components/ui/Button";
 import { Material } from "@/types/rep";
 import { MaterialTypeLabel } from "@/components/ui/MaterialTypeLabel";
@@ -111,6 +111,10 @@ export function SelectedMaterialsPanel({
             side="bottom"
             className="rounded-t-[3rem] p-0 h-[85vh] border-t-0 bg-transparent overflow-hidden"
           >
+            <SheetTitle className="sr-only">Materiales seleccionados</SheetTitle>
+            <SheetDescription className="sr-only">
+              Lista de materiales seleccionados para la sesión actual.
+            </SheetDescription>
             <div className="h-full bg-background/95 backdrop-blur-2xl rounded-t-[3rem] border-t border-border/40 shadow-2xl flex flex-col">
               <div className="w-16 h-1.5 bg-border mx-auto mt-5 rounded-full mb-2 shrink-0" />
               <div className="flex-1 min-h-0">{content}</div>

@@ -7,7 +7,7 @@ import {
   User as UserIcon,
 } from "lucide-react";
 import { useAuth } from "@/contexts/useAuth";
-import { Sheet, SheetContent } from "@/components/ui/Sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/Sheet";
 import { Avatar, AvatarFallback } from "@/components/ui/Avatar";
 import { getNavItems } from "@/lib/auth";
 import { cn } from "@/lib/utils";
@@ -266,6 +266,12 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           side="left"
           className="w-[280px] border-none bg-transparent p-0"
         >
+          <SheetHeader className="sr-only">
+            <SheetTitle>Menú de Navegación</SheetTitle>
+            <SheetDescription>
+              Selecciona una opción del menú para navegar por la aplicación.
+            </SheetDescription>
+          </SheetHeader>
           {renderContent(false, true)}
         </SheetContent>
       </Sheet>

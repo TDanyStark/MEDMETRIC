@@ -21,10 +21,10 @@ export function SheetOverlay({ className, ...props }: React.ComponentProps<typeo
 }
 
 const sheetVariants = {
-  left: 'inset-y-0 left-0 h-full w-3/4 border-r data-[state=open]:slide-in-from-left data-[state=closed]:slide-out-to-left sm:max-w-sm',
-  right: 'inset-y-0 right-0 h-full w-3/4 border-l data-[state=open]:slide-in-from-right data-[state=closed]:slide-out-to-right sm:max-w-sm',
-  bottom: 'inset-x-0 bottom-0 h-auto border-t data-[state=open]:slide-in-from-bottom data-[state=closed]:slide-out-to-bottom',
-  top: 'inset-x-0 top-0 h-auto border-b data-[state=open]:slide-in-from-top data-[state=closed]:slide-out-to-top',
+  left: 'inset-y-0 left-0 h-full w-3/4 border-r rounded-r-3xl data-[state=open]:slide-in-from-left data-[state=closed]:slide-out-to-left sm:max-w-sm',
+  right: 'inset-y-0 right-0 h-full w-3/4 border-l rounded-l-3xl data-[state=open]:slide-in-from-right data-[state=closed]:slide-out-to-right sm:max-w-sm',
+  bottom: 'inset-x-0 bottom-0 h-auto border-t rounded-t-3xl data-[state=open]:slide-in-from-bottom data-[state=closed]:slide-out-to-bottom',
+  top: 'inset-x-0 top-0 h-auto border-b rounded-b-3xl data-[state=open]:slide-in-from-top data-[state=closed]:slide-out-to-top',
 } as const
 
 interface SheetContentProps extends React.ComponentProps<typeof DialogPrimitive.Content> {
@@ -37,7 +37,7 @@ export function SheetContent({ side = 'right', className, children, ...props }: 
       <SheetOverlay />
       <DialogPrimitive.Content
         className={cn(
-          'fixed z-50 bg-card shadow-sm duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out',
+          'fixed z-50 bg-card shadow-sm duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out overflow-hidden',
           sheetVariants[side],
           className,
         )}
@@ -50,5 +50,31 @@ export function SheetContent({ side = 'right', className, children, ...props }: 
         </DialogPrimitive.Close>
       </DialogPrimitive.Content>
     </SheetPortal>
+  )
+}
+
+export function SheetHeader({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+  return <div className={cn('flex flex-col space-y-2 text-center sm:text-left', className)} {...props} />
+}
+
+export function SheetFooter({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+  return <div className={cn('flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2', className)} {...props} />
+}
+
+export function SheetTitle({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.Title>) {
+  return (
+    <DialogPrimitive.Title
+      className={cn('text-lg font-semibold text-foreground', className)}
+      {...props}
+    />
+  )
+}
+
+export function SheetDescription({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.Description>) {
+  return (
+    <DialogPrimitive.Description
+      className={cn('text-sm text-muted-foreground', className)}
+      {...props}
+    />
   )
 }
