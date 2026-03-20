@@ -63,6 +63,7 @@ class GetMaterialResourceAction extends Action
 
         // Validate session token if provided (for doctor access)
         $sessionId = null;
+        $session = null;
         if (!empty($queryParams['session_token'])) {
             $session = $this->visitSessionRepository->findByDoctorToken($queryParams['session_token']);
             if ($session) {
@@ -81,6 +82,12 @@ class GetMaterialResourceAction extends Action
         // Extract viewer info from query params
         $viewerType = $queryParams['viewer_type'] ?? 'doctor';
         $viewerId = !empty($queryParams['viewer_id']) ? (int) $queryParams['viewer_id'] : null;
+
+        // Fallback: If it's a rep view within a session but no viewer_id was passed, 
+        // use the rep from the session itself.
+        if ($viewerType === 'rep' && $viewerId === null && $session !== null) {
+            $viewerId = $session->getRepId();
+        }
 
         // Record view metrics for all types when accessed via this endpoint
         $this->recordResourceView($material, $sessionId, $viewerType, $viewerId);

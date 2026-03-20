@@ -19,13 +19,13 @@ export default function PublicVisitPage() {
       if (authUserStr) {
         const user = JSON.parse(authUserStr)
         if (user && user.role) {
-          return { type: 'rep' as const, id: user.id || null }
+          return { type: 'rep' as const }
         }
       }
     } catch(e) {
       // Ignore
     }
-    return { type: 'doctor' as const, id: null }
+    return { type: 'doctor' as const }
   }, [])
 
   const sessionQuery = useQuery({
@@ -44,10 +44,6 @@ export default function PublicVisitPage() {
       viewer_type: viewerInfo.type
     })
     
-    if (viewerInfo.id) {
-      params.append('viewer_id', viewerInfo.id.toString())
-    }
-
     return `${baseUrl}?${params.toString()}`
   }
 
