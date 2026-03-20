@@ -20,6 +20,7 @@ use App\Application\Actions\Admin\User\ListRolesAction;
 use App\Application\Actions\Admin\User\UpdateAdminUserAction;
 use App\Application\Actions\Admin\User\UpdateOrgAdminAction;
 use App\Application\Actions\Admin\User\UpdateRepSubscriptionsAction;
+use App\Application\Actions\Auth\ChangePasswordAction;
 use App\Application\Actions\Auth\LoginAction;
 use App\Application\Actions\Auth\MeAction;
 use App\Application\Actions\Manager\Brand\ListBrandsAction;
@@ -155,6 +156,7 @@ return function (App $app) {
         // -------------------------------------------------------------------------
         $group->group('/auth', function (RouteCollectorProxy $auth) {
             $auth->get('/me', MeAction::class);
+            $auth->post('/change-password', ChangePasswordAction::class);
         })->add(JwtMiddleware::class);
 
         // -------------------------------------------------------------------------

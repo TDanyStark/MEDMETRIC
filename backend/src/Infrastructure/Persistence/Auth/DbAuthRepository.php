@@ -49,4 +49,19 @@ class DbAuthRepository implements AuthRepositoryInterface
 
         $stmt->execute([':id' => $userId]);
     }
+
+    /**
+     * Update the password hash for a user.
+     */
+    public function updatePassword(int $userId, string $passwordHash): void
+    {
+        $stmt = $this->pdo->prepare(
+            'UPDATE users SET password_hash = :hash WHERE id = :id'
+        );
+
+        $stmt->execute([
+            ':hash' => $passwordHash,
+            ':id' => $userId,
+        ]);
+    }
 }

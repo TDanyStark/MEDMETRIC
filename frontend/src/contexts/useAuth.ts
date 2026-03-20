@@ -9,6 +9,7 @@ interface AuthState {
   login: (email: string, password: string) => Promise<User>
   logout: () => void
   syncSession: () => Promise<User | null>
+  changePassword: (current_password: string, new_password: string) => Promise<void>
 }
 
 function normalizeUser(value: unknown): User | null {
@@ -106,6 +107,9 @@ export const useAuthStore = create<AuthState>((set) => ({
       return null
     }
   },
+  changePassword: async (current_password: string, new_password: string) => {
+    await api.post('/auth/change-password', { current_password, new_password })
+  },
 }))
 
 export function useAuth() {
@@ -116,6 +120,7 @@ export function useAuth() {
       login: state.login,
       logout: state.logout,
       syncSession: state.syncSession,
+      changePassword: state.changePassword,
     }))
   )
 }

@@ -16,4 +16,9 @@ interface AuthRepositoryInterface
      * Update the last_login_at timestamp for a user.
      */
     public function updateLastLogin(int $userId): void;
+
+    /**
+     * Update the password hash for a user.
+     */
+    public function updatePassword(int $userId, string $passwordHash): void;
 }

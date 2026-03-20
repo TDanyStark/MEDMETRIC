@@ -11,6 +11,7 @@ import { Sheet, SheetContent } from "@/components/ui/Sheet";
 import { Avatar, AvatarFallback } from "@/components/ui/Avatar";
 import { getNavItems } from "@/lib/auth";
 import { cn } from "@/lib/utils";
+import { ChangePasswordDialog } from "../auth/ChangePasswordDialog";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -89,6 +90,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
 
   const [isCollapsed, setIsCollapsed] = useState(() => {
     if (typeof window !== "undefined") {
@@ -179,8 +181,9 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         )}
       >
         <div
+          onClick={() => setIsChangePasswordOpen(true)}
           className={cn(
-            "relative flex items-center rounded-2xl bg-white/5 p-2 transition-all duration-300 hover:bg-white/10 group overflow-hidden",
+            "relative flex items-center rounded-2xl bg-white/5 p-2 transition-all duration-300 hover:bg-white/10 group overflow-hidden cursor-pointer",
             collapsed ? "justify-center" : "gap-3",
           )}
         >
@@ -281,6 +284,11 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           {renderContent(false, true)}
         </SheetContent>
       </Sheet>
+
+      <ChangePasswordDialog
+        open={isChangePasswordOpen}
+        onOpenChange={setIsChangePasswordOpen}
+      />
     </>
   );
 }
