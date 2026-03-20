@@ -19,7 +19,9 @@ import {
   listRepMaterialFilters,
 } from "@/services/rep";
 import { Material, RepSession } from "@/types/rep";
-import { LoadingState, ErrorState, MaterialTypeLabel } from "./RepHelpers";
+import { LoadingState } from "@/components/ui/LoadingState";
+import { ErrorState } from "@/components/ui/ErrorState";
+import { MaterialTypeLabel } from "@/components/ui/MaterialTypeLabel";
 import { Badge } from "@/components/ui/Badge";
 import {
   Tooltip,

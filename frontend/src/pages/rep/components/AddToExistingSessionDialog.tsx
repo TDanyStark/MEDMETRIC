@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/Badge";
 import { listRepSessions, addMaterialsToSession } from "@/services/rep";
 import { RepSession } from "@/types/rep";
 import { formatDateTime } from "@/lib/utils";
-import { LoadingState } from "./RepHelpers";
+import { LoadingState } from "@/components/ui/LoadingState";
 
 interface AddToExistingSessionDialogProps {
   open: boolean;

@@ -2,7 +2,8 @@ import { FileText, Eye } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Material } from "@/types/rep";
-import { MaterialTypeLabel, formatDate } from "./RepHelpers";
+import { MaterialTypeLabel } from "@/components/ui/MaterialTypeLabel";
+import { formatDate } from "@/lib/utils";
 import {
   Tooltip,
   TooltipContent,

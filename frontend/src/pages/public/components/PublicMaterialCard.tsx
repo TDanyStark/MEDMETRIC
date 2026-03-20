@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
 import { PublicMaterial } from "@/types";
-import { MaterialTypeLabel } from "@/pages/rep/components/RepHelpers";
+import { MaterialTypeLabel } from "@/components/ui/MaterialTypeLabel";
 import {
   Tooltip,
   TooltipContent,

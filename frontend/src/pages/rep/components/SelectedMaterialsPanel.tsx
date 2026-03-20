@@ -2,7 +2,7 @@ import { Stethoscope, Plus, PackagePlus } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/Sheet";
 import { Button } from "@/components/ui/Button";
 import { Material } from "@/types/rep";
-import { MaterialTypeLabel } from "./RepHelpers";
+import { MaterialTypeLabel } from "@/components/ui/MaterialTypeLabel";
 
 export function SelectedMaterialsPanel({
   selected,

@@ -11,7 +11,8 @@ import {
 } from "@/lib/search";
 import { listRepMaterials, listRepMaterialFilters } from "@/services/rep";
 import { Material } from "@/types/rep";
-import { LoadingState, ErrorState } from "./components/RepHelpers";
+import { LoadingState } from "@/components/ui/LoadingState";
+import { ErrorState } from "@/components/ui/ErrorState";
 import { SelectedMaterialsPanel } from "./components/SelectedMaterialsPanel";
 import { MaterialCard } from "./components/MaterialCard";
 import { MaterialFilters } from "./components/MaterialFilters";

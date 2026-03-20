@@ -1,23 +1,6 @@
 import { FileText, PlayCircle, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { MaterialType } from "@/types/rep";
-import { parseUTCDate } from "@/lib/utils";
-
-export function LoadingState({ message }: { message: string }) {
-  return (
-    <div className="rounded-2xl border border-border/50 bg-background/50 px-4 py-8 text-center text-sm text-muted-foreground">
-      {message}
-    </div>
-  );
-}
-
-export function ErrorState({ message }: { message: string }) {
-  return (
-    <div className="rounded-2xl border border-destructive/20 bg-destructive/5 px-4 py-8 text-center text-sm text-destructive">
-      {message}
-    </div>
-  );
-}
 
 export function MaterialTypeLabel({ type }: { type: MaterialType }) {
   const label = type === "pdf" ? "PDF" : type === "video" ? "Video" : "Link";
@@ -43,14 +26,4 @@ export function MaterialTypeLabel({ type }: { type: MaterialType }) {
       {label}
     </Badge>
   );
-}
-
-export function formatDate(dateString: string) {
-  return new Intl.DateTimeFormat("es-ES", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  })
-    .format(parseUTCDate(dateString))
-    .replace(".", "");
 }

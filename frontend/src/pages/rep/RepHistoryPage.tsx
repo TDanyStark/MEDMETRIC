@@ -17,7 +17,8 @@ import { getNumberParam, getStringParam, updateSearchParams } from '@/lib/search
 import { formatDateTime } from '@/lib/utils'
 import { listRepSessions } from '@/services/rep'
 import { RepSession } from '@/types/rep'
-import { LoadingState, ErrorState } from './components/RepHelpers'
+import { LoadingState } from "@/components/ui/LoadingState";
+import { ErrorState } from "@/components/ui/ErrorState";
 import { AddMaterialsDialog } from './components/AddMaterialsDialog'
 
 export function RepHistoryPage() {
