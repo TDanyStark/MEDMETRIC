@@ -1,5 +1,4 @@
-import { FileText, Eye, Share2 } from "lucide-react";
-import { toast } from "sonner";
+import { FileText, Eye } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Material } from "@/types/rep";
@@ -23,15 +22,6 @@ export function MaterialCard({
   onToggle,
   onPreview,
 }: MaterialCardProps) {
-  const handleShare = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const shareUrl = `${window.location.origin}/api/v1/public/material/${item.id}/resource?viewer_type=doctor`;
-    
-    navigator.clipboard.writeText(shareUrl)
-      .then(() => toast.success("Enlace para el médico copiado con éxito"))
-      .catch(() => toast.error("No se pudo copiar el enlace"));
-  };
-
   return (
     <Card
       className={`group cursor-pointer overflow-hidden transition-all duration-300 ${
@@ -70,34 +60,18 @@ export function MaterialCard({
         </div>
 
         {/* Action Overlay */}
-        <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/80 via-black/40 to-transparent p-3 pt-10 flex gap-2 lg:opacity-0 lg:group-hover:opacity-100 transition-all duration-300">
+        <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/80 via-black/40 to-transparent p-3 pt-10 flex justify-center lg:opacity-0 lg:group-hover:opacity-100 transition-all duration-300">
           <Button
             size="sm"
             variant="secondary"
-            className="h-8 flex-1 shadow-lg border-none font-semibold text-[11px] hover:bg-white hover:text-black transition-colors"
+            className="h-8 w-full shadow-lg border-none font-semibold text-[11px] hover:bg-white hover:text-black transition-colors"
             onClick={(e) => {
               e.stopPropagation();
               onPreview(item);
             }}
           >
-            <Eye className="mr-1.5 h-3.5 w-3.5" /> Previa
+            <Eye className="mr-1.5 h-3.5 w-3.5" /> Previsualización rápida
           </Button>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-8 px-3 shadow-lg border-none"
-                onClick={handleShare}
-              >
-                <Share2 className="h-3.5 w-3.5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="top">
-              <p className="text-xs">Copiar enlace para médico</p>
-            </TooltipContent>
-          </Tooltip>
         </div>
       </div>
       <CardContent className="p-4 pt-3">

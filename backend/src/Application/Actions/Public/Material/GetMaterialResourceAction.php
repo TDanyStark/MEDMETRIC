@@ -61,21 +61,23 @@ class GetMaterialResourceAction extends Action
             ], 404);
         }
 
-        // Validate session token if provided (for doctor access)
-        $sessionId = null;
-        $session = null;
-        if (!empty($queryParams['session_token'])) {
-            $session = $this->visitSessionRepository->findByDoctorToken($queryParams['session_token']);
-            if ($session) {
-                // Verify material is in this session
-                if (!$this->materialViewRepository->isMaterialInSession($materialId, $session->getId())) {
-                    return $this->respondWithData([
-                        'error' => 'Material not available in this session',
-                    ], 403);
-                }
-                $sessionId = $session->getId();
-            }
+        // Validate session token (MANDATORY for public access)
+        $token = $queryParams['session_token'] ?? '';
+        if (empty($token)) {
+            return $this->respondWithData(['error' => 'Enlace no válido: falta el token de sesión'], 403);
         }
+
+        $session = $this->visitSessionRepository->findByDoctorToken($token);
+        if (!$session) {
+            return $this->respondWithData(['error' => 'Enlace no válido o expirado'], 403);
+        }
+
+        // Verify material is in this session
+        if (!$this->materialViewRepository->isMaterialInSession($materialId, $session->getId())) {
+            return $this->respondWithData(['error' => 'Este material no está disponible en la sesión actual'], 403);
+        }
+
+        $sessionId = $session->getId();
 
         $type = $material->getType();
 
