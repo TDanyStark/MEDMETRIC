@@ -54,60 +54,75 @@ export function AsyncMaterialSelect({
   const customStyles = {
     control: (base: any, state: any) => ({
       ...base,
-      backgroundColor: 'transparent',
-      borderColor: state.isFocused ? 'hsl(var(--ring))' : 'hsl(var(--border) / 0.5)',
-      borderRadius: 'calc(var(--radius) + 2px)',
-      minHeight: '40px',
-      boxShadow: state.isFocused ? '0 0 0 1px hsl(var(--ring))' : 'none',
+      backgroundColor: 'var(--background)',
+      borderColor: state.isFocused ? 'var(--primary)' : 'var(--border)',
+      borderRadius: '16px',
+      padding: '2px 8px',
+      minHeight: '44px',
+      boxShadow: state.isFocused ? '0 0 0 2px var(--ring)' : 'none',
       '&:hover': {
-        borderColor: state.isFocused ? 'hsl(var(--ring))' : 'hsl(var(--border))'
-      }
+        borderColor: state.isFocused ? 'var(--primary)' : 'var(--primary)',
+      },
+      transition: 'all 0.2s ease',
     }),
     valueContainer: (base: any) => ({
       ...base,
-      padding: '0 12px',
-      color: 'hsl(var(--foreground))'
+      paddingLeft: '4px',
     }),
     singleValue: (base: any) => ({
       ...base,
-      color: 'hsl(var(--foreground))'
+      color: 'var(--foreground)',
+      fontWeight: '500',
+    }),
+    placeholder: (base: any) => ({
+      ...base,
+      color: 'var(--muted-foreground)',
+      fontSize: '0.875rem',
     }),
     input: (base: any) => ({
       ...base,
-      color: 'hsl(var(--foreground))'
+      color: 'var(--foreground)'
     }),
     menu: (base: any) => ({
       ...base,
-      backgroundColor: 'hsl(var(--popover))',
-      border: '1px solid hsl(var(--border))',
-      boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
-      borderRadius: 'calc(var(--radius) + 2px)',
+      backgroundColor: 'var(--popover)',
+      borderRadius: '16px',
+      marginTop: '8px',
+      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+      border: '1px solid var(--border)',
       overflow: 'hidden',
-      zIndex: 50
+      zIndex: 50,
+      animation: 'in 0.2s ease-out',
+    }),
+    menuList: (base: any) => ({
+      ...base,
+      padding: '4px',
     }),
     option: (base: any, state: any) => ({
       ...base,
-      backgroundColor: state.isSelected
-        ? 'hsl(var(--primary))'
-        : state.isFocused
-        ? 'hsl(var(--accent))'
-        : 'transparent',
-      color: state.isSelected
-        ? 'hsl(var(--primary-foreground))'
-        : state.isFocused
-        ? 'hsl(var(--accent-foreground))'
-        : 'hsl(var(--popover-foreground))',
+      backgroundColor: state.isSelected 
+        ? 'var(--primary)' 
+        : state.isFocused 
+          ? 'var(--accent)' 
+          : 'transparent',
+      color: state.isSelected 
+        ? 'var(--primary-foreground)' 
+        : 'var(--foreground)',
+      borderRadius: '12px',
+      margin: '2px 0',
       cursor: 'pointer',
-      padding: '8px 12px',
+      fontSize: '0.875rem',
+      fontWeight: '500',
       '&:active': {
-        backgroundColor: state.isSelected ? 'hsl(var(--primary))' : 'hsl(var(--accent))'
-      }
+        backgroundColor: 'var(--primary)',
+        color: 'var(--primary-foreground)',
+      },
     }),
     indicatorSeparator: () => ({ display: 'none' }),
-    dropdownIndicator: (base: any) => ({
+    dropdownIndicator: (base: any, state: any) => ({
       ...base,
-      color: 'hsl(var(--muted-foreground))',
-      '&:hover': { color: 'hsl(var(--foreground))' }
+      color: state.isFocused ? 'var(--primary)' : 'var(--muted-foreground)',
+      '&:hover': { color: 'var(--primary)' }
     })
   }
 
