@@ -47,6 +47,16 @@ export default function PublicVisitPage() {
     return `${baseUrl}?${params.toString()}`
   }
 
+  const getShareUrl = (material: PublicMaterial) => {
+    const baseUrl = `/api/v1/public/material/${material.id}/resource`
+    const params = new URLSearchParams({
+      session_token: token,
+      viewer_type: 'doctor'
+    })
+    
+    return `${window.location.origin}${baseUrl}?${params.toString()}`
+  }
+
   if (sessionQuery.isLoading) {
     return <PublicVisitLoading />
   }
@@ -71,6 +81,8 @@ export default function PublicVisitPage() {
           materials={sessionQuery.data.materials}
           activeMaterialId={null}
           getHref={getMaterialHref}
+          isModeVisitador={viewerInfo.type === 'rep'}
+          getShareUrl={getShareUrl}
         />
       </div>
     </div>

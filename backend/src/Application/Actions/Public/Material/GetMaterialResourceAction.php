@@ -79,13 +79,13 @@ class GetMaterialResourceAction extends Action
 
         $type = $material->getType();
 
-        // Extract viewer info from query params
-        $viewerType = $queryParams['viewer_type'] ?? 'doctor';
-        $viewerId = !empty($queryParams['viewer_id']) ? (int) $queryParams['viewer_id'] : null;
+        // Determine viewer type: anything not explicitly 'doctor' is treated as 'rep'
+        $requestedType = $queryParams['viewer_type'] ?? 'doctor';
+        $viewerType = ($requestedType === 'doctor') ? 'doctor' : 'rep';
+        $viewerId = null;
 
-        // Fallback: If it's a rep view within a session but no viewer_id was passed, 
-        // use the rep from the session itself.
-        if ($viewerType === 'rep' && $viewerId === null && $session !== null) {
+        // If it's a representative view, we always fetch their ID from the session context
+        if ($viewerType === 'rep' && $session !== null) {
             $viewerId = $session->getRepId();
         }
 
