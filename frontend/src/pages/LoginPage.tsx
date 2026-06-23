@@ -1,5 +1,5 @@
 import { FormEvent, useState } from 'react'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, Eye, EyeOff } from 'lucide-react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 
@@ -17,6 +17,7 @@ export default function LoginPage() {
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -70,15 +71,29 @@ export default function LoginPage() {
               autoComplete="email"
               required
             />
-            <Input
-              label="Contraseña"
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              placeholder="Ingresa tu contraseña"
-              autoComplete="current-password"
-              required
-            />
+            <div className="flex flex-col gap-2">
+              <label className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Contraseña</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="Ingresa tu contraseña"
+                  autoComplete="current-password"
+                  required
+                  className="flex h-12 w-full rounded-[20px] border border-input bg-background pl-4 pr-12 text-sm text-foreground shadow-sm transition outline-none placeholder:text-muted-foreground focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-ring/25 disabled:cursor-not-allowed disabled:opacity-50"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(prev => !prev)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center rounded-full p-1.5 text-muted-foreground transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/25"
+                  aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
 
             {error && (
               <div className="rounded-2xl border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive text-center">
