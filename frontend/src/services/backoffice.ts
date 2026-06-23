@@ -3,6 +3,7 @@ import { ApiResponse, MaterialResource } from '@/types'
 import {
   AdminUser,
   Brand,
+  BrandManagersResponse,
   Material,
   Organization,
   PaginatedData,
@@ -94,7 +95,7 @@ export function updateRepSubscriptions(id: number, managerIds: number[]) {
   return api.put<ApiResponse<RepSubscription[]>>(`/org-admin/users/${id}/subscriptions`, { manager_ids: managerIds }).then(unwrap)
 }
 
-export function listOrgBrands(params: { q?: string; page?: number }) {
+export function listOrgBrands(params: { q?: string; page?: number; all?: boolean }) {
   return api.get<ApiResponse<PaginatedData<Brand>>>(`/org-admin/brands${buildQuery(params)}`).then(unwrap)
 }
 
@@ -124,6 +125,49 @@ export function removeBrandsFromManager(managerId: number, brandIds: number[]) {
 
 export function listManagerBrands(params: { q?: string; page?: number }) {
   return api.get<ApiResponse<PaginatedData<Brand>>>(`/manager/brands${buildQuery(params)}`).then(unwrap)
+}
+
+// -----------------------------------------------------------------------------
+// Org Admin: Materials
+// -----------------------------------------------------------------------------
+
+export function listOrgMaterials(params: {
+  q?: string
+  status?: string
+  type?: string
+  brand_id?: number | null
+  manager_id?: number | null
+  page?: number
+}) {
+  return api.get<ApiResponse<PaginatedData<Material>>>(`/org-admin/materials${buildQuery(params)}`).then(unwrap)
+}
+
+export function getOrgMaterial(id: number) {
+  return api.get<ApiResponse<Material>>(`/org-admin/materials/${id}`).then(unwrap)
+}
+
+export function createOrgMaterial(payload: FormData) {
+  return api.post<ApiResponse<Material>>('/org-admin/materials', payload).then(unwrap)
+}
+
+export function updateOrgMaterial(id: number, payload: FormData) {
+  return api.put<ApiResponse<Material>>(`/org-admin/materials/${id}`, payload).then(unwrap)
+}
+
+export function approveOrgMaterial(id: number) {
+  return api.post<ApiResponse<Material>>(`/org-admin/materials/${id}/approve`).then(unwrap)
+}
+
+export function deleteOrgMaterial(id: number) {
+  return api.delete<ApiResponse<{ message: string }>>(`/org-admin/materials/${id}`).then(unwrap)
+}
+
+export function getOrgMaterialPreview(id: number) {
+  return api.get<ApiResponse<MaterialResource>>(`/org-admin/materials/${id}/preview`).then(unwrap)
+}
+
+export function getOrgBrandManagers(brandId: number) {
+  return api.get<ApiResponse<BrandManagersResponse>>(`/org-admin/brands/${brandId}/managers`).then(unwrap)
 }
 
 export function listManagerMaterials(params: { q?: string; status?: string; type?: string; page?: number }) {

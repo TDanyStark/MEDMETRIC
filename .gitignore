@@ -29,3 +29,5 @@ backend/storage/
 # Testing / coverage
 coverage/
 .phpunit.result.cache
+
+.playwright-mcp/

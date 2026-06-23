@@ -84,6 +84,104 @@ class DbMaterialRepository implements MaterialRepositoryInterface
         ];
     }
 
+    public function findAllByOrganization(int $organizationId, ?string $search = null, ?string $status = null, ?string $type = null, ?int $brandId = null, ?int $managerId = null, int $page = 1): array
+    {
+        $pageSize = PaginationConfig::PAGE_SIZE;
+        $offset   = ($page - 1) * $pageSize;
+
+        $where  = ['m.organization_id = :organization_id'];
+        $params = [':organization_id' => $organizationId];
+
+        if ($search !== null && $search !== '') {
+            $where[]                       = '(m.title LIKE :search_title OR m.description LIKE :search_description)';
+            $params[':search_title']       = '%' . $search . '%';
+            $params[':search_description'] = '%' . $search . '%';
+        }
+
+        if ($status !== null && $status !== '') {
+            $where[]           = 'm.status = :status';
+            $params[':status'] = $status;
+        }
+
+        if ($type !== null && $type !== '') {
+            $where[]         = 'm.type = :type';
+            $params[':type'] = $type;
+        }
+
+        if ($brandId !== null) {
+            $where[]             = 'm.brand_id = :brand_id';
+            $params[':brand_id'] = $brandId;
+        }
+
+        if ($managerId !== null) {
+            $where[]               = 'm.manager_id = :manager_id';
+            $params[':manager_id'] = $managerId;
+        }
+
+        $whereSql = ' WHERE ' . implode(' AND ', $where);
+
+        $countSql = "SELECT COUNT(*) FROM materials m {$whereSql}";
+        $countStmt = $this->pdo->prepare($countSql);
+        $countStmt->execute($params);
+        $total = (int) $countStmt->fetchColumn();
+
+        $sql = "SELECT m.id, m.organization_id, m.brand_id, m.manager_id, m.title, m.description, m.cover_path, m.type, m.status,
+                       m.storage_driver, m.storage_path, m.external_url, m.approved_at, m.approved_by,
+                       m.created_at, m.updated_at,
+                       b.name AS brand_name,
+                       u.name AS manager_name
+                FROM   materials m
+                JOIN   brands b ON m.brand_id = b.id
+                JOIN   users u ON m.manager_id = u.id
+                {$whereSql}
+                ORDER  BY m.created_at DESC
+                LIMIT  :limit OFFSET :offset";
+
+        $stmt = $this->pdo->prepare($sql);
+        foreach ($params as $key => $val) {
+            $stmt->bindValue($key, $val);
+        }
+        $stmt->bindValue(':limit',  $pageSize, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset,   PDO::PARAM_INT);
+        $stmt->execute();
+
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $items = array_map(fn(array $row) => Material::fromRow($row), $rows);
+
+        return [
+            'items'     => $items,
+            'total'     => $total,
+            'page'      => $page,
+            'per_page'  => $pageSize,
+            'last_page' => (int) ceil($total / $pageSize),
+        ];
+    }
+
+    public function findByOrganizationAndId(int $organizationId, int $id): Material
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT m.id, m.organization_id, m.brand_id, m.manager_id, m.title, m.description, m.cover_path, m.type, m.status,
+                    m.storage_driver, m.storage_path, m.external_url, m.approved_at, m.approved_by,
+                    m.created_at, m.updated_at,
+                    b.name AS brand_name,
+                    u.name AS manager_name
+             FROM   materials m
+             JOIN   brands b ON m.brand_id = b.id
+             JOIN   users u ON m.manager_id = u.id
+             WHERE  m.id = :id AND m.organization_id = :organization_id
+             LIMIT  1'
+        );
+
+        $stmt->execute([':id' => $id, ':organization_id' => $organizationId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$row) {
+            throw new MaterialNotFoundException($id);
+        }
+
+        return Material::fromRow($row);
+    }
+
     public function findById(int $id): Material
     {
         $stmt = $this->pdo->prepare(

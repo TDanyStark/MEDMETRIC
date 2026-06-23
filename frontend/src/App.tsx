@@ -27,8 +27,9 @@ const RepLibraryPage = lazy(() => import('./pages/rep/RepLibraryPage').then(m =>
 const RepHistoryPage = lazy(() => import('./pages/rep/RepHistoryPage').then(m => ({ default: m.RepHistoryPage })))
 
 // Org Admin pages
-const OrgAdminAssignmentsPage = lazy(() => import('./pages/org-admin/OrgAdminAssignmentsPage').then(m => ({ default: m.OrgAdminAssignmentsPage })))
 const OrgAdminBrandsPage = lazy(() => import('./pages/org-admin/OrgAdminBrandsPage').then(m => ({ default: m.OrgAdminBrandsPage })))
+const OrgAdminMaterialsPage = lazy(() => import('./pages/org-admin/OrgAdminMaterialsPage').then(m => ({ default: m.OrgAdminMaterialsPage })))
+const OrgAdminMaterialFormPage = lazy(() => import('./pages/org-admin/OrgAdminMaterialFormPage').then(m => ({ default: m.OrgAdminMaterialFormPage })))
 const OrgAdminMetricsPage = lazy(() => import('./pages/org-admin/OrgAdminMetricsPage').then(m => ({ default: m.OrgAdminMetricsPage })))
 const OrgAdminUsersPage = lazy(() => import('./pages/org-admin/OrgAdminUsersPage').then(m => ({ default: m.OrgAdminUsersPage })))
 
@@ -122,7 +123,9 @@ function App() {
                 <Route index element={<RoleHomePage role="org_admin" />} />
                 <Route path="users" element={<OrgAdminUsersPage />} />
                 <Route path="brands" element={<OrgAdminBrandsPage />} />
-                <Route path="assignments" element={<OrgAdminAssignmentsPage />} />
+                <Route path="materials" element={<OrgAdminMaterialsPage />} />
+                <Route path="materials/new" element={<OrgAdminMaterialFormPage />} />
+                <Route path="materials/:id/edit" element={<OrgAdminMaterialFormPage />} />
                 <Route path="metrics" element={<OrgAdminMetricsPage />} />
               </Route>
 

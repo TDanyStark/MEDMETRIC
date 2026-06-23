@@ -44,6 +44,7 @@ export interface Brand {
   active: boolean
   created_at: string
   updated_at: string
+  managers?: ManagerOption[]
 }
 
 export type MaterialType = 'pdf' | 'video' | 'link'
@@ -69,6 +70,18 @@ export interface Material {
   updated_at: string
   brand_name?: string
   manager_name?: string
+}
+
+export interface ManagerOption {
+  id: number
+  name: string
+}
+
+export interface BrandManagersResponse {
+  brand_managers: ManagerOption[]
+  org_managers: ManagerOption[]
+  needs_selection: boolean
+  needs_sync: boolean
 }
 
 export interface RepCandidate {

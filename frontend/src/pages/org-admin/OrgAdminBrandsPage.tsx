@@ -15,16 +15,18 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/Dialog'
+import { ManagerMultiSelect } from '@/components/ui/ManagerMultiSelect'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table'
 
 import { getNumberParam, getStringParam, updateSearchParams } from '@/lib/search'
-import { formatDateTime } from '@/lib/utils'
 import {
+  assignBrandsToManager,
   createOrgBrand,
   listOrgBrands,
+  removeBrandsFromManager,
   updateOrgBrand,
 } from '@/services/backoffice'
-import { Brand } from '@/types/backoffice'
+import { Brand, ManagerOption } from '@/types/backoffice'
 
 import { LoadingState } from './components/LoadingState'
 import { ErrorState } from './components/ErrorState'
@@ -33,12 +35,14 @@ interface BrandFormState {
   name: string
   description: string
   active: boolean
+  managers: ManagerOption[]
 }
 
 const emptyBrandForm: BrandFormState = {
   name: '',
   description: '',
   active: true,
+  managers: [],
 }
 
 export function OrgAdminBrandsPage() {
@@ -65,22 +69,51 @@ export function OrgAdminBrandsPage() {
       name: editingBrand.name,
       description: editingBrand.description ?? '',
       active: editingBrand.active,
+      managers: editingBrand.managers ?? [],
     })
     setIsDialogOpen(true)
   }, [editingBrand])
 
   const saveMutation = useMutation({
     mutationFn: async () => {
+      let brandId: number
+
       if (editingBrand) {
-        return updateOrgBrand(editingBrand.id, form)
+        await updateOrgBrand(editingBrand.id, {
+          name: form.name,
+          description: form.description,
+          active: form.active,
+        })
+        brandId = editingBrand.id
+      } else {
+        const created = await createOrgBrand({
+          name: form.name,
+          description: form.description,
+          active: form.active,
+        })
+        brandId = created.id
       }
-      return createOrgBrand({ name: form.name, description: form.description, active: form.active })
+
+      // Reconcile manager assignments for this brand.
+      const currentManagerIds = editingBrand
+        ? (editingBrand.managers ?? []).map(manager => manager.id)
+        : []
+      const nextManagerIds = form.managers.map(manager => manager.id)
+
+      const toAssign = nextManagerIds.filter(id => !currentManagerIds.includes(id))
+      const toRemove = currentManagerIds.filter(id => !nextManagerIds.includes(id))
+
+      await Promise.all([
+        ...toAssign.map(managerId => assignBrandsToManager(managerId, [brandId])),
+        ...toRemove.map(managerId => removeBrandsFromManager(managerId, [brandId])),
+      ])
     },
     onSuccess: () => {
       toast.success(editingBrand ? 'Marca actualizada.' : 'Marca creada.')
       setIsDialogOpen(false)
       setEditingBrand(null)
       void queryClient.invalidateQueries({ queryKey: ['org-admin', 'brands'] })
+      void queryClient.invalidateQueries({ queryKey: ['org-admin', 'manager-brands'] })
     },
     onError: (error) => {
       const message = error instanceof Error ? error.message : 'No se pudo guardar la marca.'
@@ -99,7 +132,7 @@ export function OrgAdminBrandsPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-display font-semibold tracking-tight text-foreground">Marcas</h1>
-          <p className="mt-2 text-sm text-muted-foreground">Catálogo maestro de marcas de la organización.</p>
+          <p className="mt-2 text-sm text-muted-foreground">Catálogo maestro de marcas y su asignación a gerentes.</p>
         </div>
         <Button onClick={handleOpenNewDialog}>
           <Plus className="mr-2 h-4 w-4" /> Nueva Marca
@@ -125,29 +158,42 @@ export function OrgAdminBrandsPage() {
             <Table>
               <TableHeader className="bg-muted/30">
                 <TableRow>
-                  <TableHead className="w-[30%]">Nombre</TableHead>
+                  <TableHead className="w-[24%]">Nombre</TableHead>
                   <TableHead>Descripción</TableHead>
+                  <TableHead className="w-[22%]">Asignado a</TableHead>
                   <TableHead className="w-[10%]">Estado</TableHead>
-                  <TableHead className="w-[15%]">Última Actualización</TableHead>
-                  <TableHead className="text-right w-[10%]">Acciones</TableHead>
+                  <TableHead className="text-right w-[8%]">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {brandsQuery.data?.items.map(item => (
-                  <TableRow key={item.id} className="group transition-colors hover:bg-muted/20">
-                    <TableCell className="font-medium text-foreground">{item.name}</TableCell>
-                    <TableCell className="text-muted-foreground truncate max-w-md" title={item.description || ''}>{item.description || <span className="text-muted-foreground/50 italic">Sin descripción</span>}</TableCell>
-                    <TableCell>
-                      <Badge variant={item.active ? 'success' : 'outline'}>{item.active ? 'Activa' : 'Inactiva'}</Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-xs">{formatDateTime(item.updated_at)}</TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="sm" onClick={() => setEditingBrand(item)} className="opacity-70 hover:opacity-100 transition-opacity">
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {brandsQuery.data?.items.map(item => {
+                  const managers = item.managers ?? []
+                  return (
+                    <TableRow key={item.id} className="group transition-colors hover:bg-muted/20">
+                      <TableCell className="font-medium text-foreground">{item.name}</TableCell>
+                      <TableCell className="text-muted-foreground truncate max-w-md" title={item.description || ''}>{item.description || <span className="text-muted-foreground/50 italic">Sin descripción</span>}</TableCell>
+                      <TableCell>
+                        {managers.length > 0 ? (
+                          <div className="flex flex-wrap gap-1.5">
+                            {managers.map(manager => (
+                              <Badge key={manager.id} variant="accent">{manager.name}</Badge>
+                            ))}
+                          </div>
+                        ) : (
+                          <Badge variant="outline" className="text-muted-foreground">Sin asignar</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={item.active ? 'success' : 'outline'}>{item.active ? 'Activa' : 'Inactiva'}</Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="sm" onClick={() => setEditingBrand(item)} className="opacity-70 hover:opacity-100 transition-opacity">
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
               </TableBody>
             </Table>
           </div>
@@ -165,11 +211,24 @@ export function OrgAdminBrandsPage() {
         setIsDialogOpen(open)
         if (!open) setEditingBrand(null)
       }}>
-        <DialogContent>
+        <DialogContent
+          onPointerDownOutside={event => {
+            const target = event.target as HTMLElement | null
+            if (target?.closest('.manager-select__menu, [class*="manager-select__"]')) {
+              event.preventDefault()
+            }
+          }}
+          onInteractOutside={event => {
+            const target = event.target as HTMLElement | null
+            if (target?.closest('.manager-select__menu, [class*="manager-select__"]')) {
+              event.preventDefault()
+            }
+          }}
+        >
           <DialogHeader>
             <DialogTitle>{editingBrand ? 'Editar Marca' : 'Nueva Marca'}</DialogTitle>
             <DialogDescription>
-              {editingBrand ? 'Actualiza la información de la marca.' : 'Agrega una nueva marca al catálogo maestro.'}
+              {editingBrand ? 'Actualiza la información y la asignación de la marca.' : 'Agrega una nueva marca y asígnala a gerentes.'}
             </DialogDescription>
           </DialogHeader>
           <form
@@ -187,6 +246,17 @@ export function OrgAdminBrandsPage() {
               placeholder="Contexto comercial o científico"
               rows={4}
             />
+
+            <div className="space-y-2">
+              <p className="text-sm font-semibold text-foreground">Gerentes asignados</p>
+              <p className="text-xs leading-5 text-muted-foreground">Busca y selecciona los gerentes que administrarán esta marca.</p>
+              <ManagerMultiSelect
+                value={form.managers}
+                onChange={managers => setForm(current => ({ ...current, managers }))}
+                instanceId={`brand-managers-${editingBrand?.id ?? 'new'}`}
+              />
+            </div>
+
             <ToggleField
               checked={form.active}
               onChange={active => setForm(current => ({ ...current, active }))}

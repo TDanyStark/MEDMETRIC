@@ -29,6 +29,13 @@ use App\Application\Actions\Manager\Material\CreateMaterialAction;
 use App\Application\Actions\Manager\Material\ListMaterialsAction;
 use App\Application\Actions\Manager\Material\UpdateMaterialAction;
 use App\Application\Actions\Material\PreviewMaterialAction;
+use App\Application\Actions\OrgAdmin\Material\ApproveMaterialAction as OrgAdminApproveMaterialAction;
+use App\Application\Actions\OrgAdmin\Material\CreateMaterialAction as OrgAdminCreateMaterialAction;
+use App\Application\Actions\OrgAdmin\Material\DeleteMaterialAction as OrgAdminDeleteMaterialAction;
+use App\Application\Actions\OrgAdmin\Material\GetBrandManagersAction as OrgAdminGetBrandManagersAction;
+use App\Application\Actions\OrgAdmin\Material\GetMaterialAction as OrgAdminGetMaterialAction;
+use App\Application\Actions\OrgAdmin\Material\ListMaterialsAction as OrgAdminListMaterialsAction;
+use App\Application\Actions\OrgAdmin\Material\UpdateMaterialAction as OrgAdminUpdateMaterialAction;
 use App\Application\Actions\Manager\Rep\AssignRepAction;
 use App\Application\Actions\Manager\Rep\GetAvailableRepsAction;
 use App\Application\Actions\Manager\Rep\ListAssignedRepsAction;
@@ -214,6 +221,19 @@ return function (App $app) {
                 $brands->get('',       AdminListBrandsAction::class);
                 $brands->post('',      CreateBrandAction::class);
                 $brands->put('/{id}',  UpdateBrandAction::class);
+                // Managers relevant to a brand (for material owner resolution)
+                $brands->get('/{brandId}/managers', OrgAdminGetBrandManagersAction::class);
+            });
+
+            // Materials (Org Admin manages all materials in their organization)
+            $orgAdmin->group('/materials', function (RouteCollectorProxy $materials) {
+                $materials->get('',               OrgAdminListMaterialsAction::class);
+                $materials->get('/{id}',          OrgAdminGetMaterialAction::class);
+                $materials->post('',              OrgAdminCreateMaterialAction::class);
+                $materials->put('/{id}',          OrgAdminUpdateMaterialAction::class);
+                $materials->delete('/{id}',       OrgAdminDeleteMaterialAction::class);
+                $materials->post('/{id}/approve', OrgAdminApproveMaterialAction::class);
+                $materials->get('/{id}/preview',  PreviewMaterialAction::class);
             });
 
             // Manager brand assignments

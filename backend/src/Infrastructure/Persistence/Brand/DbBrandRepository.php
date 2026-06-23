@@ -21,7 +21,7 @@ class DbBrandRepository implements BrandRepositoryInterface
     }
 
     // Admin: List all brands (optionally filtered by organization)
-    public function findAll(?int $organizationId = null, ?string $search = null, int $page = 1): array
+    public function findAll(?int $organizationId = null, ?string $search = null, int $page = 1, bool $all = false): array
     {
         $pageSize = PaginationConfig::PAGE_SIZE;
         $offset   = ($page - 1) * $pageSize;
@@ -46,30 +46,81 @@ class DbBrandRepository implements BrandRepositoryInterface
         $countStmt->execute($params);
         $total = (int) $countStmt->fetchColumn();
 
+        $limitSql = $all ? '' : ' LIMIT :limit OFFSET :offset';
+
         $sql = "SELECT id, organization_id, name, description, active, created_at, updated_at
                 FROM   brands
                 {$whereSql}
                 ORDER  BY name ASC
-                LIMIT  :limit OFFSET :offset";
+                {$limitSql}";
 
         $stmt = $this->pdo->prepare($sql);
         foreach ($params as $key => $val) {
             $stmt->bindValue($key, $val);
         }
-        $stmt->bindValue(':limit',  $pageSize, PDO::PARAM_INT);
-        $stmt->bindValue(':offset', $offset,   PDO::PARAM_INT);
+        if (!$all) {
+            $stmt->bindValue(':limit',  $pageSize, PDO::PARAM_INT);
+            $stmt->bindValue(':offset', $offset,   PDO::PARAM_INT);
+        }
         $stmt->execute();
 
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        $items = array_map(fn(array $row) => Brand::fromRow($row), $rows);
+
+        // Attach assigned managers to each brand (single query, no N+1)
+        $brandIds = array_map(fn(array $row) => (int) $row['id'], $rows);
+        $managersByBrand = $this->getManagersForBrands($brandIds);
+
+        $items = array_map(function (array $row) use ($managersByBrand) {
+            $brand = Brand::fromRow($row)->jsonSerialize();
+            $brand['managers'] = $managersByBrand[(int) $row['id']] ?? [];
+            return $brand;
+        }, $rows);
 
         return [
             'items'     => $items,
             'total'     => $total,
-            'page'      => $page,
-            'per_page'  => $pageSize,
-            'last_page' => (int) ceil($total / $pageSize),
+            'page'      => $all ? 1 : $page,
+            'per_page'  => $all ? $total : $pageSize,
+            'last_page' => $all ? 1 : (int) ceil($total / $pageSize),
         ];
+    }
+
+    /**
+     * Returns a map of brandId => [ ['id' => int, 'name' => string], ... ]
+     * for the active manager assignments of the given brands.
+     *
+     * @param int[] $brandIds
+     * @return array<int, array<int, array{id:int, name:string}>>
+     */
+    private function getManagersForBrands(array $brandIds): array
+    {
+        if (empty($brandIds)) {
+            return [];
+        }
+
+        $placeholders = implode(',', array_fill(0, count($brandIds), '?'));
+
+        $sql = "SELECT mb.brand_id, u.id AS manager_id, u.name AS manager_name
+                FROM   manager_brands mb
+                JOIN   users u ON u.id = mb.manager_id
+                WHERE  mb.active = 1 AND mb.brand_id IN ($placeholders)
+                ORDER  BY u.name ASC";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(array_values($brandIds));
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $map = [];
+        foreach ($rows as $row) {
+            $brandId = (int) $row['brand_id'];
+            $map[$brandId] ??= [];
+            $map[$brandId][] = [
+                'id'   => (int) $row['manager_id'],
+                'name' => $row['manager_name'],
+            ];
+        }
+
+        return $map;
     }
 
     // Manager: Get single brand by manager access
@@ -304,6 +355,17 @@ class DbBrandRepository implements BrandRepositoryInterface
         
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
         return array_map(fn($row) => (int) $row['brand_id'], $rows);
+    }
+
+    public function getActiveManagerIdsByBrand(int $brandId): array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT manager_id FROM manager_brands WHERE brand_id = :brand_id AND active = 1'
+        );
+        $stmt->execute([':brand_id' => $brandId]);
+
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return array_map(fn($row) => (int) $row['manager_id'], $rows);
     }
 
     public function findAllAccessibleByRep(int $repId): array

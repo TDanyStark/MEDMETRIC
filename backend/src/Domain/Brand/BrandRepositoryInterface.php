@@ -6,7 +6,7 @@ namespace App\Domain\Brand;
 
 interface BrandRepositoryInterface
 {
-    public function findAll(?int $organizationId = null, ?string $search = null, int $page = 1): array;
+    public function findAll(?int $organizationId = null, ?string $search = null, int $page = 1, bool $all = false): array;
     public function findById(int $id): Brand;
     public function create(int $organizationId, string $name, ?string $description): Brand;
     public function update(int $id, array $data): Brand;
@@ -20,5 +20,6 @@ interface BrandRepositoryInterface
     public function assignToManager(int $managerId, int $brandId): void;
     public function removeFromManager(int $managerId, int $brandId): void;
     public function getManagerBrandIds(int $managerId): array;
+    public function getActiveManagerIdsByBrand(int $brandId): array;
     public function findAllAccessibleByRep(int $repId): array;
 }

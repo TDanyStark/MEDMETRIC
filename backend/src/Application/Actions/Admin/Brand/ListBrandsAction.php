@@ -41,7 +41,9 @@ class ListBrandsAction extends Action
         $page = (int) ($queryParams['page'] ?? 1);
         if ($page < 1) $page = 1;
 
-        $result = $this->brandRepository->findAll($organizationId, $search, $page);
+        $all = isset($queryParams['all']) && in_array($queryParams['all'], ['1', 'true', true], true);
+
+        $result = $this->brandRepository->findAll($organizationId, $search, $page, $all);
 
         return $this->respondWithData($result);
     }

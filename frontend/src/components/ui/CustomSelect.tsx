@@ -65,6 +65,8 @@ export function CustomSelect<
     menuList: (base) => ({
       ...base,
       padding: '4px',
+      maxHeight: '260px',
+      overflowY: 'auto',
     }),
     option: (base, state) => ({
       ...base,
@@ -108,6 +110,7 @@ export function CustomSelect<
       <Select
         instanceId={instanceId}
         styles={customStyles}
+        menuPlacement="auto"
         {...props}
       />
       {error && <p className="text-xs font-medium text-destructive pl-1">{error}</p>}
