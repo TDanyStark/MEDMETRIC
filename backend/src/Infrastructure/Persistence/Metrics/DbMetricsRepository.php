@@ -17,6 +17,44 @@ class DbMetricsRepository implements MetricsRepositoryInterface
         $this->pdo = Connection::getConnection();
     }
 
+    /**
+     * Normalize a filter value into a list of positive integers.
+     * Accepts an array of ids or a single scalar id.
+     *
+     * @return int[]
+     */
+    private function intIds($value): array
+    {
+        if ($value === null || $value === '') {
+            return [];
+        }
+        $list = is_array($value) ? $value : [$value];
+        $ids = [];
+        foreach ($list as $item) {
+            $id = (int) $item;
+            if ($id > 0) {
+                $ids[] = $id;
+            }
+        }
+        return array_values(array_unique($ids));
+    }
+
+    /**
+     * Build a parameterized "IN (...)" clause with uniquely named placeholders.
+     * Returns the SQL fragment (e.g. "(:mat0, :mat1)") and fills $params by ref.
+     * Required because native prepared statements forbid reusing placeholders.
+     */
+    private function buildInClause(array $ids, string $prefix, array &$params): string
+    {
+        $placeholders = [];
+        foreach (array_values($ids) as $index => $id) {
+            $key = ':' . $prefix . $index;
+            $placeholders[] = $key;
+            $params[$key] = $id;
+        }
+        return '(' . implode(', ', $placeholders) . ')';
+    }
+
     public function getMaterialViewsMetrics(int $organizationId, ?int $managerId, array $filters = []): array
     {
         $where = ['m.organization_id = :org_id'];
@@ -25,6 +63,26 @@ class DbMetricsRepository implements MetricsRepositoryInterface
         if ($managerId !== null) {
             $where[] = 'm.manager_id = :manager_id';
             $params[':manager_id'] = $managerId;
+        }
+
+        $materialIds = $this->intIds($filters['material_ids'] ?? null);
+        if (!empty($materialIds)) {
+            $where[] = 'm.id IN ' . $this->buildInClause($materialIds, 'mat', $params);
+        }
+
+        $repIds = $this->intIds($filters['rep_ids'] ?? null);
+        if (!empty($repIds)) {
+            $where[] = "mv.viewer_type = 'rep' AND mv.viewer_id IN " . $this->buildInClause($repIds, 'rep', $params);
+        }
+
+        if (!empty($filters['start_date'])) {
+            $where[] = 'DATE(mv.opened_at) >= :start_date';
+            $params[':start_date'] = $filters['start_date'];
+        }
+
+        if (!empty($filters['end_date'])) {
+            $where[] = 'DATE(mv.opened_at) <= :end_date';
+            $params[':end_date'] = $filters['end_date'];
         }
 
         $whereSql = implode(' AND ', $where);
@@ -39,7 +97,7 @@ class DbMetricsRepository implements MetricsRepositoryInterface
                 WHERE {$whereSql}
                 GROUP BY DATE(mv.opened_at), mv.viewer_type
                 ORDER BY date DESC
-                LIMIT 30";
+                LIMIT 90";
 
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($params);
@@ -88,9 +146,9 @@ class DbMetricsRepository implements MetricsRepositoryInterface
             $params[':manager_id'] = $managerId;
         }
 
-        if (!empty($filters['material_id'])) {
-            $where[] = 'm.id = :material_id';
-            $params[':material_id'] = $filters['material_id'];
+        $materialIds = $this->intIds($filters['material_ids'] ?? null);
+        if (!empty($materialIds)) {
+            $where[] = 'm.id IN ' . $this->buildInClause($materialIds, 'mat', $params);
         }
 
         if (!empty($filters['q'])) {
@@ -98,10 +156,8 @@ class DbMetricsRepository implements MetricsRepositoryInterface
             $params[':q'] = '%' . $filters['q'] . '%';
         }
 
-        // We apply date filters to the ON clause or WHERE clause for the material_views join
-        // If we want materials with 0 views to show up if they match material_id, but the views are filtered by date, we need to handle that.
-        // Actually, TopMaterials should probably only count views within the date range, but still show materials.
-        // Let's modify the JOIN or create an additional views join condition.
+        // Date and rep filters are applied to the JOIN ON clause so that materials
+        // with 0 views in the selected scope still appear in the result set.
         $viewsJoinCondition = "mv.material_id = m.id";
         if (!empty($filters['start_date'])) {
             $viewsJoinCondition .= " AND DATE(mv.opened_at) >= :start_date";
@@ -110,6 +166,10 @@ class DbMetricsRepository implements MetricsRepositoryInterface
         if (!empty($filters['end_date'])) {
             $viewsJoinCondition .= " AND DATE(mv.opened_at) <= :end_date";
             $params[':end_date'] = $filters['end_date'];
+        }
+        $repIds = $this->intIds($filters['rep_ids'] ?? null);
+        if (!empty($repIds)) {
+            $viewsJoinCondition .= " AND mv.viewer_type = 'rep' AND mv.viewer_id IN " . $this->buildInClause($repIds, 'rep', $params);
         }
 
         $whereSql = implode(' AND ', $where);
@@ -120,7 +180,8 @@ class DbMetricsRepository implements MetricsRepositoryInterface
                     m.type,
                     COUNT(mv.id) as total_views,
                     SUM(CASE WHEN mv.viewer_type = 'rep' THEN 1 ELSE 0 END) as rep_views,
-                    SUM(CASE WHEN mv.viewer_type = 'doctor' THEN 1 ELSE 0 END) as doctor_views
+                    SUM(CASE WHEN mv.viewer_type = 'doctor' THEN 1 ELSE 0 END) as doctor_views,
+                    COUNT(DISTINCT CASE WHEN mv.viewer_type = 'rep' THEN mv.viewer_id END) as unique_reps
                 FROM materials m
                 LEFT JOIN material_views mv ON {$viewsJoinCondition}
                 WHERE {$whereSql}
@@ -144,9 +205,9 @@ class DbMetricsRepository implements MetricsRepositoryInterface
             $params[':manager_id'] = $managerId;
         }
         
-        if (!empty($filters['material_id'])) {
-            $where[] = 'm.id = :material_id';
-            $params[':material_id'] = $filters['material_id'];
+        $materialIds = $this->intIds($filters['material_ids'] ?? null);
+        if (!empty($materialIds)) {
+            $where[] = 'm.id IN ' . $this->buildInClause($materialIds, 'mat', $params);
         }
         
         if (!empty($filters['start_date'])) {
@@ -159,12 +220,21 @@ class DbMetricsRepository implements MetricsRepositoryInterface
             $params[':end_date'] = $filters['end_date'];
         }
 
+        // Resolve the rep behind each view: direct rep view (mv.viewer_id) takes
+        // precedence, otherwise the rep that owns the visit session (vs.rep_id).
+        $repJoin = "LEFT JOIN users rep ON rep.id = COALESCE(mv.viewer_id, vs.rep_id)";
+
+        $repIds = $this->intIds($filters['rep_ids'] ?? null);
+        if (!empty($repIds)) {
+            $where[] = 'COALESCE(mv.viewer_id, vs.rep_id) IN ' . $this->buildInClause($repIds, 'rep', $params);
+        }
+
         $whereSql = implode(' AND ', $where);
 
         $countSql = "SELECT COUNT(*) FROM material_views mv
                      JOIN materials m ON m.id = mv.material_id
                      LEFT JOIN visit_sessions vs ON vs.id = mv.visit_session_id
-                     LEFT JOIN users rep ON rep.id = vs.rep_id OR rep.id = mv.viewer_id
+                     {$repJoin}
                      WHERE {$whereSql}";
         
         $countStmt = $this->pdo->prepare($countSql);
@@ -187,7 +257,7 @@ class DbMetricsRepository implements MetricsRepositoryInterface
                 FROM material_views mv
                 JOIN materials m ON m.id = mv.material_id
                 LEFT JOIN visit_sessions vs ON vs.id = mv.visit_session_id
-                LEFT JOIN users rep ON rep.id = vs.rep_id OR rep.id = mv.viewer_id
+                {$repJoin}
                 WHERE {$whereSql}
                 ORDER BY mv.opened_at DESC
                 LIMIT :limit OFFSET :offset";
@@ -211,5 +281,97 @@ class DbMetricsRepository implements MetricsRepositoryInterface
                 'last_page' => ceil($total / $pageSize)
             ]
         ];
+    }
+
+    public function getRepAdoptionMetrics(int $organizationId, ?int $managerId, array $filters = []): array
+    {
+        // Build the universe of materials available to each rep (denominator for
+        // adoption %). For a manager scope, that's the manager's materials; for
+        // org_admin, it's all approved materials of the organization.
+        $materialWhere = ['m.organization_id = :org_id', "m.status = 'approved'"];
+        $materialParams = [':org_id' => $organizationId];
+        if ($managerId !== null) {
+            $materialWhere[] = 'm.manager_id = :manager_id';
+            $materialParams[':manager_id'] = $managerId;
+        }
+        $materialWhereSql = implode(' AND ', $materialWhere);
+
+        $availableStmt = $this->pdo->prepare(
+            "SELECT COUNT(*) FROM materials m WHERE {$materialWhereSql}"
+        );
+        $availableStmt->execute($materialParams);
+        $availableMaterials = (int)$availableStmt->fetchColumn();
+
+        // Rep scope.
+        $repWhere = ['u.organization_id = :org_id', "u.active = 1"];
+        $repParams = [':org_id' => $organizationId];
+        $repJoin = "JOIN roles r ON r.id = u.role_id AND r.name = 'rep'";
+        if ($managerId !== null) {
+            $repJoin .= " JOIN rep_manager_access rma ON rma.rep_id = u.id AND rma.active = 1";
+            $repWhere[] = 'rma.manager_id = :manager_id';
+            $repParams[':manager_id'] = $managerId;
+        }
+
+        // Views sub-scope, restricted to materials within the same scope and to
+        // rep-type views. Date filters apply to the LEFT JOIN so reps with 0
+        // views still appear.
+        $viewJoin = "mv.viewer_id = u.id AND mv.viewer_type = 'rep'";
+        if (!empty($filters['start_date'])) {
+            $viewJoin .= " AND DATE(mv.opened_at) >= :start_date";
+            $repParams[':start_date'] = $filters['start_date'];
+        }
+        if (!empty($filters['end_date'])) {
+            $viewJoin .= " AND DATE(mv.opened_at) <= :end_date";
+            $repParams[':end_date'] = $filters['end_date'];
+        }
+
+        // Use distinct placeholder names because native (non-emulated) prepared
+        // statements do not allow reusing the same named parameter twice.
+        $materialScopeJoin = "m2.id = mv.material_id AND m2.organization_id = :org_id_scope";
+        $repParams[':org_id_scope'] = $organizationId;
+        if ($managerId !== null) {
+            $materialScopeJoin .= " AND m2.manager_id = :manager_id_scope";
+            $repParams[':manager_id_scope'] = $managerId;
+        }
+
+        $repIds = $this->intIds($filters['rep_ids'] ?? null);
+        if (!empty($repIds)) {
+            $repWhere[] = 'u.id IN ' . $this->buildInClause($repIds, 'rep', $repParams);
+        }
+
+        $repWhereSql = implode(' AND ', $repWhere);
+
+        $sql = "SELECT 
+                    u.id as rep_id,
+                    u.name,
+                    u.email,
+                    u.last_login_at,
+                    COUNT(mv.id) as total_views,
+                    COUNT(DISTINCT mv.material_id) as distinct_materials,
+                    MAX(mv.opened_at) as last_view_at
+                FROM users u
+                {$repJoin}
+                LEFT JOIN material_views mv ON {$viewJoin}
+                LEFT JOIN materials m2 ON {$materialScopeJoin}
+                WHERE {$repWhereSql}
+                  AND (mv.id IS NULL OR m2.id IS NOT NULL)
+                GROUP BY u.id, u.name, u.email, u.last_login_at
+                ORDER BY total_views DESC, u.name ASC";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($repParams);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Compute adoption percent = distinct materials viewed / available materials.
+        foreach ($rows as &$row) {
+            $distinct = (int)$row['distinct_materials'];
+            $row['available_materials'] = $availableMaterials;
+            $row['adoption_percent'] = $availableMaterials > 0
+                ? (int)round(($distinct / $availableMaterials) * 100)
+                : 0;
+        }
+        unset($row);
+
+        return $rows;
     }
 }

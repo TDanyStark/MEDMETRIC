@@ -6,7 +6,7 @@ namespace App\Application\Actions\Metrics;
 
 use Psr\Http\Message\ResponseInterface as Response;
 
-class GetTopMaterialsAction extends MetricsAction
+class GetRepAdoptionAction extends MetricsAction
 {
     /**
      * {@inheritdoc}
@@ -16,25 +16,16 @@ class GetTopMaterialsAction extends MetricsAction
         $authUser = $this->getAuthUser();
         $organizationId = $authUser ? $authUser->getOrganizationId() : 0;
         $role = $authUser ? $authUser->getRole() : null;
-        
+
         $managerId = null;
         if ($role === 'manager') {
             $managerId = $authUser ? $authUser->getId() : 0;
         }
 
-        $limit = (int) ($this->request->getQueryParams()['limit'] ?? 10);
-        if ($limit > 50) {
-            $limit = 50;
-        }
-
+        // rep-adoption ignores material_ids (it's per-rep) but uses rep_ids + dates.
         $filters = $this->buildCommonFilters();
 
-        $q = $this->request->getQueryParams()['q'] ?? null;
-        if ($q !== null && $q !== '') {
-            $filters['q'] = trim($q);
-        }
-
-        $metrics = $this->metricsRepository->getTopMaterialsMetrics($organizationId, $managerId, $filters, $limit);
+        $metrics = $this->metricsRepository->getRepAdoptionMetrics($organizationId, $managerId, $filters);
 
         return $this->respondWithData($metrics);
     }

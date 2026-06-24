@@ -22,7 +22,9 @@ class GetMaterialViewsAction extends MetricsAction
             $managerId = $authUser ? $authUser->getId() : 0;
         }
 
-        $metrics = $this->metricsRepository->getMaterialViewsMetrics($organizationId, $managerId);
+        $filters = $this->buildCommonFilters();
+
+        $metrics = $this->metricsRepository->getMaterialViewsMetrics($organizationId, $managerId, $filters);
 
         return $this->respondWithData($metrics);
     }

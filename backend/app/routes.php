@@ -51,6 +51,7 @@ use App\Application\Actions\Metrics\GetMaterialViewsAction;
 use App\Application\Actions\Metrics\GetMaterialViewsListAction;
 use App\Application\Actions\Metrics\GetRepLastLoginAction;
 use App\Application\Actions\Metrics\GetTopMaterialsAction;
+use App\Application\Actions\Metrics\GetRepAdoptionAction;
 use App\Application\Middleware\JwtMiddleware;
 use App\Application\Middleware\RoleMiddleware;
 use App\Infrastructure\Database\Connection;
@@ -308,6 +309,7 @@ return function (App $app) {
             $metrics->get('/material-views-list', GetMaterialViewsListAction::class);
             $metrics->get('/rep-last-login', GetRepLastLoginAction::class);
             $metrics->get('/top-materials', GetTopMaterialsAction::class);
+            $metrics->get('/rep-adoption', GetRepAdoptionAction::class);
         })->add(function ($request, $handler) use ($app) {
             $responseFactory = $app->getContainer()->get(ResponseFactoryInterface::class);
             return (new RoleMiddleware($responseFactory, ['org_admin', 'manager']))->process($request, $handler);

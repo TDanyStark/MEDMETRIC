@@ -17,6 +17,24 @@ export function getNullableNumberParam(searchParams: URLSearchParams, key: strin
   return Number.isFinite(value) && value > 0 ? value : null
 }
 
+/**
+ * Read a comma-separated list of positive numbers from a query param.
+ * Example: "?material_id=7,12,30" -> [7, 12, 30]
+ */
+export function getNumberArrayParam(searchParams: URLSearchParams, key: string): number[] {
+  const raw = searchParams.get(key)
+  if (!raw) {
+    return []
+  }
+
+  const ids = raw
+    .split(',')
+    .map((part) => Number(part.trim()))
+    .filter((value) => Number.isFinite(value) && value > 0)
+
+  return Array.from(new Set(ids))
+}
+
 export function getBooleanParam(searchParams: URLSearchParams, key: string): boolean | null {
   const value = searchParams.get(key)
 

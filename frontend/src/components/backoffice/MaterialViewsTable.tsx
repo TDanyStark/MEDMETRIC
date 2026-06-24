@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { FileIcon, Eye, ChevronLeft, ChevronRight } from "lucide-react";
 import {
@@ -8,33 +8,36 @@ import {
 } from "@/components/ui/tooltip";
 import { metricsApi } from "@/services/metrics";
 import { cn, formatDateTime } from "@/lib/utils";
-import { AsyncMaterialSelect } from "@/components/ui/AsyncMaterialSelect";
-import { DatePicker } from "@/components/ui/DatePicker";
 
 interface MaterialViewsTableProps {
-  materialIdFilter: string;
-  setMaterialIdFilter: (val: string) => void;
+  materialIds: number[];
+  repIds: number[];
   startDate: string;
-  setStartDate: (val: string) => void;
   endDate: string;
-  setEndDate: (val: string) => void;
 }
 
 export function MaterialViewsTable({
-  materialIdFilter,
-  setMaterialIdFilter,
+  materialIds,
+  repIds,
   startDate,
-  setStartDate,
   endDate,
-  setEndDate,
 }: MaterialViewsTableProps) {
   const [page, setPage] = useState(1);
+
+  const materialKey = materialIds.join(",");
+  const repKey = repIds.join(",");
+
+  // Reset to first page whenever any global filter changes.
+  useEffect(() => {
+    setPage(1);
+  }, [materialKey, repKey, startDate, endDate]);
 
   const { data: viewsResponse, isLoading } = useQuery({
     queryKey: [
       "metrics",
       "material-views-list",
-      materialIdFilter,
+      materialKey,
+      repKey,
       startDate,
       endDate,
       page,
@@ -42,7 +45,8 @@ export function MaterialViewsTable({
     queryFn: () =>
       metricsApi
         .getMaterialViewsList({
-          material_id: materialIdFilter ? Number(materialIdFilter) : undefined,
+          material_id: materialIds.length ? materialIds : undefined,
+          rep_id: repIds.length ? repIds : undefined,
           start_date: startDate || undefined,
           end_date: endDate || undefined,
           page,
@@ -56,48 +60,11 @@ export function MaterialViewsTable({
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-500 mt-8">
       <div className="rounded-3xl border border-border/50 bg-background/50 p-6 shadow-sm">
-        <div className="flex flex-col justify-between sm:items-center gap-4 mb-6">
-          <div className="flex items-center gap-2">
-            <Eye className="h-5 w-5 text-muted-foreground" />
-            <h3 className="text-xl font-display font-medium">
-              Registro de Visualizaciones
-            </h3>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="w-full sm:w-auto min-w-[300px] max-w-[300px]">
-              <AsyncMaterialSelect
-                value={materialIdFilter}
-                onChange={(val) => {
-                  setMaterialIdFilter(val);
-                  setPage(1);
-                }}
-                className="w-full"
-              />
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <DatePicker
-                value={startDate}
-                onChange={(val) => {
-                  setStartDate(val || "");
-                  setPage(1);
-                }}
-                placeholder="Desde"
-                className="w-[220px]"
-              />
-              <span className="ml-6 text-muted-foreground text-sm">a</span>
-              <DatePicker
-                value={endDate}
-                onChange={(val) => {
-                  setEndDate(val || "");
-                  setPage(1);
-                }}
-                placeholder="Hasta"
-                className="w-[220px]"
-              />
-            </div>
-          </div>
+        <div className="flex items-center gap-2 mb-6">
+          <Eye className="h-5 w-5 text-muted-foreground" />
+          <h3 className="text-xl font-display font-medium">
+            Registro de Visualizaciones
+          </h3>
         </div>
 
         <div className="overflow-x-auto rounded-xl border border-border/50">

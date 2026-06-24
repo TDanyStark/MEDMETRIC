@@ -22,4 +22,12 @@ interface MetricsRepositoryInterface
      * @return array
      */
     public function getMaterialViewsList(int $organizationId, ?int $managerId, array $filters = [], int $page = 1): array;
+
+    /**
+     * Adoption metrics per representative: how many distinct materials each rep
+     * has opened, total views, last activity and adoption percentage.
+     *
+     * @return array
+     */
+    public function getRepAdoptionMetrics(int $organizationId, ?int $managerId, array $filters = []): array;
 }
