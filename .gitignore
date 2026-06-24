@@ -13,6 +13,10 @@ logs/
 .env.*
 !.env.example
 
+# Deploy secrets
+deploy/deploy.config.ps1
+deploy/temp_deploy/
+
 # Node / frontend
 frontend/node_modules/
 frontend/dist/
