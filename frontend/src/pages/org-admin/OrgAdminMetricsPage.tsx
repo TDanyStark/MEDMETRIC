@@ -23,29 +23,35 @@ export function OrgAdminMetricsPage() {
         <p className="mt-2 text-sm text-muted-foreground">Métricas operativas de la organización.</p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
-        <div className="rounded-3xl border border-border/50 bg-background/50 p-6 shadow-sm flex flex-col items-center text-center">
-          <div className="h-12 w-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-4">
-            <Users className="h-6 w-6" />
+      <div className="grid gap-3 sm:grid-cols-3">
+        <div className="rounded-2xl border border-border/50 bg-background/50 px-4 py-3 shadow-sm flex items-center gap-3">
+          <div className="h-9 w-9 shrink-0 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+            <Users className="h-5 w-5" />
           </div>
-          <h3 className="font-semibold text-lg text-foreground">Gerentes</h3>
-          <p className="mt-2 text-4xl font-display text-foreground">{managersQuery.data?.total ?? 0}</p>
+          <div className="leading-tight">
+            <p className="text-xs font-medium text-muted-foreground">Gerentes</p>
+            <p className="text-2xl font-display font-medium text-foreground">{managersQuery.data?.total ?? 0}</p>
+          </div>
         </div>
 
-        <div className="rounded-3xl border border-border/50 bg-background/50 p-6 shadow-sm flex flex-col items-center text-center">
-          <div className="h-12 w-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-4">
-            <Network className="h-6 w-6" />
+        <div className="rounded-2xl border border-border/50 bg-background/50 px-4 py-3 shadow-sm flex items-center gap-3">
+          <div className="h-9 w-9 shrink-0 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+            <Network className="h-5 w-5" />
           </div>
-          <h3 className="font-semibold text-lg text-foreground">Visitadores</h3>
-          <p className="mt-2 text-4xl font-display text-foreground">{repsQuery.data?.total ?? 0}</p>
+          <div className="leading-tight">
+            <p className="text-xs font-medium text-muted-foreground">Visitadores</p>
+            <p className="text-2xl font-display font-medium text-foreground">{repsQuery.data?.total ?? 0}</p>
+          </div>
         </div>
 
-        <div className="rounded-3xl border border-border/50 bg-background/50 p-6 shadow-sm flex flex-col items-center text-center">
-          <div className="h-12 w-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-4">
-            <Tags className="h-6 w-6" />
+        <div className="rounded-2xl border border-border/50 bg-background/50 px-4 py-3 shadow-sm flex items-center gap-3">
+          <div className="h-9 w-9 shrink-0 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+            <Tags className="h-5 w-5" />
           </div>
-          <h3 className="font-semibold text-lg text-foreground">Marcas</h3>
-          <p className="mt-2 text-4xl font-display text-foreground">{brandsQuery.data?.total ?? 0}</p>
+          <div className="leading-tight">
+            <p className="text-xs font-medium text-muted-foreground">Marcas</p>
+            <p className="text-2xl font-display font-medium text-foreground">{brandsQuery.data?.total ?? 0}</p>
+          </div>
         </div>
       </div>
 
