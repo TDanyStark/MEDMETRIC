@@ -167,52 +167,44 @@ export function MetricsDashboard() {
       </div>
 
       {/* Resumen Cards */}
-      <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
-        <div className="rounded-3xl border border-border/50 bg-background/50 p-6 shadow-sm flex flex-col">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="h-10 w-10 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center">
-              <TrendingUp className="h-5 w-5" />
-            </div>
-            <h3 className="font-semibold text-lg text-foreground">Visualizaciones</h3>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="rounded-3xl border border-border/50 bg-background/50 p-5 shadow-sm flex flex-col items-start">
+          <div className="h-10 w-10 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center mb-3">
+            <TrendingUp className="h-5 w-5" />
           </div>
-          <p className="mt-2 text-4xl font-display font-medium text-foreground">
+          <h3 className="text-sm font-medium text-muted-foreground">Visualizaciones</h3>
+          <p className="mt-1 text-4xl font-display font-medium text-foreground">
             {isLoadingViews ? '-' : totalViews}
           </p>
-          <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1">
+          <div className="mt-3 flex flex-col gap-1 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1.5">
               <Eye className="h-3.5 w-3.5 text-purple-500" /> {repViews} visitadores
             </span>
-            <span className="flex items-center gap-1">
+            <span className="flex items-center gap-1.5">
               <Stethoscope className="h-3.5 w-3.5 text-teal-500" /> {doctorViews} médicos
             </span>
           </div>
         </div>
 
-        <div className="rounded-3xl border border-border/50 bg-background/50 p-6 shadow-sm flex flex-col">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="h-10 w-10 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
-              <CheckCircle2 className="h-5 w-5" />
-            </div>
-            <h3 className="font-semibold text-lg text-foreground">Adopción de Equipo</h3>
+        <div className="rounded-3xl border border-border/50 bg-background/50 p-5 shadow-sm flex flex-col items-start">
+          <div className="h-10 w-10 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center mb-3">
+            <CheckCircle2 className="h-5 w-5" />
           </div>
-          <div className="flex items-baseline gap-2 mt-2">
-            <p className="text-4xl font-display font-medium text-foreground">
-              {isLoadingLogins ? '-' : `${activePercent}%`}
-            </p>
-          </div>
+          <h3 className="text-sm font-medium text-muted-foreground">Adopción de Equipo</h3>
+          <p className="mt-1 text-4xl font-display font-medium text-foreground">
+            {isLoadingLogins ? '-' : `${activePercent}%`}
+          </p>
           <p className="mt-3 text-xs text-muted-foreground">
             {activeReps} de {totalReps} visitadores con acceso registrado
           </p>
         </div>
 
-        <div className="rounded-3xl border border-border/50 bg-background/50 p-6 shadow-sm flex flex-col">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="h-10 w-10 rounded-full bg-orange-500/10 text-orange-500 flex items-center justify-center">
-              <Presentation className="h-5 w-5" />
-            </div>
-            <h3 className="font-semibold text-lg text-foreground">Materiales activos</h3>
+        <div className="rounded-3xl border border-border/50 bg-background/50 p-5 shadow-sm flex flex-col items-start">
+          <div className="h-10 w-10 rounded-full bg-orange-500/10 text-orange-500 flex items-center justify-center mb-3">
+            <Presentation className="h-5 w-5" />
           </div>
-          <div className="flex items-baseline gap-2 mt-2">
+          <h3 className="text-sm font-medium text-muted-foreground">Materiales activos</h3>
+          <div className="mt-1 flex items-baseline gap-2">
             <p className="text-4xl font-display font-medium text-foreground">
               {isLoadingTop ? '-' : materialsWithViews}
             </p>
@@ -221,14 +213,12 @@ export function MetricsDashboard() {
           <p className="mt-3 text-xs text-muted-foreground">con al menos una visualización</p>
         </div>
 
-        <div className="rounded-3xl border border-border/50 bg-background/50 p-6 shadow-sm flex flex-col">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="h-10 w-10 rounded-full bg-purple-500/10 text-purple-500 flex items-center justify-center">
-              <FileText className="h-5 w-5" />
-            </div>
-            <h3 className="font-semibold text-lg text-foreground">Promedio por material</h3>
+        <div className="rounded-3xl border border-border/50 bg-background/50 p-5 shadow-sm flex flex-col items-start">
+          <div className="h-10 w-10 rounded-full bg-purple-500/10 text-purple-500 flex items-center justify-center mb-3">
+            <FileText className="h-5 w-5" />
           </div>
-          <p className="mt-2 text-4xl font-display font-medium text-foreground">
+          <h3 className="text-sm font-medium text-muted-foreground">Promedio por material</h3>
+          <p className="mt-1 text-4xl font-display font-medium text-foreground">
             {isLoadingTop || totalMaterials === 0
               ? '-'
               : Math.round(totalViews / Math.max(1, materialsWithViews))}
