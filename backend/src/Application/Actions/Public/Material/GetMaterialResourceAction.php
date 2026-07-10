@@ -54,7 +54,7 @@ class GetMaterialResourceAction extends Action
         // Verify material exists and is approved
         try {
             $material = $this->materialRepository->findById($materialId);
-            if ($material->getStatus() !== 'approved') {
+            if ($material->getStatus() !== 'approved' || !$material->isVisible()) {
                 return $this->redirectToError('Material no disponible', 'Lo sentimos, este contenido ya no se encuentra accesible.');
             }
         } catch (\Exception $e) {

@@ -13,6 +13,7 @@ export const buttonVariants = cva(
         secondary: 'border-border bg-card text-foreground hover:-translate-y-0.5 hover:bg-accent',
         ghost: 'border-transparent bg-transparent text-foreground hover:bg-accent/80',
         outline: 'border-border bg-background text-foreground hover:border-primary/25 hover:bg-card',
+        destructive: 'border-destructive bg-destructive text-white shadow-sm hover:-translate-y-0.5 hover:bg-destructive/90',
       },
       size: {
         sm: 'h-9 px-4 text-xs',

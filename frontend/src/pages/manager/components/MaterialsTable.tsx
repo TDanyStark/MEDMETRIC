@@ -13,6 +13,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/Button";
+import { CompactSwitch } from "@/components/ui/CompactSwitch";
 import { Material } from "@/types/backoffice";
 import { MaterialTypeLabel, StatusBadge } from "./ManagerHelpers";
 
@@ -22,6 +23,8 @@ interface MaterialsTableProps {
   onEdit: (material: Material) => void;
   onApprove: (materialId: number) => void;
   isApproving: (materialId: number) => boolean;
+  onToggleVisible: (materialId: number, value: boolean) => void;
+  isTogglingVisible: (materialId: number) => boolean;
   onPreview: (material: Material) => void;
 }
 
@@ -31,6 +34,8 @@ export function MaterialsTable({
   onEdit,
   onApprove,
   isApproving,
+  onToggleVisible,
+  isTogglingVisible,
   onPreview,
 }: MaterialsTableProps) {
   return (
@@ -120,6 +125,14 @@ export function MaterialsTable({
                     >
                       Aprobar
                     </Button>
+                  )}
+                  {item.status === "approved" && (
+                    <CompactSwitch
+                      checked={item.is_visible}
+                      onChange={value => onToggleVisible(item.id, value)}
+                      disabled={isTogglingVisible(item.id)}
+                      label={`Visibilidad de ${item.title}`}
+                    />
                   )}
                 </div>
               </TableCell>

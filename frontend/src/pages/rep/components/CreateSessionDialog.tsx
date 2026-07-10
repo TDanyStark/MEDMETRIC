@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Link2, Copy } from "lucide-react";
+import { Link2, Copy, UserPlus } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import {
@@ -13,7 +13,10 @@ import {
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
+import { DoctorSelect } from "@/components/ui/DoctorSelect";
+import { CreateDoctorDialog } from "@/components/doctors/CreateDoctorDialog";
 import { createRepSession } from "@/services/rep";
+import { Doctor } from "@/types/doctor";
 
 interface CreateSessionDialogProps {
   open: boolean;
@@ -30,9 +33,13 @@ export function CreateSessionDialog({
 }: CreateSessionDialogProps) {
   const queryClient = useQueryClient();
   const [sessionForm, setSessionForm] = useState({
-    doctor_name: "",
     notes: "",
   });
+  const [doctorId, setDoctorId] = useState<number | null>(null);
+  const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
+  const [doctorSearchInput, setDoctorSearchInput] = useState("");
+  const [isCreateDoctorOpen, setIsCreateDoctorOpen] = useState(false);
+  const [showDoctorError, setShowDoctorError] = useState(false);
   const [createdSessionToken, setCreatedSessionToken] = useState<string | null>(
     null,
   );
@@ -41,8 +48,9 @@ export function CreateSessionDialog({
     mutationFn: async () => {
       if (selectedMaterialIds.length === 0)
         throw new Error("Selecciona al menos un material.");
+      if (!doctorId) throw new Error("Selecciona un médico para continuar.");
       return createRepSession({
-        doctor_name: sessionForm.doctor_name || undefined,
+        doctor_id: doctorId,
         notes: sessionForm.notes || undefined,
         material_ids: selectedMaterialIds,
       });
@@ -50,7 +58,9 @@ export function CreateSessionDialog({
     onSuccess: (data) => {
       toast.success("Sesión médica creada exitosamente.");
       setCreatedSessionToken(data.session.doctor_token);
-      setSessionForm({ doctor_name: "", notes: "" });
+      setSessionForm({ notes: "" });
+      setDoctorId(null);
+      setSelectedDoctor(null);
       void queryClient.invalidateQueries({ queryKey: ["rep", "sessions"] });
       onSuccess();
     },
@@ -64,6 +74,13 @@ export function CreateSessionDialog({
   const handleClose = () => {
     onOpenChange(false);
     setCreatedSessionToken(null);
+    setShowDoctorError(false);
+  };
+
+  const handleDoctorCreated = (doctor: Doctor) => {
+    setDoctorId(doctor.id);
+    setSelectedDoctor(doctor);
+    setShowDoctorError(false);
   };
 
   const copyToClipboard = async (text: string) => {
@@ -76,13 +93,28 @@ export function CreateSessionDialog({
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent>
+      <DialogContent
+        onPointerDownOutside={event => {
+          const target = event.target as HTMLElement | null
+          if (target?.closest('.doctor-select__menu, [class*="doctor-select__"]')) {
+            event.preventDefault()
+          }
+        }}
+        onInteractOutside={event => {
+          const target = event.target as HTMLElement | null
+          if (target?.closest('.doctor-select__menu, [class*="doctor-select__"]')) {
+            event.preventDefault()
+          }
+        }}
+      >
         <DialogHeader>
           <DialogTitle>Crear Visita Médica</DialogTitle>
           <DialogDescription>
-            Registra notas o a quién visitas (opcional). El enlace que generes
-            incluirá los {selectedMaterialIds.length} materiales seleccionados.
+            Selecciona al médico que vas a visitar y, si quieres, agrega notas.
+            El enlace que generes incluirá los {selectedMaterialIds.length}{" "}
+            materiales seleccionados.
           </DialogDescription>
         </DialogHeader>
 
@@ -90,18 +122,46 @@ export function CreateSessionDialog({
           <form
             onSubmit={(e) => {
               e.preventDefault();
+              if (!doctorId) {
+                setShowDoctorError(true);
+                return;
+              }
               void createSessionMutation.mutateAsync();
             }}
             className="space-y-5 mt-4"
           >
-            <Input
-              label="Médico (Opcional)"
-              value={sessionForm.doctor_name}
-              onChange={(e) =>
-                setSessionForm((c) => ({ ...c, doctor_name: e.target.value }))
-              }
-              placeholder="Dr. Juan Pérez"
-            />
+            <div className="flex flex-col gap-2">
+              <label className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                Médico
+              </label>
+              <DoctorSelect
+                value={doctorId}
+                onChange={(id, doctor) => {
+                  setDoctorId(id);
+                  setSelectedDoctor(doctor);
+                  if (id) setShowDoctorError(false);
+                }}
+                onInputChange={setDoctorSearchInput}
+                instanceId="create-session-doctor-select"
+              />
+              {showDoctorError && (
+                <p className="text-xs text-destructive">
+                  Selecciona un médico para continuar.
+                </p>
+              )}
+              {selectedDoctor?.specialty && (
+                <p className="text-xs text-muted-foreground">
+                  {selectedDoctor.specialty}
+                </p>
+              )}
+              <button
+                type="button"
+                onClick={() => setIsCreateDoctorOpen(true)}
+                className="inline-flex w-fit items-center gap-1.5 text-xs font-semibold text-primary hover:underline"
+              >
+                <UserPlus className="h-3.5 w-3.5" />+ Registrar nuevo médico
+              </button>
+            </div>
             <Textarea
               label="Notas de la visita (Opcional)"
               value={sessionForm.notes}
@@ -115,7 +175,11 @@ export function CreateSessionDialog({
               <Button type="button" variant="outline" onClick={handleClose}>
                 Cancelar
               </Button>
-              <Button type="submit" loading={createSessionMutation.isPending}>
+              <Button
+                type="submit"
+                disabled={!doctorId}
+                loading={createSessionMutation.isPending}
+              >
                 Generar Link
               </Button>
             </div>
@@ -172,5 +236,13 @@ export function CreateSessionDialog({
         )}
       </DialogContent>
     </Dialog>
+
+    <CreateDoctorDialog
+      open={isCreateDoctorOpen}
+      onOpenChange={setIsCreateDoctorOpen}
+      onCreated={handleDoctorCreated}
+      initialName={doctorSearchInput}
+    />
+    </>
   );
 }

@@ -29,15 +29,17 @@ class DeleteMaterialAction extends Action
         // Scoped to organization (throws MaterialNotFoundException -> 404 if outside org)
         $material = $this->materialRepository->findByOrganizationAndId($organizationId, $materialId);
 
-        // Clean up stored files
+        // Delete the DB row first. If this fails (e.g. FK constraint violation),
+        // the stored files are left untouched so nothing is orphaned.
+        $this->materialRepository->delete($materialId);
+
+        // Only clean up stored files after the DB delete succeeded.
         if ($material->getStoragePath()) {
             $this->storageService->delete($material->getStoragePath());
         }
         if ($material->getCoverPath()) {
             $this->storageService->delete($material->getCoverPath());
         }
-
-        $this->materialRepository->delete($materialId);
 
         return $this->respondWithData(['message' => 'Material deleted successfully']);
     }

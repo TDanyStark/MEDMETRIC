@@ -16,4 +16,5 @@ interface MaterialRepositoryInterface
     public function findByManagerAndId(int $managerId, int $id): Material;
     public function approve(int $id, int $approvedBy): Material;
     public function findAllApprovedByRep(int $repId, ?string $search = null, ?string $type = null, int $page = 1, ?int $managerId = null, ?int $brandId = null): array;
+    public function setVisibility(int $id, bool $isVisible): Material;
 }

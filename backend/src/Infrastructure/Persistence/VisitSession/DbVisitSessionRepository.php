@@ -47,14 +47,14 @@ class DbVisitSessionRepository implements VisitSessionRepositoryInterface
         $total = (int) $countStmt->fetchColumn();
 
         // Get sessions with material count and IDs
-        $sql = "SELECT vs.id, vs.organization_id, vs.rep_id, vs.doctor_token, 
+        $sql = "SELECT vs.id, vs.organization_id, vs.rep_id, vs.doctor_token, vs.doctor_id,
                        vs.doctor_name, vs.notes, vs.active, vs.created_at, vs.updated_at,
                        COUNT(vsm.id) as material_count,
                        GROUP_CONCAT(vsm.material_id) as material_ids
                 FROM visit_sessions vs
                 LEFT JOIN visit_session_materials vsm ON vs.id = vsm.visit_session_id
                 WHERE $whereClause
-                GROUP BY vs.id, vs.organization_id, vs.rep_id, vs.doctor_token, 
+                GROUP BY vs.id, vs.organization_id, vs.rep_id, vs.doctor_token, vs.doctor_id,
                          vs.doctor_name, vs.notes, vs.active, vs.created_at, vs.updated_at
                 ORDER BY vs.created_at DESC
                 LIMIT :limit OFFSET :offset";
@@ -96,7 +96,7 @@ class DbVisitSessionRepository implements VisitSessionRepositoryInterface
     public function findByIdAndRep(int $id, int $repId): VisitSession
     {
         $stmt = $this->pdo->prepare(
-            'SELECT id, organization_id, rep_id, doctor_token, doctor_name, notes, active, created_at, updated_at
+            'SELECT id, organization_id, rep_id, doctor_token, doctor_id, doctor_name, notes, active, created_at, updated_at
              FROM visit_sessions
              WHERE id = :id AND rep_id = :rep_id
              LIMIT 1'
@@ -115,7 +115,7 @@ class DbVisitSessionRepository implements VisitSessionRepositoryInterface
     public function findByDoctorToken(string $token): ?VisitSession
     {
         $stmt = $this->pdo->prepare(
-            'SELECT vs.id, vs.organization_id, vs.rep_id, vs.doctor_token, vs.doctor_name, vs.notes, vs.active, vs.created_at, vs.updated_at,
+            'SELECT vs.id, vs.organization_id, vs.rep_id, vs.doctor_token, vs.doctor_id, vs.doctor_name, vs.notes, vs.active, vs.created_at, vs.updated_at,
                     u.name as rep_name
              FROM visit_sessions vs
              LEFT JOIN users u ON vs.rep_id = u.id
@@ -143,14 +143,15 @@ class DbVisitSessionRepository implements VisitSessionRepositoryInterface
         try {
             // Insert visit session
             $stmt = $this->pdo->prepare(
-                'INSERT INTO visit_sessions (organization_id, rep_id, doctor_token, doctor_name, notes, active) 
-                 VALUES (:organization_id, :rep_id, :doctor_token, :doctor_name, :notes, 1)'
+                'INSERT INTO visit_sessions (organization_id, rep_id, doctor_token, doctor_id, doctor_name, notes, active) 
+                 VALUES (:organization_id, :rep_id, :doctor_token, :doctor_id, :doctor_name, :notes, 1)'
             );
 
             $stmt->execute([
                 ':organization_id' => $organizationId,
                 ':rep_id'          => $repId,
                 ':doctor_token'    => $doctorToken,
+                ':doctor_id'       => $data['doctor_id'] ?? null,
                 ':doctor_name'     => $data['doctor_name'] ?? null,
                 ':notes'           => $data['notes'] ?? null,
             ]);

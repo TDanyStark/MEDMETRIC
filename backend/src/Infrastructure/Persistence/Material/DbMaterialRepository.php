@@ -55,7 +55,7 @@ class DbMaterialRepository implements MaterialRepositoryInterface
         $countStmt->execute($params);
         $total = (int) $countStmt->fetchColumn();
 
-        $sql = "SELECT m.id, m.organization_id, m.brand_id, m.manager_id, m.title, m.description, m.cover_path, m.type, m.status,
+        $sql = "SELECT m.id, m.organization_id, m.brand_id, m.manager_id, m.title, m.description, m.cover_path, m.type, m.status, m.is_visible,
                        m.storage_driver, m.storage_path, m.external_url, m.approved_at, m.approved_by, 
                        m.created_at, m.updated_at
                 FROM   materials m
@@ -125,7 +125,7 @@ class DbMaterialRepository implements MaterialRepositoryInterface
         $countStmt->execute($params);
         $total = (int) $countStmt->fetchColumn();
 
-        $sql = "SELECT m.id, m.organization_id, m.brand_id, m.manager_id, m.title, m.description, m.cover_path, m.type, m.status,
+        $sql = "SELECT m.id, m.organization_id, m.brand_id, m.manager_id, m.title, m.description, m.cover_path, m.type, m.status, m.is_visible,
                        m.storage_driver, m.storage_path, m.external_url, m.approved_at, m.approved_by,
                        m.created_at, m.updated_at,
                        b.name AS brand_name,
@@ -160,7 +160,7 @@ class DbMaterialRepository implements MaterialRepositoryInterface
     public function findByOrganizationAndId(int $organizationId, int $id): Material
     {
         $stmt = $this->pdo->prepare(
-            'SELECT m.id, m.organization_id, m.brand_id, m.manager_id, m.title, m.description, m.cover_path, m.type, m.status,
+            'SELECT m.id, m.organization_id, m.brand_id, m.manager_id, m.title, m.description, m.cover_path, m.type, m.status, m.is_visible,
                     m.storage_driver, m.storage_path, m.external_url, m.approved_at, m.approved_by,
                     m.created_at, m.updated_at,
                     b.name AS brand_name,
@@ -185,7 +185,7 @@ class DbMaterialRepository implements MaterialRepositoryInterface
     public function findById(int $id): Material
     {
         $stmt = $this->pdo->prepare(
-            'SELECT id, organization_id, brand_id, manager_id, title, description, cover_path, type, status,
+            'SELECT id, organization_id, brand_id, manager_id, title, description, cover_path, type, status, is_visible,
                     storage_driver, storage_path, external_url, approved_at, approved_by, 
                     created_at, updated_at
              FROM   materials
@@ -206,7 +206,7 @@ class DbMaterialRepository implements MaterialRepositoryInterface
     public function findByManagerAndId(int $managerId, int $id): Material
     {
         $stmt = $this->pdo->prepare(
-            'SELECT m.id, m.organization_id, m.brand_id, m.manager_id, m.title, m.description, m.cover_path, m.type, m.status,
+            'SELECT m.id, m.organization_id, m.brand_id, m.manager_id, m.title, m.description, m.cover_path, m.type, m.status, m.is_visible,
                     m.storage_driver, m.storage_path, m.external_url, m.approved_at, m.approved_by, 
                     m.created_at, m.updated_at
              FROM   materials m
@@ -228,8 +228,8 @@ class DbMaterialRepository implements MaterialRepositoryInterface
     public function create(array $data): Material
     {
         $stmt = $this->pdo->prepare(
-            'INSERT INTO materials (organization_id, brand_id, manager_id, title, description, cover_path, type, status, storage_driver, storage_path, external_url) 
-             VALUES (:organization_id, :brand_id, :manager_id, :title, :description, :cover_path, :type, :status, :storage_driver, :storage_path, :external_url)'
+            'INSERT INTO materials (organization_id, brand_id, manager_id, title, description, cover_path, type, status, is_visible, storage_driver, storage_path, external_url) 
+             VALUES (:organization_id, :brand_id, :manager_id, :title, :description, :cover_path, :type, :status, :is_visible, :storage_driver, :storage_path, :external_url)'
         );
 
         $stmt->execute([
@@ -241,6 +241,7 @@ class DbMaterialRepository implements MaterialRepositoryInterface
             ':cover_path'      => $data['cover_path'] ?? null,
             ':type'            => $data['type'],
             ':status'          => $data['status'] ?? 'draft',
+            ':is_visible'      => isset($data['is_visible']) ? (int) $data['is_visible'] : 0,
             ':storage_driver'  => $data['storage_driver'] ?? 'local',
             ':storage_path'    => $data['storage_path'] ?? null,
             ':external_url'    => $data['external_url'] ?? null,
@@ -288,6 +289,11 @@ class DbMaterialRepository implements MaterialRepositoryInterface
             $params[':status'] = $data['status'];
         }
 
+        if (isset($data['is_visible'])) {
+            $fields[] = 'is_visible = :is_visible';
+            $params[':is_visible'] = (int) $data['is_visible'];
+        }
+
         if (isset($data['storage_driver'])) {
             $fields[] = 'storage_driver = :storage_driver';
             $params[':storage_driver'] = $data['storage_driver'];
@@ -326,13 +332,29 @@ class DbMaterialRepository implements MaterialRepositoryInterface
         $this->findById($id);
 
         $stmt = $this->pdo->prepare(
-            'UPDATE materials SET status = :status, approved_at = NOW(), approved_by = :approved_by WHERE id = :id'
+            'UPDATE materials SET status = :status, is_visible = 1, approved_at = NOW(), approved_by = :approved_by WHERE id = :id'
         );
 
         $stmt->execute([
             ':id'          => $id,
             ':status'      => 'approved',
             ':approved_by' => $approvedBy,
+        ]);
+
+        return $this->findById($id);
+    }
+
+    public function setVisibility(int $id, bool $isVisible): Material
+    {
+        $this->findById($id);
+
+        $stmt = $this->pdo->prepare(
+            'UPDATE materials SET is_visible = :is_visible, updated_at = NOW() WHERE id = :id'
+        );
+
+        $stmt->execute([
+            ':id'         => $id,
+            ':is_visible' => $isVisible ? 1 : 0,
         ]);
 
         return $this->findById($id);
@@ -345,7 +367,7 @@ class DbMaterialRepository implements MaterialRepositoryInterface
 
         // Join with rep_manager_access to get materials from subscribed managers
         // Only approved materials that are active
-        $where  = ['m.status = :status', 'rma.active = 1', 'rma.rep_id = :rep_id'];
+        $where  = ['m.status = :status', 'm.is_visible = 1', 'rma.active = 1', 'rma.rep_id = :rep_id'];
         $params = [':rep_id' => $repId, ':status' => 'approved'];
 
         if ($search !== null && $search !== '') {
@@ -379,7 +401,7 @@ class DbMaterialRepository implements MaterialRepositoryInterface
         $countStmt->execute($params);
         $total = (int) $countStmt->fetchColumn();
 
-        $sql = "SELECT m.id, m.organization_id, m.brand_id, m.manager_id, m.title, m.description, m.cover_path, m.type, m.status,
+        $sql = "SELECT m.id, m.organization_id, m.brand_id, m.manager_id, m.title, m.description, m.cover_path, m.type, m.status, m.is_visible,
                         m.storage_driver, m.storage_path, m.external_url, m.approved_at, m.approved_by, 
                         m.created_at, m.updated_at,
                         b.name as brand_name,

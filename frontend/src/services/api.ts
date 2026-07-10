@@ -31,6 +31,40 @@ function extractErrorMessage(data: ApiErrorPayload | unknown, status: number): s
   return `HTTP error ${status}`
 }
 
+const DEFAULT_FRIENDLY_ERROR_MESSAGE =
+  'Ocurrió un error inesperado. Intenta de nuevo o contacta soporte si el problema persiste.'
+
+// Matches technical/leaked backend error text (SQL errors, PHP exceptions, stack traces)
+// that should never be shown to end users, even if the backend fails to sanitize it.
+const TECHNICAL_ERROR_PATTERN =
+  /SQLSTATE|PDOException|Fatal error|Stack trace|Trace:|Exception\b|at \w+\(.*\)/i
+
+function looksLikeTechnicalMessage(message: string): boolean {
+  if (!message) return true
+  if (TECHNICAL_ERROR_PATTERN.test(message)) return true
+  if (message.length > 200) return true
+  if (/\r|\n/.test(message)) return true
+  return false
+}
+
+/**
+ * Returns a message safe to show to end users. Curated/friendly backend messages
+ * (e.g. 409 conflict messages) are passed through as-is. Anything that looks like a
+ * raw technical error (SQL error text, PHP exceptions, stack traces, unexpectedly
+ * long/multi-line strings) is replaced with a generic Spanish fallback message.
+ */
+export function getUserFriendlyErrorMessage(
+  error: unknown,
+  fallback: string = DEFAULT_FRIENDLY_ERROR_MESSAGE,
+): string {
+  const message =
+    error instanceof ApiRequestError || error instanceof Error ? error.message : null
+
+  if (!message) return fallback
+
+  return looksLikeTechnicalMessage(message) ? fallback : message
+}
+
 class ApiService {
   async request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
     const url = `${API_BASE}${endpoint}`

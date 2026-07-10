@@ -15,6 +15,7 @@ const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
 const PublicVisitPage = lazy(() => import('./pages/public/PublicVisitPage'))
 const PublicErrorPage = lazy(() => import('./pages/public/PublicErrorPage'))
 const RoleHomePage = lazy(() => import('./pages/RoleHomePage'))
+const DoctorsPage = lazy(() => import('./pages/doctors/DoctorsPage').then(m => ({ default: m.DoctorsPage })))
 
 // Manager pages
 const ManagerBrandsPage = lazy(() => import('./pages/manager/ManagerBrandsPage').then(m => ({ default: m.ManagerBrandsPage })))
@@ -126,6 +127,7 @@ function App() {
                 <Route path="materials" element={<OrgAdminMaterialsPage />} />
                 <Route path="materials/new" element={<OrgAdminMaterialFormPage />} />
                 <Route path="materials/:id/edit" element={<OrgAdminMaterialFormPage />} />
+                <Route path="doctors" element={<DoctorsPage />} />
                 <Route path="metrics" element={<OrgAdminMetricsPage />} />
               </Route>
 
@@ -141,6 +143,7 @@ function App() {
                 <Route path="brands" element={<ManagerBrandsPage />} />
                 <Route path="materials" element={<ManagerMaterialsPage />} />
                 <Route path="reps" element={<ManagerRepsPage />} />
+                <Route path="doctors" element={<DoctorsPage />} />
                 <Route path="metrics" element={<ManagerMetricsPage />} />
               </Route>
 
@@ -155,6 +158,7 @@ function App() {
                 <Route index element={<RoleHomePage role="rep" />} />
                 <Route path="library" element={<RepLibraryPage />} />
                 <Route path="history" element={<RepHistoryPage />} />
+                <Route path="doctors" element={<DoctorsPage />} />
               </Route>
 
               <Route path="*" element={<NotFoundPage />} />

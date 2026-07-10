@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useMutation, useQueries, useQueryClient } from '@tanstack/react-query'
-import { Plus } from 'lucide-react'
+import { AlertTriangle, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
@@ -15,12 +15,14 @@ import {
 } from '@/components/ui/Dialog'
 
 import { getNumberParam, getStringParam, updateSearchParams } from '@/lib/search'
+import { getUserFriendlyErrorMessage } from '@/services/api'
 import {
   approveOrgMaterial,
   deleteOrgMaterial,
   listOrgBrands,
   listOrgMaterials,
   listOrgUsers,
+  setOrgMaterialVisibility,
 } from '@/services/backoffice'
 import { Material } from '@/types/backoffice'
 
@@ -90,6 +92,18 @@ export function OrgAdminMaterialsPage() {
     },
   })
 
+  const visibilityMutation = useMutation({
+    mutationFn: ({ id, isVisible }: { id: number; isVisible: boolean }) => setOrgMaterialVisibility(id, isVisible),
+    onSuccess: () => {
+      toast.success('Visibilidad actualizada.')
+      void queryClient.invalidateQueries({ queryKey: ['org-admin', 'materials'] })
+    },
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : 'No se pudo actualizar la visibilidad.'
+      toast.error(message)
+    },
+  })
+
   const deleteMutation = useMutation({
     mutationFn: (materialId: number) => deleteOrgMaterial(materialId),
     onSuccess: () => {
@@ -98,8 +112,12 @@ export function OrgAdminMaterialsPage() {
       void queryClient.invalidateQueries({ queryKey: ['org-admin', 'materials'] })
     },
     onError: (error) => {
-      const message = error instanceof Error ? error.message : 'No se pudo eliminar.'
-      toast.error(message)
+      toast.error(
+        getUserFriendlyErrorMessage(
+          error,
+          'Ocurrió un error inesperado al eliminar el material. Intenta de nuevo o contacta soporte si el problema persiste.',
+        ),
+      )
     },
   })
 
@@ -196,6 +214,8 @@ export function OrgAdminMaterialsPage() {
               onEdit={handleEdit}
               onApprove={(id) => void approveMutation.mutateAsync(id)}
               isApproving={(id) => approveMutation.isPending && approveMutation.variables === id}
+              onToggleVisible={(id, value) => void visibilityMutation.mutateAsync({ id, isVisible: value })}
+              isTogglingVisible={(id) => visibilityMutation.isPending && visibilityMutation.variables?.id === id}
               onDelete={(material) => setDeletingMaterial(material)}
               onPreview={handlePreview}
             />
@@ -225,10 +245,21 @@ export function OrgAdminMaterialsPage() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Eliminar material</DialogTitle>
-            <DialogDescription>
-              ¿Seguro que deseas eliminar <strong>{deletingMaterial?.title}</strong>? Esta acción no
-              se puede deshacer.
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-destructive/10 text-destructive sm:mx-0">
+              <AlertTriangle className="h-7 w-7" />
+            </div>
+            <DialogTitle className="pt-3">¿Eliminar material?</DialogTitle>
+            <DialogDescription asChild>
+              <div className="space-y-3 text-left">
+                <p>
+                  Estás a punto de eliminar <strong className="text-foreground">{deletingMaterial?.title}</strong>.
+                </p>
+                <p className="rounded-2xl border border-destructive/20 bg-destructive/5 px-4 py-3 text-destructive">
+                  Se eliminarán también, de forma <strong>permanente e irreversible</strong>, todas
+                  las métricas de visualización y sesiones de visita asociadas a este material. Esta
+                  acción no se puede deshacer.
+                </p>
+              </div>
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end gap-3 pt-4 border-t border-border/50">
@@ -237,14 +268,13 @@ export function OrgAdminMaterialsPage() {
             </Button>
             <Button
               type="button"
-              variant="outline"
-              className="border-destructive/30 text-destructive hover:bg-destructive/5 hover:border-destructive/50"
+              variant="destructive"
               loading={deleteMutation.isPending}
               onClick={() => {
                 if (deletingMaterial) void deleteMutation.mutateAsync(deletingMaterial.id)
               }}
             >
-              Eliminar
+              Eliminar definitivamente
             </Button>
           </div>
         </DialogContent>

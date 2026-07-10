@@ -12,10 +12,12 @@ use App\Infrastructure\Storage\PdfProcessorService;
 use App\Infrastructure\Storage\S3StorageService;
 use App\Application\Settings\SettingsInterface;
 use App\Domain\Brand\BrandRepositoryInterface;
+use App\Domain\Doctor\DoctorRepositoryInterface;
 use App\Domain\Material\MaterialRepositoryInterface;
 use App\Domain\RepAccess\RepAccessRepositoryInterface;
 use App\Domain\VisitSession\VisitSessionRepositoryInterface;
 use App\Infrastructure\Persistence\Brand\DbBrandRepository;
+use App\Infrastructure\Persistence\Doctor\DbDoctorRepository;
 use App\Infrastructure\Persistence\Material\DbMaterialRepository;
 use App\Infrastructure\Persistence\RepAccess\DbRepAccessRepository;
 use App\Infrastructure\Persistence\VisitSession\DbVisitSessionRepository;
@@ -73,6 +75,7 @@ return function (ContainerBuilder $containerBuilder) {
 
         // Repositories
         BrandRepositoryInterface::class => \DI\autowire(DbBrandRepository::class),
+        DoctorRepositoryInterface::class => \DI\autowire(DbDoctorRepository::class),
         MaterialRepositoryInterface::class => \DI\autowire(DbMaterialRepository::class),
         RepAccessRepositoryInterface::class => \DI\autowire(DbRepAccessRepository::class),
         VisitSessionRepositoryInterface::class => \DI\autowire(DbVisitSessionRepository::class),

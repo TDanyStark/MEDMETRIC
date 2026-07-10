@@ -57,7 +57,7 @@ class OpenMaterialAction extends Action
         // Verify material exists and is approved
         try {
             $material = $this->materialRepository->findById($materialId);
-            if ($material->getStatus() !== 'approved') {
+            if ($material->getStatus() !== 'approved' || !$material->isVisible()) {
                 return $this->respondWithData([
                     'error' => 'Material is not available',
                 ], 403);

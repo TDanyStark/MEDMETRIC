@@ -13,6 +13,7 @@ class VisitSession implements JsonSerializable
         private int     $organizationId,
         private int     $repId,
         private string  $doctorToken,
+        private ?int    $doctorId,
         private ?string $doctorName,
         private ?string $notes,
         private bool    $active,
@@ -25,6 +26,7 @@ class VisitSession implements JsonSerializable
     public function getOrganizationId(): int    { return $this->organizationId; }
     public function getRepId(): int           { return $this->repId; }
     public function getDoctorToken(): string  { return $this->doctorToken; }
+    public function getDoctorId(): ?int       { return $this->doctorId; }
     public function getDoctorName(): ?string  { return $this->doctorName; }
     public function getNotes(): ?string       { return $this->notes; }
     public function isActive(): bool          { return $this->active; }
@@ -41,6 +43,7 @@ class VisitSession implements JsonSerializable
             'organization_id' => $this->organizationId,
             'rep_id'          => $this->repId,
             'doctor_token'    => $this->doctorToken,
+            'doctor_id'       => $this->doctorId,
             'doctor_name'     => $this->doctorName,
             'notes'           => $this->notes,
             'active'          => $this->active,
@@ -57,6 +60,7 @@ class VisitSession implements JsonSerializable
             organizationId: (int) $row['organization_id'],
             repId:          (int) $row['rep_id'],
             doctorToken:    $row['doctor_token'],
+            doctorId:       isset($row['doctor_id']) ? (int) $row['doctor_id'] : null,
             doctorName:     $row['doctor_name'] ?? null,
             notes:          $row['notes'] ?? null,
             active:         (bool) $row['active'],

@@ -61,6 +61,7 @@ export interface Material {
   cover_url?: string | null
   type: MaterialType
   status: MaterialStatus
+  is_visible: boolean
   storage_driver: string
   storage_path: string | null
   external_url: string | null

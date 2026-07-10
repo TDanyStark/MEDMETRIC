@@ -158,6 +158,10 @@ export function approveOrgMaterial(id: number) {
   return api.post<ApiResponse<Material>>(`/org-admin/materials/${id}/approve`).then(unwrap)
 }
 
+export function setOrgMaterialVisibility(id: number, is_visible: boolean) {
+  return api.patch<ApiResponse<Material>>(`/org-admin/materials/${id}/visibility`, { is_visible }).then(unwrap)
+}
+
 export function deleteOrgMaterial(id: number) {
   return api.delete<ApiResponse<{ message: string }>>(`/org-admin/materials/${id}`).then(unwrap)
 }
@@ -193,6 +197,10 @@ export function updateManagerMaterial(
 
 export function approveManagerMaterial(id: number) {
   return api.post<ApiResponse<Material>>(`/manager/materials/${id}/approve`).then(unwrap)
+}
+
+export function setManagerMaterialVisibility(id: number, is_visible: boolean) {
+  return api.patch<ApiResponse<Material>>(`/manager/materials/${id}/visibility`, { is_visible }).then(unwrap)
 }
 
 export function getManagerMaterialPreview(id: number) {

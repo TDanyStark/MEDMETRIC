@@ -16,6 +16,7 @@ import {
   createManagerMaterial,
   listManagerBrands,
   listManagerMaterials,
+  setManagerMaterialVisibility,
   updateManagerMaterial,
 } from '@/services/backoffice'
 import { Material } from '@/types/backoffice'
@@ -89,6 +90,18 @@ export function ManagerMaterialsPage() {
     },
   })
 
+  const visibilityMutation = useMutation({
+    mutationFn: ({ id, isVisible }: { id: number; isVisible: boolean }) => setManagerMaterialVisibility(id, isVisible),
+    onSuccess: () => {
+      toast.success('Visibilidad actualizada.')
+      void queryClient.invalidateQueries({ queryKey: ['manager', 'materials'] })
+    },
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : 'No se pudo actualizar la visibilidad.'
+      toast.error(message)
+    },
+  })
+
   const handleOpenNewDialog = () => {
     setEditingMaterial(null)
     setIsDialogOpen(true)
@@ -141,6 +154,8 @@ export function ManagerMaterialsPage() {
             onEdit={handleEdit}
             onApprove={id => void approveMutation.mutateAsync(id)}
             isApproving={id => approveMutation.isPending && approveMutation.variables === id}
+            onToggleVisible={(id, value) => void visibilityMutation.mutateAsync({ id, isVisible: value })}
+            isTogglingVisible={id => visibilityMutation.isPending && visibilityMutation.variables?.id === id}
             onPreview={handlePreview}
           />
         )}

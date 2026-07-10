@@ -18,6 +18,7 @@ class Material implements JsonSerializable
         private ?string  $coverPath,
         private string   $type,
         private string   $status,
+        private bool     $isVisible,
         private string   $storageDriver,
         private ?string  $storagePath,
         private ?string  $externalUrl,
@@ -39,6 +40,7 @@ class Material implements JsonSerializable
     public function getCoverPath(): ?string   { return $this->coverPath; }
     public function getType(): string      { return $this->type; }
     public function getStatus(): string    { return $this->status; }
+    public function isVisible(): bool      { return $this->isVisible; }
     public function getStorageDriver(): string { return $this->storageDriver; }
     public function getStoragePath(): ?string { return $this->storagePath; }
     public function getExternalUrl(): ?string { return $this->externalUrl; }
@@ -70,6 +72,7 @@ class Material implements JsonSerializable
             'cover_path'      => $this->coverPath,
             'type'            => $this->type,
             'status'          => $this->status,
+            'is_visible'      => $this->isVisible,
             'storage_driver'  => $this->storageDriver,
             'storage_path'    => $this->storagePath,
             'external_url'    => $this->externalUrl,
@@ -95,6 +98,7 @@ class Material implements JsonSerializable
             coverPath:       $row['cover_path'] ?? null,
             type:            $row['type'],
             status:          $row['status'],
+            isVisible:       (bool) ($row['is_visible'] ?? false),
             storageDriver:   $row['storage_driver'],
             storagePath:     $row['storage_path'] ?? null,
             externalUrl:     $row['external_url'] ?? null,

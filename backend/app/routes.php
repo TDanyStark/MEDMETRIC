@@ -23,10 +23,16 @@ use App\Application\Actions\Admin\User\UpdateRepSubscriptionsAction;
 use App\Application\Actions\Auth\ChangePasswordAction;
 use App\Application\Actions\Auth\LoginAction;
 use App\Application\Actions\Auth\MeAction;
+use App\Application\Actions\Doctor\CreateDoctorAction;
+use App\Application\Actions\Doctor\DeleteDoctorAction;
+use App\Application\Actions\Doctor\ListDoctorsAction;
+use App\Application\Actions\Doctor\SearchDoctorsAction;
+use App\Application\Actions\Doctor\UpdateDoctorAction;
 use App\Application\Actions\Manager\Brand\ListBrandsAction;
 use App\Application\Actions\Manager\Material\ApproveMaterialAction;
 use App\Application\Actions\Manager\Material\CreateMaterialAction;
 use App\Application\Actions\Manager\Material\ListMaterialsAction;
+use App\Application\Actions\Manager\Material\SetMaterialVisibilityAction;
 use App\Application\Actions\Manager\Material\UpdateMaterialAction;
 use App\Application\Actions\Material\PreviewMaterialAction;
 use App\Application\Actions\OrgAdmin\Material\ApproveMaterialAction as OrgAdminApproveMaterialAction;
@@ -35,6 +41,7 @@ use App\Application\Actions\OrgAdmin\Material\DeleteMaterialAction as OrgAdminDe
 use App\Application\Actions\OrgAdmin\Material\GetBrandManagersAction as OrgAdminGetBrandManagersAction;
 use App\Application\Actions\OrgAdmin\Material\GetMaterialAction as OrgAdminGetMaterialAction;
 use App\Application\Actions\OrgAdmin\Material\ListMaterialsAction as OrgAdminListMaterialsAction;
+use App\Application\Actions\OrgAdmin\Material\SetMaterialVisibilityAction as OrgAdminSetMaterialVisibilityAction;
 use App\Application\Actions\OrgAdmin\Material\UpdateMaterialAction as OrgAdminUpdateMaterialAction;
 use App\Application\Actions\Manager\Rep\AssignRepAction;
 use App\Application\Actions\Manager\Rep\GetAvailableRepsAction;
@@ -54,6 +61,7 @@ use App\Application\Actions\Metrics\GetTopMaterialsAction;
 use App\Application\Actions\Metrics\GetRepAdoptionAction;
 use App\Application\Middleware\JwtMiddleware;
 use App\Application\Middleware\RoleMiddleware;
+use App\Infrastructure\Config\DoctorAccessConfig;
 use App\Infrastructure\Database\Connection;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface as Response;
@@ -234,6 +242,7 @@ return function (App $app) {
                 $materials->put('/{id}',          OrgAdminUpdateMaterialAction::class);
                 $materials->delete('/{id}',       OrgAdminDeleteMaterialAction::class);
                 $materials->post('/{id}/approve', OrgAdminApproveMaterialAction::class);
+                $materials->patch('/{id}/visibility', OrgAdminSetMaterialVisibilityAction::class);
                 $materials->get('/{id}/preview',  PreviewMaterialAction::class);
             });
 
@@ -263,6 +272,7 @@ return function (App $app) {
                 $materials->post('',           CreateMaterialAction::class);
                 $materials->put('/{id}',       UpdateMaterialAction::class);
                 $materials->post('/{id}/approve', ApproveMaterialAction::class);
+                $materials->patch('/{id}/visibility', SetMaterialVisibilityAction::class);
                 $materials->get('/{id}/preview', PreviewMaterialAction::class);
             });
 
@@ -299,6 +309,27 @@ return function (App $app) {
         })->add(function ($request, $handler) use ($app) {
             $responseFactory = $app->getContainer()->get(ResponseFactoryInterface::class);
             return (new RoleMiddleware($responseFactory, ['rep']))->process($request, $handler);
+        })->add(JwtMiddleware::class);
+
+        // -------------------------------------------------------------------------
+        // Doctors routes (JWT + roles in DoctorAccessConfig::MANAGE_ROLES)
+        // Shared doctor directory used by org_admin/manager/rep. Deleting a
+        // doctor is further restricted to DoctorAccessConfig::DELETE_ROLES.
+        // -------------------------------------------------------------------------
+        $group->group('/doctors', function (RouteCollectorProxy $doctors) use ($app) {
+            $doctors->get('/search', SearchDoctorsAction::class);
+            $doctors->get('',        ListDoctorsAction::class);
+            $doctors->post('',       CreateDoctorAction::class);
+            $doctors->put('/{id}',   UpdateDoctorAction::class);
+
+            $doctors->delete('/{id}', DeleteDoctorAction::class)
+                ->add(function ($request, $handler) use ($app) {
+                    $responseFactory = $app->getContainer()->get(ResponseFactoryInterface::class);
+                    return (new RoleMiddleware($responseFactory, DoctorAccessConfig::DELETE_ROLES))->process($request, $handler);
+                });
+        })->add(function ($request, $handler) use ($app) {
+            $responseFactory = $app->getContainer()->get(ResponseFactoryInterface::class);
+            return (new RoleMiddleware($responseFactory, DoctorAccessConfig::MANAGE_ROLES))->process($request, $handler);
         })->add(JwtMiddleware::class);
 
         // -------------------------------------------------------------------------

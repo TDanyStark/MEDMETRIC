@@ -10,6 +10,7 @@ import {
   LucideIcon,
   Orbit,
   ShieldCheck,
+  Stethoscope,
   Users,
 } from 'lucide-react'
 import { Role } from '@/types'
@@ -62,6 +63,7 @@ export const ROLE_BLUEPRINTS: Record<Role, RoleBlueprint> = {
       { to: '/org-admin/users', label: 'Usuarios', description: 'Gestion de gerentes y visitadores dentro de la organizacion.', icon: Users },
       { to: '/org-admin/brands', label: 'Marcas', description: 'Catalogo maestro de marcas sin duplicados por cliente.', icon: BadgeCheck },
       { to: '/org-admin/materials', label: 'Materiales', description: 'Todos los materiales de la organizacion y su marca.', icon: FileStack },
+      { to: '/org-admin/doctors', label: 'Medicos', description: 'Directorio de medicos con historial de visitas y contexto comercial.', icon: Stethoscope },
       { to: '/org-admin/metrics', label: 'Metricas', description: 'Lectura operativa de usuarios, marcas y estructura interna.', icon: Activity },
     ],
   },
@@ -76,6 +78,7 @@ export const ROLE_BLUEPRINTS: Record<Role, RoleBlueprint> = {
       { to: '/manager/brands', label: 'Marcas asignadas', description: 'Consulta de marcas habilitadas para trabajar contenido.', icon: Orbit },
       { to: '/manager/materials', label: 'Materiales', description: 'Alta, edicion y aprobacion de piezas PDF, video y link.', icon: FileStack },
       { to: '/manager/reps', label: 'Visitadores', description: 'Gestion de suscripciones de acceso al contenido del gerente.', icon: BriefcaseMedical },
+      { to: '/manager/doctors', label: 'Medicos', description: 'Directorio de medicos con historial de visitas y contexto comercial.', icon: Stethoscope },
       { to: '/manager/metrics', label: 'Metricas', description: 'Rendimiento y uso de materiales.', icon: Activity },
     ],
   },
@@ -88,6 +91,7 @@ export const ROLE_BLUEPRINTS: Record<Role, RoleBlueprint> = {
     navigation: [
       { to: '/rep', label: 'Panorama', description: 'Inicio del visitador con accesos rapidos a contenido y sesiones.', icon: LayoutDashboard },
       { to: '/rep/library', label: 'Biblioteca', description: 'Materiales aprobados de los gerentes suscritos.', icon: FolderKanban },
+      { to: '/rep/doctors', label: 'Medicos', description: 'Directorio de medicos con historial de visitas y contexto comercial.', icon: Stethoscope },
       { to: '/rep/history', label: 'Historial', description: 'Seguimiento de sesiones ya creadas y consumos asociados.', icon: Link2 },
     ],
   },
