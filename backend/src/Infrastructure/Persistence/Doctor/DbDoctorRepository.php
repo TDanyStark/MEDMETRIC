@@ -115,8 +115,11 @@ class DbDoctorRepository implements DoctorRepositoryInterface
         $params = [':organization_id' => $organizationId];
 
         if ($q !== '') {
-            $where[]     = '(name LIKE :q OR document LIKE :q OR institution LIKE :q)';
-            $params[':q'] = "%{$q}%";
+            $where[] = '(name LIKE :q1 OR document LIKE :q2 OR institution LIKE :q3)';
+            $likeValue = "%{$q}%";
+            $params[':q1'] = $likeValue;
+            $params[':q2'] = $likeValue;
+            $params[':q3'] = $likeValue;
         }
 
         $whereSql = implode(' AND ', $where);
@@ -150,8 +153,11 @@ class DbDoctorRepository implements DoctorRepositoryInterface
         $params = [':organization_id' => $organizationId];
 
         if (!empty($filters['q'])) {
-            $where[]      = '(d.name LIKE :q OR d.document LIKE :q OR d.institution LIKE :q)';
-            $params[':q'] = '%' . $filters['q'] . '%';
+            $where[] = '(d.name LIKE :q1 OR d.document LIKE :q2 OR d.institution LIKE :q3)';
+            $likeValue = '%' . $filters['q'] . '%';
+            $params[':q1'] = $likeValue;
+            $params[':q2'] = $likeValue;
+            $params[':q3'] = $likeValue;
         }
 
         if (!empty($filters['region'])) {

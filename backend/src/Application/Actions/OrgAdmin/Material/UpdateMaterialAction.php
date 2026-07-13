@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Actions\OrgAdmin\Material;
 
 use App\Application\Actions\Action;
+use App\Application\Services\DeferredTasks\BackgroundProcessLauncher;
 use App\Application\Services\Storage\StorageServiceInterface;
 use App\Domain\Brand\BrandNotFoundException;
 use App\Domain\Brand\BrandRepositoryInterface;
@@ -18,7 +19,8 @@ class UpdateMaterialAction extends Action
         LoggerInterface $logger,
         private MaterialRepositoryInterface $materialRepository,
         private BrandRepositoryInterface $brandRepository,
-        private StorageServiceInterface $storageService
+        private StorageServiceInterface $storageService,
+        private BackgroundProcessLauncher $backgroundProcessLauncher
     ) {
         parent::__construct($logger);
     }
@@ -104,15 +106,22 @@ class UpdateMaterialAction extends Action
             }
         }
 
+        // Set when uploading a new PDF, so we can compress it in the
+        // background instead of blocking this response.
+        $pdfPath = null;
+        $pdfUpload = null;
+        $previousStoragePath = null;
+
         // Handle PDF file
         if (!empty($uploadedFiles['file'])) {
             $file = $uploadedFiles['file'];
             if ($file->getError() === UPLOAD_ERR_OK && $material->isPdf()) {
-                if ($material->getStoragePath()) {
-                    $this->storageService->delete($material->getStoragePath());
-                }
-                $path = $material->getManagerId() . '/materials/' . date('Y-m');
-                $updateData['storage_path'] = $this->storageService->storePdf($file, $path);
+                $previousStoragePath = $material->getStoragePath();
+                $pdfPath = $material->getManagerId() . '/materials/' . date('Y-m');
+                $pdfUpload = $this->storageService->storePdfDeferred($file, $pdfPath);
+                $updateData['storage_path'] = $pdfUpload['key'];
+                $updateData['pdf_compression_status'] = 'pending';
+                $updateData['pdf_compression_error'] = null;
             }
         }
 
@@ -126,6 +135,27 @@ class UpdateMaterialAction extends Action
 
         if ($updatedMaterial->getCoverPath()) {
             $updatedMaterial->setCoverUrl($this->storageService->getUrl($updatedMaterial->getCoverPath()));
+        }
+
+        if ($pdfUpload !== null) {
+            $launched = $this->backgroundProcessLauncher->launchPdfCompression(
+                $materialId,
+                $pdfUpload['tmpPath'],
+                $pdfUpload['key'],
+                $pdfPath,
+                $pdfUpload['originalFilename']
+            );
+
+            if (!$launched) {
+                $updatedMaterial = $this->materialRepository->update($materialId, ['pdf_compression_status' => 'unavailable']);
+            }
+
+            // The old file is no longer referenced by this material. It's a
+            // simple delete (no compression needed), so it's cheap enough to
+            // do inline — no need to background it.
+            if ($previousStoragePath !== null) {
+                $this->storageService->delete($previousStoragePath);
+            }
         }
 
         return $this->respondWithData($updatedMaterial);

@@ -28,7 +28,10 @@ class Material implements JsonSerializable
         private string   $updatedAt,
         private ?string  $brandName = null,
         private ?string  $managerName = null,
-        private ?string  $coverUrl = null
+        private ?string  $coverUrl = null,
+        private ?string  $pdfCompressionStatus = null,
+        private ?string  $pdfCompressionError = null,
+        private ?string  $pdfCompressionCheckedAt = null
     ) {}
 
     public function getId(): int           { return $this->id; }
@@ -51,6 +54,9 @@ class Material implements JsonSerializable
     public function getBrandName(): ?string { return $this->brandName; }
     public function getManagerName(): ?string { return $this->managerName; }
     public function getCoverUrl(): ?string  { return $this->coverUrl; }
+    public function getPdfCompressionStatus(): ?string { return $this->pdfCompressionStatus; }
+    public function getPdfCompressionError(): ?string { return $this->pdfCompressionError; }
+    public function getPdfCompressionCheckedAt(): ?string { return $this->pdfCompressionCheckedAt; }
 
     public function setCoverUrl(?string $url): void { $this->coverUrl = $url; }
 
@@ -83,6 +89,9 @@ class Material implements JsonSerializable
             'brand_name'      => $this->brandName,
             'manager_name'    => $this->managerName,
             'cover_url'       => $this->coverUrl,
+            'pdf_compression_status'     => $this->pdfCompressionStatus,
+            'pdf_compression_error'      => $this->pdfCompressionError,
+            'pdf_compression_checked_at' => $this->pdfCompressionCheckedAt,
         ];
     }
 
@@ -108,6 +117,9 @@ class Material implements JsonSerializable
             updatedAt:       $row['updated_at'],
             brandName:       $row['brand_name'] ?? null,
             managerName:     $row['manager_name'] ?? null,
+            pdfCompressionStatus:    $row['pdf_compression_status'] ?? null,
+            pdfCompressionError:     $row['pdf_compression_error'] ?? null,
+            pdfCompressionCheckedAt: $row['pdf_compression_checked_at'] ?? null,
         );
     }
 }

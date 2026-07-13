@@ -131,8 +131,8 @@ if ($DoBackend) {
     New-Item -ItemType Directory -Path "$ApiTemp\api" | Out-Null
 
     if ($Quick) {
-        Write-Host "Backend (Quick): solo app, public, src, database..." -ForegroundColor Gray
-        foreach ($folder in @("app", "public", "src", "database")) {
+        Write-Host "Backend (Quick): solo app, public, src, database, bin..." -ForegroundColor Gray
+        foreach ($folder in @("app", "public", "src", "database", "bin")) {
             if (Test-Path "$BackendDir\$folder") {
                 Copy-Item -Path "$BackendDir\$folder" -Destination "$ApiTemp\api\$folder" -Recurse
             }

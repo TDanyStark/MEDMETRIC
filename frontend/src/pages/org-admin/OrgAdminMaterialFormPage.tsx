@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, Info } from 'lucide-react'
 import { toast } from 'sonner'
@@ -52,6 +52,10 @@ export function OrgAdminMaterialFormPage() {
 
   const [form, setForm] = useState<MaterialFormState>(emptyForm)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  // Stable per "create attempt" key: reused across retries on this page
+  // instance so the backend can recognize a resubmission and avoid creating
+  // a duplicate material (see idempotency_key handling in CreateMaterialAction).
+  const createIdempotencyKeyRef = useRef<string>(crypto.randomUUID())
 
   const brandsQuery = useQuery({
     queryKey: ['org-admin', 'brands', 'material-form'],
@@ -128,6 +132,7 @@ export function OrgAdminMaterialFormPage() {
         payload.append('external_url', form.external_url)
       }
       if (form.cover_file) payload.append('cover_image', form.cover_file)
+      if (!isEditing) payload.append('idempotency_key', createIdempotencyKeyRef.current)
 
       return isEditing ? updateOrgMaterial(materialId!, payload) : createOrgMaterial(payload)
     },

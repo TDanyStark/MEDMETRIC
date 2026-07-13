@@ -51,6 +51,20 @@ abstract class AbstractStorageService implements StorageServiceInterface
     }
 
     /**
+     * Move an uploaded file to a temp path WITHOUT deleting it afterwards.
+     * Used by the deferred-compression flow: the caller uploads the raw
+     * temp file immediately, then compresses/deletes it later in a
+     * background step (see storePdfDeferred() / compressAndReplacePdf()).
+     */
+    protected function moveToTemp(UploadedFileInterface $file): string
+    {
+        $tmpPath = $this->getTempPath('storage_in_');
+        $file->moveTo($tmpPath);
+
+        return $tmpPath;
+    }
+
+    /**
      * Helper to wrap a processing step with temporary files.
      */
     protected function withProcessed(

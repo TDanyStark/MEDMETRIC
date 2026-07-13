@@ -187,7 +187,7 @@ class DbMaterialRepository implements MaterialRepositoryInterface
         $stmt = $this->pdo->prepare(
             'SELECT id, organization_id, brand_id, manager_id, title, description, cover_path, type, status, is_visible,
                     storage_driver, storage_path, external_url, approved_at, approved_by, 
-                    created_at, updated_at
+                    created_at, updated_at, pdf_compression_status, pdf_compression_error, pdf_compression_checked_at
              FROM   materials
              WHERE  id = :id
              LIMIT  1'
@@ -227,29 +227,65 @@ class DbMaterialRepository implements MaterialRepositoryInterface
 
     public function create(array $data): Material
     {
+        $idempotencyKey = !empty($data['idempotency_key']) ? (string) $data['idempotency_key'] : null;
+
         $stmt = $this->pdo->prepare(
-            'INSERT INTO materials (organization_id, brand_id, manager_id, title, description, cover_path, type, status, is_visible, storage_driver, storage_path, external_url) 
-             VALUES (:organization_id, :brand_id, :manager_id, :title, :description, :cover_path, :type, :status, :is_visible, :storage_driver, :storage_path, :external_url)'
+            'INSERT INTO materials (organization_id, brand_id, manager_id, title, description, cover_path, type, status, is_visible, storage_driver, storage_path, external_url, idempotency_key, pdf_compression_status) 
+             VALUES (:organization_id, :brand_id, :manager_id, :title, :description, :cover_path, :type, :status, :is_visible, :storage_driver, :storage_path, :external_url, :idempotency_key, :pdf_compression_status)'
         );
 
-        $stmt->execute([
-            ':organization_id' => $data['organization_id'],
-            ':brand_id'        => $data['brand_id'],
-            ':manager_id'      => $data['manager_id'],
-            ':title'           => $data['title'],
-            ':description'     => $data['description'] ?? null,
-            ':cover_path'      => $data['cover_path'] ?? null,
-            ':type'            => $data['type'],
-            ':status'          => $data['status'] ?? 'draft',
-            ':is_visible'      => isset($data['is_visible']) ? (int) $data['is_visible'] : 0,
-            ':storage_driver'  => $data['storage_driver'] ?? 'local',
-            ':storage_path'    => $data['storage_path'] ?? null,
-            ':external_url'    => $data['external_url'] ?? null,
-        ]);
+        try {
+            $stmt->execute([
+                ':organization_id' => $data['organization_id'],
+                ':brand_id'        => $data['brand_id'],
+                ':manager_id'      => $data['manager_id'],
+                ':title'           => $data['title'],
+                ':description'     => $data['description'] ?? null,
+                ':cover_path'      => $data['cover_path'] ?? null,
+                ':type'            => $data['type'],
+                ':status'          => $data['status'] ?? 'draft',
+                ':is_visible'      => isset($data['is_visible']) ? (int) $data['is_visible'] : 0,
+                ':storage_driver'  => $data['storage_driver'] ?? 'local',
+                ':storage_path'    => $data['storage_path'] ?? null,
+                ':external_url'    => $data['external_url'] ?? null,
+                ':idempotency_key' => $idempotencyKey,
+                ':pdf_compression_status' => $data['pdf_compression_status'] ?? null,
+            ]);
+        } catch (\PDOException $e) {
+            // Race condition: two near-simultaneous requests with the same
+            // idempotency_key (e.g. a retry fired right as the first request
+            // was finishing). The unique constraint rejects the second
+            // insert — return the row the first request already created
+            // instead of failing the whole request.
+            if ($idempotencyKey !== null && (int) ($e->errorInfo[1] ?? 0) === 1062) {
+                $existing = $this->findByIdempotencyKey($idempotencyKey);
+                if ($existing !== null) {
+                    return $existing;
+                }
+            }
+            throw $e;
+        }
 
         $id = (int) $this->pdo->lastInsertId();
 
         return $this->findById($id);
+    }
+
+    public function findByIdempotencyKey(string $idempotencyKey): ?Material
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT id, organization_id, brand_id, manager_id, title, description, cover_path, type, status, is_visible,
+                    storage_driver, storage_path, external_url, approved_at, approved_by,
+                    created_at, updated_at
+             FROM   materials
+             WHERE  idempotency_key = :idempotency_key
+             LIMIT  1'
+        );
+
+        $stmt->execute([':idempotency_key' => $idempotencyKey]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $row ? Material::fromRow($row) : null;
     }
 
     public function update(int $id, array $data): Material
@@ -307,6 +343,23 @@ class DbMaterialRepository implements MaterialRepositoryInterface
         if (isset($data['external_url'])) {
             $fields[] = 'external_url = :external_url';
             $params[':external_url'] = $data['external_url'];
+        }
+
+        if (isset($data['pdf_compression_status'])) {
+            $fields[] = 'pdf_compression_status = :pdf_compression_status';
+            $params[':pdf_compression_status'] = $data['pdf_compression_status'];
+        }
+
+        // array_key_exists (not isset): must allow explicitly clearing a
+        // previous error message back to NULL once compression succeeds.
+        if (array_key_exists('pdf_compression_error', $data)) {
+            $fields[] = 'pdf_compression_error = :pdf_compression_error';
+            $params[':pdf_compression_error'] = $data['pdf_compression_error'];
+        }
+
+        if (isset($data['pdf_compression_checked_at'])) {
+            $fields[] = 'pdf_compression_checked_at = :pdf_compression_checked_at';
+            $params[':pdf_compression_checked_at'] = $data['pdf_compression_checked_at'];
         }
 
         if (!empty($fields)) {

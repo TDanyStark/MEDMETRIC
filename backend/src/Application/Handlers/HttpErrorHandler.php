@@ -66,6 +66,16 @@ class HttpErrorHandler extends SlimErrorHandler
             return $response->withHeader('Content-Type', 'application/json');
         }
 
+        if ($fkViolation === null && $exception instanceof Throwable && !($exception instanceof HttpException)) {
+            // Any exception that isn't a known HttpException (4xx) or FK violation results in a
+            // generic 500 response. Log it here so it stays traceable in app.log.
+            $this->logger->error('Unhandled server error', [
+                'exception' => $exception->getMessage(),
+                'code' => $exception->getCode(),
+                'trace' => $exception->getTraceAsString(),
+            ]);
+        }
+
         if ($exception instanceof HttpException) {
             $statusCode = $exception->getCode();
             $error->setDescription($exception->getMessage());

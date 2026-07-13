@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use App\Application\Middleware\JwtMiddleware;
 use App\Application\Services\Auth\JwtServiceInterface;
+use App\Application\Services\DeferredTasks\BackgroundProcessLauncher;
+use App\Application\Services\Material\DeferredPdfCompressionService;
 use App\Application\Services\Storage\StorageServiceInterface;
 use App\Infrastructure\Auth\JwtService;
 use App\Infrastructure\Storage\ImageProcessorService;
@@ -61,6 +63,12 @@ return function (ContainerBuilder $containerBuilder) {
         // Processors (shared between local and S3 services)
         PdfProcessorService::class => \DI\autowire(PdfProcessorService::class),
         ImageProcessorService::class => \DI\autowire(ImageProcessorService::class),
+
+        // Background PDF compression — see BackgroundProcessLauncher for why
+        // this runs as a genuinely detached OS process (bin/compress_material.php)
+        // instead of continuing in-process after the response.
+        BackgroundProcessLauncher::class => \DI\autowire(BackgroundProcessLauncher::class),
+        DeferredPdfCompressionService::class => \DI\autowire(DeferredPdfCompressionService::class),
 
         // Storage Service — switch between local disk and AWS S3 via STORAGE_DRIVER env var
         StorageServiceInterface::class => function (ContainerInterface $c) {

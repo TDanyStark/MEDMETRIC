@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Actions\OrgAdmin\Material;
 
 use App\Application\Actions\Action;
+use App\Application\Services\DeferredTasks\BackgroundProcessLauncher;
 use App\Application\Services\Storage\StorageServiceInterface;
 use App\Domain\AdminUser\AdminUserRepositoryInterface;
 use App\Domain\Brand\BrandNotFoundException;
@@ -20,7 +21,8 @@ class CreateMaterialAction extends Action
         private MaterialRepositoryInterface $materialRepository,
         private BrandRepositoryInterface $brandRepository,
         private AdminUserRepositoryInterface $adminUserRepository,
-        private StorageServiceInterface $storageService
+        private StorageServiceInterface $storageService,
+        private BackgroundProcessLauncher $backgroundProcessLauncher
     ) {
         parent::__construct($logger);
     }
@@ -48,6 +50,21 @@ class CreateMaterialAction extends Action
 
         if (empty($data['type'])) {
             return $this->respondWithData(['error' => 'Material type is required (pdf, video, link)'], 422);
+        }
+
+        // Idempotency: if the client already sent this exact create request
+        // before (e.g. it retried after a gateway timeout that actually
+        // succeeded on the backend), return the material that was already
+        // created instead of creating a duplicate.
+        $idempotencyKey = !empty($data['idempotency_key']) ? (string) $data['idempotency_key'] : null;
+        if ($idempotencyKey !== null) {
+            $existing = $this->materialRepository->findByIdempotencyKey($idempotencyKey);
+            if ($existing !== null && $existing->getOrganizationId() === $organizationId) {
+                if ($existing->getCoverPath()) {
+                    $existing->setCoverUrl($this->storageService->getUrl($existing->getCoverPath()));
+                }
+                return $this->respondWithData($existing, 201);
+            }
         }
 
         $brandId = (int) $data['brand_id'];
@@ -81,6 +98,7 @@ class CreateMaterialAction extends Action
             'storage_driver'  => $_ENV['STORAGE_DRIVER'] ?? 'local',
             'storage_path'    => null,
             'external_url'    => null,
+            'idempotency_key' => $idempotencyKey,
         ];
 
         $uploadedFiles = $this->request->getUploadedFiles();
@@ -97,6 +115,12 @@ class CreateMaterialAction extends Action
             }
         }
 
+        // Set when uploading a PDF, so we can compress it in a detached
+        // background process (see BackgroundProcessLauncher below) instead
+        // of blocking this response.
+        $pdfPath = null;
+        $pdfUpload = null;
+
         if ($data['type'] === 'pdf') {
             if (empty($uploadedFiles['file'])) {
                 return $this->respondWithData(['error' => 'PDF file is required'], 422);
@@ -112,8 +136,10 @@ class CreateMaterialAction extends Action
                 return $this->respondWithData(['error' => 'Only PDF files are allowed'], 422);
             }
 
-            $path = $managerId . '/materials/' . date('Y-m');
-            $materialData['storage_path'] = $this->storageService->storePdf($file, $path);
+            $pdfPath = $managerId . '/materials/' . date('Y-m');
+            $pdfUpload = $this->storageService->storePdfDeferred($file, $pdfPath);
+            $materialData['storage_path'] = $pdfUpload['key'];
+            $materialData['pdf_compression_status'] = 'pending';
         } elseif ($data['type'] === 'video') {
             if (empty($data['external_url'])) {
                 return $this->respondWithData(['error' => 'Video URL is required'], 422);
@@ -138,6 +164,20 @@ class CreateMaterialAction extends Action
         $material = $this->materialRepository->findByOrganizationAndId($organizationId, $material->getId());
         if ($material->getCoverPath()) {
             $material->setCoverUrl($this->storageService->getUrl($material->getCoverPath()));
+        }
+
+        if ($pdfUpload !== null) {
+            $launched = $this->backgroundProcessLauncher->launchPdfCompression(
+                $material->getId(),
+                $pdfUpload['tmpPath'],
+                $pdfUpload['key'],
+                $pdfPath,
+                $pdfUpload['originalFilename']
+            );
+
+            if (!$launched) {
+                $material = $this->materialRepository->update($material->getId(), ['pdf_compression_status' => 'unavailable']);
+            }
         }
 
         return $this->respondWithData($material, 201);

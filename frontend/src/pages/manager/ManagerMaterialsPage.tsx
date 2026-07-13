@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useMutation, useQueries, useQueryClient } from '@tanstack/react-query'
 import { Plus } from 'lucide-react'
 import { toast } from 'sonner'
@@ -33,6 +33,10 @@ export function ManagerMaterialsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [previewingMaterial, setPreviewingMaterial] = useState<Material | null>(null)
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
+  // Stable per "create attempt" key: reused across retries of the same open
+  // dialog so the backend can recognize a resubmission and avoid creating a
+  // duplicate material (see idempotency_key handling in CreateMaterialAction).
+  const createIdempotencyKeyRef = useRef<string | null>(null)
 
   const q = getStringParam(searchParams, 'q')
   const page = getNumberParam(searchParams, 'page')
@@ -62,6 +66,9 @@ export function ManagerMaterialsPage() {
 
   const saveMutation = useMutation({
     mutationFn: async (payload: FormData) => {
+      if (!editingMaterial && createIdempotencyKeyRef.current) {
+        payload.append('idempotency_key', createIdempotencyKeyRef.current)
+      }
       return editingMaterial 
         ? updateManagerMaterial(editingMaterial.id, payload) 
         : createManagerMaterial(payload)
@@ -103,6 +110,7 @@ export function ManagerMaterialsPage() {
   })
 
   const handleOpenNewDialog = () => {
+    createIdempotencyKeyRef.current = crypto.randomUUID()
     setEditingMaterial(null)
     setIsDialogOpen(true)
   }
