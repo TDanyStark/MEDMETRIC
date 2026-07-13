@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react'
 import AsyncSelect from 'react-select/async'
+import { useDebouncedCallback } from 'use-debounce'
 import { searchDoctors } from '@/services/doctors'
 import { Doctor } from '@/types/doctor'
+
+const SEARCH_DEBOUNCE_MS = 350
 
 interface Option {
   label: string
@@ -53,15 +56,21 @@ export function DoctorSelect({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value])
 
-  const loadOptions = async (inputValue: string): Promise<Option[]> => {
-    try {
-      const results = await searchDoctors(inputValue)
-      return results.map(toOption)
-    } catch (error) {
-      console.error('Error fetching doctors', error)
-      return []
-    }
-  }
+  // Debounced so we only hit the API after the user stops typing, instead of
+  // firing a request on every keystroke. Uses the callback-based loadOptions
+  // signature (rather than returning a Promise) so react-select resolves the
+  // menu once the debounced call actually runs.
+  const loadOptions = useDebouncedCallback(
+    (inputValue: string, callback: (options: Option[]) => void) => {
+      searchDoctors(inputValue)
+        .then(results => callback(results.map(toOption)))
+        .catch(error => {
+          console.error('Error fetching doctors', error)
+          callback([])
+        })
+    },
+    SEARCH_DEBOUNCE_MS
+  )
 
   const customStyles = {
     control: (base: any, state: any) => ({
