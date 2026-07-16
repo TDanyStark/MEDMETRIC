@@ -6,6 +6,7 @@ namespace App\Application\Actions\Rep\Material;
 
 use App\Application\Actions\Action;
 use App\Domain\Material\MaterialRepositoryInterface;
+use App\Domain\MaterialStudy\MaterialStudyRepositoryInterface;
 use App\Application\Services\Storage\StorageServiceInterface;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Log\LoggerInterface;
@@ -14,15 +15,18 @@ class ListMaterialsAction extends Action
 {
     private MaterialRepositoryInterface $materialRepository;
     private StorageServiceInterface $storageService;
+    private MaterialStudyRepositoryInterface $studyRepository;
 
     public function __construct(
         LoggerInterface $logger, 
         MaterialRepositoryInterface $materialRepository,
-        StorageServiceInterface $storageService
+        StorageServiceInterface $storageService,
+        MaterialStudyRepositoryInterface $studyRepository
     ) {
         parent::__construct($logger);
         $this->materialRepository = $materialRepository;
         $this->storageService = $storageService;
+        $this->studyRepository = $studyRepository;
     }
 
     protected function action(): Response
@@ -45,6 +49,14 @@ class ListMaterialsAction extends Action
             if ($material->getCoverPath()) {
                 $material->setCoverUrl($this->storageService->getUrl($material->getCoverPath()));
             }
+        }
+
+        // Batch-attach nested studies only — reps never see metrics
+        // (no view_count), matching design.md's rep scope.
+        $materialIds = array_map(fn ($material) => $material->getId(), $result['items']);
+        $studiesByMaterial = $this->studyRepository->findAllByMaterialIds($materialIds);
+        foreach ($result['items'] as $material) {
+            $material->setStudies($studiesByMaterial[$material->getId()] ?? []);
         }
 
         return $this->respondWithData($result);

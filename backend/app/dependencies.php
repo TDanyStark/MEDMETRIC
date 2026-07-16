@@ -6,6 +6,7 @@ use App\Application\Middleware\JwtMiddleware;
 use App\Application\Services\Auth\JwtServiceInterface;
 use App\Application\Services\DeferredTasks\BackgroundProcessLauncher;
 use App\Application\Services\Material\DeferredPdfCompressionService;
+use App\Application\Services\MaterialStudy\DeferredStudyCompressionService;
 use App\Application\Services\Storage\StorageServiceInterface;
 use App\Infrastructure\Auth\JwtService;
 use App\Infrastructure\Storage\ImageProcessorService;
@@ -16,11 +17,13 @@ use App\Application\Settings\SettingsInterface;
 use App\Domain\Brand\BrandRepositoryInterface;
 use App\Domain\Doctor\DoctorRepositoryInterface;
 use App\Domain\Material\MaterialRepositoryInterface;
+use App\Domain\MaterialStudy\MaterialStudyRepositoryInterface;
 use App\Domain\RepAccess\RepAccessRepositoryInterface;
 use App\Domain\VisitSession\VisitSessionRepositoryInterface;
 use App\Infrastructure\Persistence\Brand\DbBrandRepository;
 use App\Infrastructure\Persistence\Doctor\DbDoctorRepository;
 use App\Infrastructure\Persistence\Material\DbMaterialRepository;
+use App\Infrastructure\Persistence\MaterialStudy\DbMaterialStudyRepository;
 use App\Infrastructure\Persistence\RepAccess\DbRepAccessRepository;
 use App\Infrastructure\Persistence\VisitSession\DbVisitSessionRepository;
 use DI\ContainerBuilder;
@@ -69,6 +72,7 @@ return function (ContainerBuilder $containerBuilder) {
         // instead of continuing in-process after the response.
         BackgroundProcessLauncher::class => \DI\autowire(BackgroundProcessLauncher::class),
         DeferredPdfCompressionService::class => \DI\autowire(DeferredPdfCompressionService::class),
+        DeferredStudyCompressionService::class => \DI\autowire(DeferredStudyCompressionService::class),
 
         // Storage Service — switch between local disk and AWS S3 via STORAGE_DRIVER env var
         StorageServiceInterface::class => function (ContainerInterface $c) {
@@ -85,6 +89,7 @@ return function (ContainerBuilder $containerBuilder) {
         BrandRepositoryInterface::class => \DI\autowire(DbBrandRepository::class),
         DoctorRepositoryInterface::class => \DI\autowire(DbDoctorRepository::class),
         MaterialRepositoryInterface::class => \DI\autowire(DbMaterialRepository::class),
+        MaterialStudyRepositoryInterface::class => \DI\autowire(DbMaterialStudyRepository::class),
         RepAccessRepositoryInterface::class => \DI\autowire(DbRepAccessRepository::class),
         VisitSessionRepositoryInterface::class => \DI\autowire(DbVisitSessionRepository::class),
     ]);

@@ -7,6 +7,13 @@ export interface MaterialViewsMetric {
   sessions: number
 }
 
+export interface StudyViewsMetric {
+  date: string
+  viewer_type: 'rep' | 'doctor'
+  views: number
+  sessions: number
+}
+
 export interface RepLastLoginMetric {
   id: number
   name: string
@@ -61,6 +68,14 @@ export interface PaginatedData<T> {
 type IdFilter = number | number[]
 
 interface BaseMetricFilters {
+  material_id?: IdFilter
+  rep_id?: IdFilter
+  start_date?: string
+  end_date?: string
+}
+
+interface StudyMetricFilters {
+  study_id?: IdFilter
   material_id?: IdFilter
   rep_id?: IdFilter
   start_date?: string
@@ -125,6 +140,18 @@ class MetricsService {
     appendIds(params, 'rep_id', filters?.rep_id)
 
     return api.get<{ data: TopMaterialMetric[] }>(`/metrics/top-materials?${params.toString()}`)
+  }
+
+  async getStudyViewsMetrics(filters?: StudyMetricFilters) {
+    const params = new URLSearchParams()
+    appendIds(params, 'study_id', filters?.study_id)
+    appendIds(params, 'material_id', filters?.material_id)
+    appendIds(params, 'rep_id', filters?.rep_id)
+    if (filters?.start_date) params.append('start_date', filters.start_date)
+    if (filters?.end_date) params.append('end_date', filters.end_date)
+
+    const qs = params.toString()
+    return api.get<{ data: StudyViewsMetric[] }>(`/metrics/study-views${qs ? `?${qs}` : ''}`)
   }
 }
 

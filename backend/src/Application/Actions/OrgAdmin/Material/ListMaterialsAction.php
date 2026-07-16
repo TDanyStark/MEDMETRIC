@@ -7,6 +7,7 @@ namespace App\Application\Actions\OrgAdmin\Material;
 use App\Application\Actions\Action;
 use App\Application\Services\Storage\StorageServiceInterface;
 use App\Domain\Material\MaterialRepositoryInterface;
+use App\Domain\MaterialStudy\MaterialStudyRepositoryInterface;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Log\LoggerInterface;
 
@@ -15,7 +16,8 @@ class ListMaterialsAction extends Action
     public function __construct(
         LoggerInterface $logger,
         private MaterialRepositoryInterface $materialRepository,
-        private StorageServiceInterface $storageService
+        private StorageServiceInterface $storageService,
+        private MaterialStudyRepositoryInterface $studyRepository
     ) {
         parent::__construct($logger);
     }
@@ -62,6 +64,15 @@ class ListMaterialsAction extends Action
             if ($material->getCoverPath()) {
                 $material->setCoverUrl($this->storageService->getUrl($material->getCoverPath()));
             }
+        }
+
+        // Batch-attach nested studies (single query for the whole page, no
+        // per-study view_count here — that's only fetched on the single
+        // material detail view in GetMaterialAction).
+        $materialIds = array_map(fn ($material) => $material->getId(), $result['items']);
+        $studiesByMaterial = $this->studyRepository->findAllByMaterialIds($materialIds);
+        foreach ($result['items'] as $material) {
+            $material->setStudies($studiesByMaterial[$material->getId()] ?? []);
         }
 
         return $this->respondWithData($result);

@@ -40,22 +40,71 @@ class BackgroundProcessLauncher
         string $path,
         ?string $originalFilename
     ): bool {
+        return $this->launch(__DIR__ . '/../../../../bin/compress_material.php', [
+            $materialId,
+            $tmpPath,
+            $rawKey,
+            $path,
+            $originalFilename ?? '',
+        ]);
+    }
+
+    /**
+     * Same detached-process launch as launchPdfCompression, but for a study's
+     * PDF (bin/compress_study.php -> DeferredStudyCompressionService). Kept
+     * as a separate public method (rather than reusing launchPdfCompression
+     * directly) so callers stay explicit about which entity they're
+     * compressing — both delegate to the same private launch() helper.
+     *
+     * @return bool True if the background process was actually launched.
+     */
+    public function launchStudyCompression(
+        int $studyId,
+        string $tmpPath,
+        string $rawKey,
+        string $path,
+        ?string $originalFilename
+    ): bool {
+        return $this->launch(__DIR__ . '/../../../../bin/compress_study.php', [
+            $studyId,
+            $tmpPath,
+            $rawKey,
+            $path,
+            $originalFilename ?? '',
+        ]);
+    }
+
+    /**
+     * Shared detached-process launcher extracted from launchPdfCompression.
+     * Spawns `setsid php <script> <args...> > /dev/null 2>&1 &` so the
+     * process fully leaves the web request's process group (see class
+     * docblock for why this is necessary on this hosting environment).
+     *
+     * @param string $script Absolute-resolvable path to the CLI entry point.
+     * @param array<int, int|string> $args Positional args passed to the script, in order.
+     * @return bool True if the background process was actually launched
+     *              (doesn't mean it will succeed — just that it started).
+     *              False means exec() isn't available on this environment
+     *              at all, so the caller should mark compression as
+     *              'unavailable' rather than 'pending' (it will never run).
+     */
+    private function launch(string $script, array $args): bool
+    {
         if (!function_exists('exec')) {
             // Can't background it on this environment — the raw upload
             // simply stays as the final file (never worse than before).
             return false;
         }
 
-        $script = escapeshellarg(dirname(__DIR__, 4) . '/bin/compress_material.php');
+        $escapedArgs = array_map(
+            static fn ($arg) => escapeshellarg((string) $arg),
+            $args
+        );
 
         $cmd = sprintf(
-            'setsid php %s %d %s %s %s %s > /dev/null 2>&1 &',
-            $script,
-            $materialId,
-            escapeshellarg($tmpPath),
-            escapeshellarg($rawKey),
-            escapeshellarg($path),
-            escapeshellarg($originalFilename ?? '')
+            'setsid php %s %s > /dev/null 2>&1 &',
+            escapeshellarg($script),
+            implode(' ', $escapedArgs)
         );
 
         exec($cmd);

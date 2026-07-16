@@ -88,6 +88,11 @@ export function MetricsDashboard() {
     queryFn: () => metricsApi.getMaterialViews(filterArgs).then((res) => res.data),
   })
 
+  const { data: studyViewsData } = useQuery({
+    queryKey: ['metrics', 'study-views', materialKey, repKey, startDate, endDate],
+    queryFn: () => metricsApi.getStudyViewsMetrics(filterArgs).then((res) => res.data),
+  })
+
   const { data: topMaterials, isLoading: isLoadingTop } = useQuery({
     queryKey: ['metrics', 'top-materials', materialKey, repKey, startDate, endDate],
     queryFn: () => metricsApi.getTopMaterials(10, filterArgs).then((res) => res.data),
@@ -108,6 +113,11 @@ export function MetricsDashboard() {
     0,
   ) ?? 0
   const totalViews = repViews + doctorViews
+
+  const totalStudyViews = studyViewsData?.reduce(
+    (acc, curr) => acc + Number(curr.views),
+    0,
+  ) ?? 0
 
   const activeReps = repsLogin?.filter((rep) => rep.last_login_at !== null).length ?? 0
   const totalReps = repsLogin?.length ?? 0
@@ -183,6 +193,11 @@ export function MetricsDashboard() {
             <span className="flex items-center gap-1.5">
               <Stethoscope className="h-3.5 w-3.5 text-teal-500" /> {doctorViews} médicos
             </span>
+            {totalStudyViews > 0 && (
+              <span className="flex items-center gap-1.5">
+                <FileText className="h-3.5 w-3.5 text-indigo-500" /> {totalStudyViews} en estudios
+              </span>
+            )}
           </div>
         </div>
 

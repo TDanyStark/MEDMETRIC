@@ -48,9 +48,13 @@ class UpdateMaterialAction extends Action
         // Scoped to organization
         $material = $this->materialRepository->findByOrganizationAndId($organizationId, $materialId);
 
-        if ($material->isApproved()) {
-            return $this->respondWithData(['error' => 'Cannot edit an approved material'], 422);
-        }
+        // NOTE: unlike the Manager equivalent, org_admin is intentionally
+        // allowed to edit materials regardless of approval status — the
+        // org_admin IS the approval authority for their organization, so
+        // there is no restriction to enforce here. Editing an approved
+        // material does not change its status/approved_at/approved_by; it
+        // simply stays approved (see frontend MaterialFormPage.tsx
+        // SCOPE_CONFIG.lockApprovedEdit = false for org-admin).
 
         $updateData = [];
 

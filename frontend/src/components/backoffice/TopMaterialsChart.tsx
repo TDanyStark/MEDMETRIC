@@ -96,8 +96,8 @@ export function TopMaterialsChart({ data, isLoading }: TopMaterialsChartProps) {
                   fontSize: '0.8125rem',
                 }}
                 labelStyle={{ color: 'var(--foreground)', fontWeight: 600 }}
-                formatter={(value: number, name: string) => [
-                  value,
+                formatter={(value, name) => [
+                  value ?? 0,
                   name === 'rep' ? 'Visitadores' : 'Médicos',
                 ]}
                 labelFormatter={(_label, payload) =>

@@ -31,7 +31,8 @@ class Material implements JsonSerializable
         private ?string  $coverUrl = null,
         private ?string  $pdfCompressionStatus = null,
         private ?string  $pdfCompressionError = null,
-        private ?string  $pdfCompressionCheckedAt = null
+        private ?string  $pdfCompressionCheckedAt = null,
+        private ?array   $studies = null
     ) {}
 
     public function getId(): int           { return $this->id; }
@@ -57,8 +58,10 @@ class Material implements JsonSerializable
     public function getPdfCompressionStatus(): ?string { return $this->pdfCompressionStatus; }
     public function getPdfCompressionError(): ?string { return $this->pdfCompressionError; }
     public function getPdfCompressionCheckedAt(): ?string { return $this->pdfCompressionCheckedAt; }
+    public function getStudies(): ?array    { return $this->studies; }
 
     public function setCoverUrl(?string $url): void { $this->coverUrl = $url; }
+    public function setStudies(?array $studies): void { $this->studies = $studies; }
 
     public function isPdf(): bool    { return $this->type === 'pdf'; }
     public function isVideo(): bool  { return $this->type === 'video'; }
@@ -68,7 +71,7 @@ class Material implements JsonSerializable
 
     public function jsonSerialize(): array
     {
-        return [
+        $data = [
             'id'              => $this->id,
             'organization_id' => $this->organizationId,
             'brand_id'        => $this->brandId,
@@ -93,6 +96,12 @@ class Material implements JsonSerializable
             'pdf_compression_error'      => $this->pdfCompressionError,
             'pdf_compression_checked_at' => $this->pdfCompressionCheckedAt,
         ];
+
+        if ($this->studies !== null) {
+            $data['studies'] = $this->studies;
+        }
+
+        return $data;
     }
 
     public static function fromRow(array $row): self

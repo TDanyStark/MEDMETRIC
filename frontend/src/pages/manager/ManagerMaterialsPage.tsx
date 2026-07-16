@@ -1,8 +1,8 @@
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useMutation, useQueries, useQueryClient } from '@tanstack/react-query'
 import { Plus } from 'lucide-react'
 import { toast } from 'sonner'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import {
   EmptyState,
@@ -13,30 +13,22 @@ import { Button } from '@/components/ui/Button'
 import { getNumberParam, getStringParam, updateSearchParams } from '@/lib/search'
 import {
   approveManagerMaterial,
-  createManagerMaterial,
   listManagerBrands,
   listManagerMaterials,
   setManagerMaterialVisibility,
-  updateManagerMaterial,
 } from '@/services/backoffice'
 import { Material } from '@/types/backoffice'
 import { LoadingState, ErrorState } from './components/ManagerHelpers'
 import { MaterialsTable } from './components/MaterialsTable'
-import { MaterialDialog } from './components/MaterialDialog'
 import { MaterialFilters } from './components/MaterialFilters'
 import { PreviewDialog } from './components/PreviewDialog'
 
 export function ManagerMaterialsPage() {
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
-  const [editingMaterial, setEditingMaterial] = useState<Material | null>(null)
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [previewingMaterial, setPreviewingMaterial] = useState<Material | null>(null)
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
-  // Stable per "create attempt" key: reused across retries of the same open
-  // dialog so the backend can recognize a resubmission and avoid creating a
-  // duplicate material (see idempotency_key handling in CreateMaterialAction).
-  const createIdempotencyKeyRef = useRef<string | null>(null)
 
   const q = getStringParam(searchParams, 'q')
   const page = getNumberParam(searchParams, 'page')
@@ -64,27 +56,6 @@ export function ManagerMaterialsPage() {
     return new Map((brandsQuery.data?.items ?? []).map(item => [item.id, item.name]))
   }, [brandsQuery.data])
 
-  const saveMutation = useMutation({
-    mutationFn: async (payload: FormData) => {
-      if (!editingMaterial && createIdempotencyKeyRef.current) {
-        payload.append('idempotency_key', createIdempotencyKeyRef.current)
-      }
-      return editingMaterial 
-        ? updateManagerMaterial(editingMaterial.id, payload) 
-        : createManagerMaterial(payload)
-    },
-    onSuccess: () => {
-      toast.success(editingMaterial ? 'Material actualizado.' : 'Material creado.')
-      setIsDialogOpen(false)
-      setEditingMaterial(null)
-      void queryClient.invalidateQueries({ queryKey: ['manager', 'materials'] })
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : 'No se pudo guardar.'
-      toast.error(message)
-    },
-  })
-
   const approveMutation = useMutation({
     mutationFn: (materialId: number) => approveManagerMaterial(materialId),
     onSuccess: () => {
@@ -109,15 +80,8 @@ export function ManagerMaterialsPage() {
     },
   })
 
-  const handleOpenNewDialog = () => {
-    createIdempotencyKeyRef.current = crypto.randomUUID()
-    setEditingMaterial(null)
-    setIsDialogOpen(true)
-  }
-
   const handleEdit = (material: Material) => {
-    setEditingMaterial(material)
-    setIsDialogOpen(true)
+    navigate(`/manager/materials/${material.id}/edit`)
   }
 
   const handlePreview = (material: Material) => {
@@ -132,7 +96,7 @@ export function ManagerMaterialsPage() {
           <h1 className="text-3xl font-display font-semibold tracking-tight text-foreground">Materiales</h1>
           <p className="mt-2 text-sm text-muted-foreground">Gestiona los materiales que los visitadores presentarán.</p>
         </div>
-        <Button onClick={handleOpenNewDialog}>
+        <Button onClick={() => navigate('/manager/materials/new')}>
           <Plus className="mr-2 h-4 w-4" /> Nuevo Material
         </Button>
       </div>
@@ -175,15 +139,6 @@ export function ManagerMaterialsPage() {
           onPageChange={nextPage => setSearchParams(current => updateSearchParams(current, { page: nextPage }))}
         />
       </div>
-
-      <MaterialDialog
-        isOpen={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
-        editingMaterial={editingMaterial}
-        brands={brandsQuery.data?.items ?? []}
-        onSave={async payload => { await saveMutation.mutateAsync(payload) }}
-        isSaving={saveMutation.isPending}
-      />
 
       <PreviewDialog
         isOpen={isPreviewOpen}

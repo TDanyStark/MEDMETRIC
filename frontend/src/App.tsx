@@ -30,9 +30,11 @@ const RepHistoryPage = lazy(() => import('./pages/rep/RepHistoryPage').then(m =>
 // Org Admin pages
 const OrgAdminBrandsPage = lazy(() => import('./pages/org-admin/OrgAdminBrandsPage').then(m => ({ default: m.OrgAdminBrandsPage })))
 const OrgAdminMaterialsPage = lazy(() => import('./pages/org-admin/OrgAdminMaterialsPage').then(m => ({ default: m.OrgAdminMaterialsPage })))
-const OrgAdminMaterialFormPage = lazy(() => import('./pages/org-admin/OrgAdminMaterialFormPage').then(m => ({ default: m.OrgAdminMaterialFormPage })))
 const OrgAdminMetricsPage = lazy(() => import('./pages/org-admin/OrgAdminMetricsPage').then(m => ({ default: m.OrgAdminMetricsPage })))
 const OrgAdminUsersPage = lazy(() => import('./pages/org-admin/OrgAdminUsersPage').then(m => ({ default: m.OrgAdminUsersPage })))
+
+// Shared material form (org-admin + manager, differentiated via `scope` prop)
+const MaterialFormPage = lazy(() => import('./pages/materials/MaterialFormPage').then(m => ({ default: m.MaterialFormPage })))
 
 // Super Admin pages
 const SuperAdminMetricsPage = lazy(() => import('./pages/superadmin/SuperAdminMetricsPage').then(m => ({ default: m.SuperAdminMetricsPage })))
@@ -125,8 +127,8 @@ function App() {
                 <Route path="users" element={<OrgAdminUsersPage />} />
                 <Route path="brands" element={<OrgAdminBrandsPage />} />
                 <Route path="materials" element={<OrgAdminMaterialsPage />} />
-                <Route path="materials/new" element={<OrgAdminMaterialFormPage />} />
-                <Route path="materials/:id/edit" element={<OrgAdminMaterialFormPage />} />
+                <Route path="materials/new" element={<MaterialFormPage scope="org-admin" />} />
+                <Route path="materials/:id/edit" element={<MaterialFormPage scope="org-admin" />} />
                 <Route path="doctors" element={<DoctorsPage />} />
                 <Route path="metrics" element={<OrgAdminMetricsPage />} />
               </Route>
@@ -142,6 +144,8 @@ function App() {
                 <Route index element={<RoleHomePage role="manager" />} />
                 <Route path="brands" element={<ManagerBrandsPage />} />
                 <Route path="materials" element={<ManagerMaterialsPage />} />
+                <Route path="materials/new" element={<MaterialFormPage scope="manager" />} />
+                <Route path="materials/:id/edit" element={<MaterialFormPage scope="manager" />} />
                 <Route path="reps" element={<ManagerRepsPage />} />
                 <Route path="doctors" element={<DoctorsPage />} />
                 <Route path="metrics" element={<ManagerMetricsPage />} />

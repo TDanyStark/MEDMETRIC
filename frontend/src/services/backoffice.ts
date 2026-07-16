@@ -5,6 +5,7 @@ import {
   Brand,
   BrandManagersResponse,
   Material,
+  MaterialStudy,
   Organization,
   PaginatedData,
   RepAccess,
@@ -170,12 +171,42 @@ export function getOrgMaterialPreview(id: number) {
   return api.get<ApiResponse<MaterialResource>>(`/org-admin/materials/${id}/preview`).then(unwrap)
 }
 
+// -----------------------------------------------------------------------------
+// Org Admin: Material Studies (nested sub-resource of a material)
+// -----------------------------------------------------------------------------
+
+export function listOrgMaterialStudies(materialId: number, params: { page?: number } = {}) {
+  return api
+    .get<ApiResponse<PaginatedData<MaterialStudy>>>(`/org-admin/materials/${materialId}/studies${buildQuery(params)}`)
+    .then(unwrap)
+}
+
+export function createOrgMaterialStudy(materialId: number, payload: FormData) {
+  return api.post<ApiResponse<MaterialStudy>>(`/org-admin/materials/${materialId}/studies`, payload).then(unwrap)
+}
+
+export function updateOrgMaterialStudy(studyId: number, payload: FormData) {
+  return api.put<ApiResponse<MaterialStudy>>(`/org-admin/studies/${studyId}`, payload).then(unwrap)
+}
+
+export function deleteOrgMaterialStudy(studyId: number) {
+  return api.delete<ApiResponse<{ message: string }>>(`/org-admin/studies/${studyId}`).then(unwrap)
+}
+
+export function getOrgStudyPreview(studyId: number) {
+  return api.get<ApiResponse<MaterialResource>>(`/org-admin/studies/${studyId}/preview`).then(unwrap)
+}
+
 export function getOrgBrandManagers(brandId: number) {
   return api.get<ApiResponse<BrandManagersResponse>>(`/org-admin/brands/${brandId}/managers`).then(unwrap)
 }
 
 export function listManagerMaterials(params: { q?: string; status?: string; type?: string; page?: number }) {
   return api.get<ApiResponse<PaginatedData<Material>>>(`/manager/materials${buildQuery(params)}`).then(unwrap)
+}
+
+export function getManagerMaterial(id: number) {
+  return api.get<ApiResponse<Material>>(`/manager/materials/${id}`).then(unwrap)
 }
 
 export function createManagerMaterial(payload: FormData | {
@@ -205,6 +236,32 @@ export function setManagerMaterialVisibility(id: number, is_visible: boolean) {
 
 export function getManagerMaterialPreview(id: number) {
   return api.get<ApiResponse<MaterialResource>>(`/manager/materials/${id}/preview`).then(unwrap)
+}
+
+// -----------------------------------------------------------------------------
+// Manager: Material Studies (nested sub-resource of a material)
+// -----------------------------------------------------------------------------
+
+export function listManagerMaterialStudies(materialId: number, params: { page?: number } = {}) {
+  return api
+    .get<ApiResponse<PaginatedData<MaterialStudy>>>(`/manager/materials/${materialId}/studies${buildQuery(params)}`)
+    .then(unwrap)
+}
+
+export function createManagerMaterialStudy(materialId: number, payload: FormData) {
+  return api.post<ApiResponse<MaterialStudy>>(`/manager/materials/${materialId}/studies`, payload).then(unwrap)
+}
+
+export function updateManagerMaterialStudy(studyId: number, payload: FormData) {
+  return api.put<ApiResponse<MaterialStudy>>(`/manager/studies/${studyId}`, payload).then(unwrap)
+}
+
+export function deleteManagerMaterialStudy(studyId: number) {
+  return api.delete<ApiResponse<{ message: string }>>(`/manager/studies/${studyId}`).then(unwrap)
+}
+
+export function getManagerStudyPreview(studyId: number) {
+  return api.get<ApiResponse<MaterialResource>>(`/manager/studies/${studyId}/preview`).then(unwrap)
 }
 
 export function listManagerReps(params: { q?: string; active?: boolean | null; page?: number }) {

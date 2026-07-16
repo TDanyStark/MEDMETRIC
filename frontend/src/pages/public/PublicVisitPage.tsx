@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useParams } from 'react-router-dom'
 import api from '@/services/api'
-import { ApiResponse, PublicMaterial, PublicVisitPayload } from '@/types'
+import { ApiResponse, PublicMaterial, PublicStudy, PublicVisitPayload } from '@/types'
 
 // Sub-components
 import { PublicVisitLoading } from './components/PublicVisitLoading'
@@ -52,6 +52,16 @@ export default function PublicVisitPage() {
     return `${baseUrl}?${params.toString()}`
   }
 
+  const getStudyHref = (study: PublicStudy) => {
+    const baseUrl = `/api/v1/public/study/${study.id}/resource`
+    const params = new URLSearchParams({
+      session_token: token,
+      viewer_type: viewerInfo.type
+    })
+
+    return `${baseUrl}?${params.toString()}`
+  }
+
   const getShareUrl = (material: PublicMaterial) => {
     const baseUrl = `/api/v1/public/material/${material.id}/resource`
     const params = new URLSearchParams({
@@ -88,6 +98,7 @@ export default function PublicVisitPage() {
           getHref={getMaterialHref}
           isModeVisitador={viewerInfo.type === 'rep'}
           getShareUrl={getShareUrl}
+          getStudyHref={getStudyHref}
         />
       </div>
     </div>

@@ -7,6 +7,7 @@ namespace App\Application\Actions\Public\Session;
 use App\Application\Actions\Action;
 use App\Domain\VisitSession\VisitSessionRepositoryInterface;
 use App\Domain\Material\MaterialRepositoryInterface;
+use App\Domain\MaterialStudy\MaterialStudyRepositoryInterface;
 use App\Application\Services\Storage\StorageServiceInterface;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Log\LoggerInterface;
@@ -20,17 +21,20 @@ class GetPublicSessionAction extends Action
     private VisitSessionRepositoryInterface $visitSessionRepository;
     private MaterialRepositoryInterface $materialRepository;
     private StorageServiceInterface $storageService;
+    private MaterialStudyRepositoryInterface $studyRepository;
 
     public function __construct(
         LoggerInterface $logger,
         VisitSessionRepositoryInterface $visitSessionRepository,
         MaterialRepositoryInterface $materialRepository,
-        StorageServiceInterface $storageService
+        StorageServiceInterface $storageService,
+        MaterialStudyRepositoryInterface $studyRepository
     ) {
         parent::__construct($logger);
         $this->visitSessionRepository = $visitSessionRepository;
         $this->materialRepository = $materialRepository;
         $this->storageService = $storageService;
+        $this->studyRepository = $studyRepository;
     }
 
     protected function action(): Response
@@ -59,6 +63,16 @@ class GetPublicSessionAction extends Action
                 $approvedMaterials[] = $material;
             }
         }
+
+        // Nest each material's studies automatically (no rep-selection step,
+        // per explicit requirement) — additive field only, existing payload
+        // shape (session, materials[], material_count) is unchanged.
+        $materialIds = array_map(fn ($material) => (int) $material['id'], $approvedMaterials);
+        $studiesByMaterial = $this->studyRepository->findAllByMaterialIds($materialIds);
+        foreach ($approvedMaterials as &$material) {
+            $material['studies'] = $studiesByMaterial[(int) $material['id']] ?? [];
+        }
+        unset($material);
 
         return $this->respondWithData([
             'session' => [

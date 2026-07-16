@@ -374,4 +374,67 @@ class DbMetricsRepository implements MetricsRepositoryInterface
 
         return $rows;
     }
+
+    /**
+     * Study views metrics — fully separate report, mirrors
+     * getMaterialViewsMetrics' date/viewer_type breakdown shape but reads
+     * study_views joined through material_studies -> materials (for
+     * org/manager scoping, since material_studies has no organization_id of
+     * its own). Never merged into getTopMaterialsMetrics/getRepAdoptionMetrics.
+     */
+    public function getStudyViewsMetrics(int $organizationId, ?int $managerId, array $filters = []): array
+    {
+        $where = ['m.organization_id = :org_id'];
+        $params = [':org_id' => $organizationId];
+
+        if ($managerId !== null) {
+            $where[] = 'm.manager_id = :manager_id';
+            $params[':manager_id'] = $managerId;
+        }
+
+        $materialIds = $this->intIds($filters['material_ids'] ?? null);
+        if (!empty($materialIds)) {
+            $where[] = 'm.id IN ' . $this->buildInClause($materialIds, 'mat', $params);
+        }
+
+        $studyIds = $this->intIds($filters['study_ids'] ?? null);
+        if (!empty($studyIds)) {
+            $where[] = 'ms.id IN ' . $this->buildInClause($studyIds, 'study', $params);
+        }
+
+        $repIds = $this->intIds($filters['rep_ids'] ?? null);
+        if (!empty($repIds)) {
+            $where[] = "sv.viewer_type = 'rep' AND sv.viewer_id IN " . $this->buildInClause($repIds, 'rep', $params);
+        }
+
+        if (!empty($filters['start_date'])) {
+            $where[] = 'DATE(sv.opened_at) >= :start_date';
+            $params[':start_date'] = $filters['start_date'];
+        }
+
+        if (!empty($filters['end_date'])) {
+            $where[] = 'DATE(sv.opened_at) <= :end_date';
+            $params[':end_date'] = $filters['end_date'];
+        }
+
+        $whereSql = implode(' AND ', $where);
+
+        $sql = "SELECT
+                    DATE(sv.opened_at) as date,
+                    sv.viewer_type,
+                    COUNT(sv.id) as views,
+                    COUNT(DISTINCT IFNULL(sv.visit_session_id, sv.id)) as sessions
+                FROM study_views sv
+                JOIN material_studies ms ON ms.id = sv.study_id
+                JOIN materials m ON m.id = ms.material_id
+                WHERE {$whereSql}
+                GROUP BY DATE(sv.opened_at), sv.viewer_type
+                ORDER BY date DESC
+                LIMIT 90";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }

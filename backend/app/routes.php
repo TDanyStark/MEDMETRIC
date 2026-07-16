@@ -31,6 +31,7 @@ use App\Application\Actions\Doctor\UpdateDoctorAction;
 use App\Application\Actions\Manager\Brand\ListBrandsAction;
 use App\Application\Actions\Manager\Material\ApproveMaterialAction;
 use App\Application\Actions\Manager\Material\CreateMaterialAction;
+use App\Application\Actions\Manager\Material\GetMaterialAction as ManagerGetMaterialAction;
 use App\Application\Actions\Manager\Material\ListMaterialsAction;
 use App\Application\Actions\Manager\Material\SetMaterialVisibilityAction;
 use App\Application\Actions\Manager\Material\UpdateMaterialAction;
@@ -43,6 +44,15 @@ use App\Application\Actions\OrgAdmin\Material\GetMaterialAction as OrgAdminGetMa
 use App\Application\Actions\OrgAdmin\Material\ListMaterialsAction as OrgAdminListMaterialsAction;
 use App\Application\Actions\OrgAdmin\Material\SetMaterialVisibilityAction as OrgAdminSetMaterialVisibilityAction;
 use App\Application\Actions\OrgAdmin\Material\UpdateMaterialAction as OrgAdminUpdateMaterialAction;
+use App\Application\Actions\OrgAdmin\Study\ListStudyAction as OrgAdminListStudyAction;
+use App\Application\Actions\OrgAdmin\Study\CreateStudyAction as OrgAdminCreateStudyAction;
+use App\Application\Actions\OrgAdmin\Study\UpdateStudyAction as OrgAdminUpdateStudyAction;
+use App\Application\Actions\OrgAdmin\Study\DeleteStudyAction as OrgAdminDeleteStudyAction;
+use App\Application\Actions\Manager\Study\ListStudyAction as ManagerListStudyAction;
+use App\Application\Actions\Manager\Study\CreateStudyAction as ManagerCreateStudyAction;
+use App\Application\Actions\Manager\Study\UpdateStudyAction as ManagerUpdateStudyAction;
+use App\Application\Actions\Manager\Study\DeleteStudyAction as ManagerDeleteStudyAction;
+use App\Application\Actions\Study\PreviewStudyAction;
 use App\Application\Actions\Manager\Rep\AssignRepAction;
 use App\Application\Actions\Manager\Rep\GetAvailableRepsAction;
 use App\Application\Actions\Manager\Rep\ListAssignedRepsAction;
@@ -50,6 +60,7 @@ use App\Application\Actions\Manager\Rep\RemoveRepAction;
 use App\Application\Actions\Public\Material\GetMaterialResourceAction;
 use App\Application\Actions\Public\Material\OpenMaterialAction;
 use App\Application\Actions\Public\Session\GetPublicSessionAction;
+use App\Application\Actions\Public\Study\GetStudyResourceAction;
 use App\Application\Actions\Rep\Material\ListMaterialsAction as RepListMaterialsAction;
 use App\Application\Actions\Rep\VisitSession\AddMaterialsToSessionAction;
 use App\Application\Actions\Rep\VisitSession\CreateVisitSessionAction;
@@ -59,6 +70,7 @@ use App\Application\Actions\Metrics\GetMaterialViewsListAction;
 use App\Application\Actions\Metrics\GetRepLastLoginAction;
 use App\Application\Actions\Metrics\GetTopMaterialsAction;
 use App\Application\Actions\Metrics\GetRepAdoptionAction;
+use App\Application\Actions\Metrics\GetStudyViewsAction;
 use App\Application\Middleware\JwtMiddleware;
 use App\Application\Middleware\RoleMiddleware;
 use App\Infrastructure\Config\DoctorAccessConfig;
@@ -244,6 +256,17 @@ return function (App $app) {
                 $materials->post('/{id}/approve', OrgAdminApproveMaterialAction::class);
                 $materials->patch('/{id}/visibility', OrgAdminSetMaterialVisibilityAction::class);
                 $materials->get('/{id}/preview',  PreviewMaterialAction::class);
+
+                // Studies nested under a material ({id} = materialId)
+                $materials->get('/{id}/studies',  OrgAdminListStudyAction::class);
+                $materials->post('/{id}/studies', OrgAdminCreateStudyAction::class);
+            });
+
+            // Studies ({id} = studyId)
+            $orgAdmin->group('/studies', function (RouteCollectorProxy $studies) {
+                $studies->put('/{id}',           OrgAdminUpdateStudyAction::class);
+                $studies->delete('/{id}',        OrgAdminDeleteStudyAction::class);
+                $studies->get('/{id}/preview',   PreviewStudyAction::class);
             });
 
             // Manager brand assignments
@@ -269,11 +292,23 @@ return function (App $app) {
             // Materials
             $manager->group('/materials', function (RouteCollectorProxy $materials) {
                 $materials->get('',            ListMaterialsAction::class);
+                $materials->get('/{id}',       ManagerGetMaterialAction::class);
                 $materials->post('',           CreateMaterialAction::class);
                 $materials->put('/{id}',       UpdateMaterialAction::class);
                 $materials->post('/{id}/approve', ApproveMaterialAction::class);
                 $materials->patch('/{id}/visibility', SetMaterialVisibilityAction::class);
                 $materials->get('/{id}/preview', PreviewMaterialAction::class);
+
+                // Studies nested under a material ({id} = materialId)
+                $materials->get('/{id}/studies',  ManagerListStudyAction::class);
+                $materials->post('/{id}/studies', ManagerCreateStudyAction::class);
+            });
+
+            // Studies ({id} = studyId)
+            $manager->group('/studies', function (RouteCollectorProxy $studies) {
+                $studies->put('/{id}',           ManagerUpdateStudyAction::class);
+                $studies->delete('/{id}',        ManagerDeleteStudyAction::class);
+                $studies->get('/{id}/preview',   PreviewStudyAction::class);
             });
 
             // Reps (visitadores médicos)
@@ -298,6 +333,9 @@ return function (App $app) {
             $rep->get('/materials', RepListMaterialsAction::class);
             $rep->get('/materials/filters', \App\Application\Actions\Rep\Material\ListRepFilterOptionsAction::class);
             $rep->get('/materials/{id}/preview', PreviewMaterialAction::class);
+
+            // Studies - shared preview Action (org-scoped internally)
+            $rep->get('/studies/{id}/preview', PreviewStudyAction::class);
 
             // Visit Sessions
             $rep->group('/visit-sessions', function (RouteCollectorProxy $sessions) {
@@ -341,6 +379,7 @@ return function (App $app) {
             $metrics->get('/rep-last-login', GetRepLastLoginAction::class);
             $metrics->get('/top-materials', GetTopMaterialsAction::class);
             $metrics->get('/rep-adoption', GetRepAdoptionAction::class);
+            $metrics->get('/study-views', GetStudyViewsAction::class);
         })->add(function ($request, $handler) use ($app) {
             $responseFactory = $app->getContainer()->get(ResponseFactoryInterface::class);
             return (new RoleMiddleware($responseFactory, ['org_admin', 'manager']))->process($request, $handler);
@@ -360,6 +399,11 @@ return function (App $app) {
                 $material->post('/open', OpenMaterialAction::class);
                 $material->get('/resource', GetMaterialResourceAction::class);
                 $material->get('/cover', \App\Application\Actions\Public\Material\GetMaterialCoverAction::class);
+            });
+
+            // Study resource endpoint (nested study links opened by the doctor)
+            $public->group('/study/{id}', function (RouteCollectorProxy $study) {
+                $study->get('/resource', GetStudyResourceAction::class);
             });
             
         });

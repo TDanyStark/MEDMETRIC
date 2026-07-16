@@ -6,11 +6,13 @@ use App\Domain\AdminUser\AdminUserRepositoryInterface;
 use App\Domain\Auth\AuthRepositoryInterface;
 use App\Domain\MaterialView\MaterialViewRepositoryInterface;
 use App\Domain\Organization\OrganizationRepositoryInterface;
+use App\Domain\StudyView\StudyViewRepositoryInterface;
 use App\Domain\User\UserRepository;
 use App\Infrastructure\Persistence\AdminUser\DbAdminUserRepository;
 use App\Infrastructure\Persistence\Auth\DbAuthRepository;
 use App\Infrastructure\Persistence\MaterialView\DbMaterialViewRepository;
 use App\Infrastructure\Persistence\Organization\DbOrganizationRepository;
+use App\Infrastructure\Persistence\StudyView\DbStudyViewRepository;
 use App\Infrastructure\Persistence\User\InMemoryUserRepository;
 use App\Domain\Metrics\MetricsRepositoryInterface;
 use App\Infrastructure\Persistence\Metrics\DbMetricsRepository;
@@ -32,6 +34,9 @@ return function (ContainerBuilder $containerBuilder) {
 
         // Material View repository — DB-backed (Phase 7)
         MaterialViewRepositoryInterface::class => \DI\autowire(DbMaterialViewRepository::class),
+
+        // Study View repository — DB-backed (material-studies change)
+        StudyViewRepositoryInterface::class => \DI\autowire(DbStudyViewRepository::class),
 
         // Metrics repository
         MetricsRepositoryInterface::class => \DI\autowire(DbMetricsRepository::class),

@@ -32,6 +32,10 @@ export function getRepMaterialPreview(id: number) {
   return api.get<ApiResponse<MaterialResource>>(`/rep/materials/${id}/preview`).then(unwrap)
 }
 
+export function getRepStudyPreview(id: number) {
+  return api.get<ApiResponse<MaterialResource>>(`/rep/studies/${id}/preview`).then(unwrap)
+}
+
 export function createRepSession(payload: RepSessionPayload) {
   return api.post<ApiResponse<RepSessionResponse>>('/rep/visit-sessions', payload).then(unwrap)
 }

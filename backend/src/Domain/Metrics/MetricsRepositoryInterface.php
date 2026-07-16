@@ -30,4 +30,13 @@ interface MetricsRepositoryInterface
      * @return array
      */
     public function getRepAdoptionMetrics(int $organizationId, ?int $managerId, array $filters = []): array;
+
+    /**
+     * Study views metrics — fully separate report from material metrics
+     * (getTopMaterialsMetrics/getRepAdoptionMetrics are never modified to
+     * include this data; see design.md "Metrics integration" decision).
+     *
+     * @return array
+     */
+    public function getStudyViewsMetrics(int $organizationId, ?int $managerId, array $filters = []): array;
 }

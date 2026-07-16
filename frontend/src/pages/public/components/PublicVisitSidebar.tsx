@@ -1,4 +1,4 @@
-import { PublicMaterial } from '@/types'
+import { PublicMaterial, PublicStudy } from '@/types'
 import { PublicMaterialCard } from './PublicMaterialCard'
 
 interface PublicVisitSidebarProps {
@@ -7,6 +7,7 @@ interface PublicVisitSidebarProps {
   getHref: (material: PublicMaterial) => string
   isModeVisitador?: boolean
   getShareUrl?: (material: PublicMaterial) => string
+  getStudyHref?: (study: PublicStudy) => string
 }
 
 export function PublicVisitSidebar({ 
@@ -14,7 +15,8 @@ export function PublicVisitSidebar({
   activeMaterialId, 
   getHref,
   isModeVisitador,
-  getShareUrl
+  getShareUrl,
+  getStudyHref
 }: PublicVisitSidebarProps) {
   return (
     <div className="space-y-6">
@@ -36,6 +38,7 @@ export function PublicVisitSidebar({
               href={getHref(material)}
               showShare={isModeVisitador}
               shareUrl={getShareUrl?.(material)}
+              getStudyHref={getStudyHref}
             />
           ))
         )}

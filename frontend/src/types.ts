@@ -39,6 +39,13 @@ export interface PublicMaterial {
   cover_url?: string | null
   type: 'pdf' | 'video' | 'link'
   status: 'draft' | 'approved' | 'archived'
+  studies?: PublicStudy[]
+}
+
+export interface PublicStudy {
+  id: number
+  title: string
+  type: 'pdf' | 'link'
 }
 
 export interface PublicVisitPayload {

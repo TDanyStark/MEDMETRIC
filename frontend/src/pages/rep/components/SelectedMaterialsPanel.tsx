@@ -17,7 +17,7 @@ export function SelectedMaterialsPanel({
   if (count === 0) return null;
 
   const content = (
-    <div className="flex flex-col bg-background/95 backdrop-blur-xl border border-border/50 shadow-2xl rounded-[2.5rem] overflow-hidden animate-in zoom-in-95 duration-300 ring-1 ring-primary/10 h-full">
+    <div className="flex flex-col bg-background/95 backdrop-blur-xl border border-border/50 shadow-2xl rounded-[2.5rem] overflow-hidden animate-in zoom-in-95 duration-300 ring-1 ring-primary/10 h-full lg:h-auto lg:max-h-[calc(100vh-8rem)] lg:min-h-[400px]">
       <div className="p-6 border-b border-border/40 bg-gradient-to-br from-primary/10 via-background to-transparent relative">
         <div className="absolute top-0 right-0 p-4 opacity-10">
           <Stethoscope className="h-12 w-12 text-primary" />
@@ -80,7 +80,7 @@ export function SelectedMaterialsPanel({
     <>
       {/* Desktop View: Absoluto a la izquierda (Fixed) */}
       <div
-        className="hidden lg:block fixed bottom-8 w-80 z-40 max-h-[calc(100vh-8rem)] min-h-[400px] transition-all duration-300"
+        className="hidden lg:block fixed bottom-8 w-80 z-40 transition-all duration-300"
         style={{ left: "calc(var(--sidebar-width, 18rem) + 2.5rem)" }}
       >
         {content}

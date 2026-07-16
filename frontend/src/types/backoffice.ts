@@ -71,6 +71,38 @@ export interface Material {
   updated_at: string
   brand_name?: string
   manager_name?: string
+  studies?: MaterialStudy[]
+}
+
+export type MaterialStudyType = 'pdf' | 'link'
+
+export interface MaterialStudy {
+  id: number
+  material_id: number
+  title: string
+  type: MaterialStudyType
+  storage_driver?: string
+  storage_path?: string | null
+  external_url?: string | null
+  pdf_compression_status?: 'pending' | 'compressed' | 'skipped' | 'failed' | 'unavailable' | null
+  pdf_compression_error?: string | null
+  pdf_compression_checked_at?: string | null
+  view_count?: number
+  created_at: string
+  updated_at: string
+}
+
+/**
+ * A study held only in local component state while its parent material is
+ * still being created (no `material_id` exists yet). Flushed sequentially
+ * against the real material id once the material create request succeeds.
+ */
+export interface PendingStudy {
+  tempId: string
+  title: string
+  type: MaterialStudyType
+  file?: File
+  external_url?: string
 }
 
 export interface ManagerOption {
