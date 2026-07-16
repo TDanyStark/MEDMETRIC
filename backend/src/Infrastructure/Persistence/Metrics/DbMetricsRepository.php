@@ -195,6 +195,97 @@ class DbMetricsRepository implements MetricsRepositoryInterface
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    /**
+     * Paginated sibling of getTopMaterialsMetrics(), exclusive to the
+     * "Detalle de materiales" table. Reuses the exact same WHERE/JOIN/GROUP BY
+     * aggregation; only adds a COUNT(*) over the grouped subquery plus
+     * LIMIT/OFFSET on the same ORDER BY (total_views DESC).
+     */
+    public function getTopMaterialsList(int $organizationId, ?int $managerId, array $filters = [], int $page = 1): array
+    {
+        $where = ['m.organization_id = :org_id'];
+        $params = [':org_id' => $organizationId];
+
+        if ($managerId !== null) {
+            $where[] = 'm.manager_id = :manager_id';
+            $params[':manager_id'] = $managerId;
+        }
+
+        $materialIds = $this->intIds($filters['material_ids'] ?? null);
+        if (!empty($materialIds)) {
+            $where[] = 'm.id IN ' . $this->buildInClause($materialIds, 'mat', $params);
+        }
+
+        if (!empty($filters['q'])) {
+            $where[] = 'm.title LIKE :q';
+            $params[':q'] = '%' . $filters['q'] . '%';
+        }
+
+        // Date and rep filters are applied to the JOIN ON clause so that materials
+        // with 0 views in the selected scope still appear in the result set.
+        $viewsJoinCondition = "mv.material_id = m.id";
+        if (!empty($filters['start_date'])) {
+            $viewsJoinCondition .= " AND DATE(mv.opened_at) >= :start_date";
+            $params[':start_date'] = $filters['start_date'];
+        }
+        if (!empty($filters['end_date'])) {
+            $viewsJoinCondition .= " AND DATE(mv.opened_at) <= :end_date";
+            $params[':end_date'] = $filters['end_date'];
+        }
+        $repIds = $this->intIds($filters['rep_ids'] ?? null);
+        if (!empty($repIds)) {
+            $viewsJoinCondition .= " AND mv.viewer_type = 'rep' AND mv.viewer_id IN " . $this->buildInClause($repIds, 'rep', $params);
+        }
+
+        $whereSql = implode(' AND ', $where);
+
+        $groupedSql = "SELECT 
+                    m.id,
+                    m.title,
+                    m.type,
+                    COUNT(mv.id) as total_views,
+                    SUM(CASE WHEN mv.viewer_type = 'rep' THEN 1 ELSE 0 END) as rep_views,
+                    SUM(CASE WHEN mv.viewer_type = 'doctor' THEN 1 ELSE 0 END) as doctor_views,
+                    COUNT(DISTINCT CASE WHEN mv.viewer_type = 'rep' THEN mv.viewer_id END) as unique_reps
+                FROM materials m
+                LEFT JOIN material_views mv ON {$viewsJoinCondition}
+                WHERE {$whereSql}
+                GROUP BY m.id, m.title, m.type";
+
+        $countSql = "SELECT COUNT(*) FROM ({$groupedSql}) as t";
+
+        $countStmt = $this->pdo->prepare($countSql);
+        $countStmt->execute($params);
+        $total = (int)$countStmt->fetchColumn();
+
+        $pageSize = \App\Infrastructure\Config\MetricsPaginationConfig::PAGE_SIZE;
+        $offset = ($page - 1) * $pageSize;
+
+        $sql = "{$groupedSql}
+                ORDER BY total_views DESC
+                LIMIT :limit OFFSET :offset";
+
+        $stmt = $this->pdo->prepare($sql);
+        foreach ($params as $key => $val) {
+            $stmt->bindValue($key, $val);
+        }
+        $stmt->bindValue(':limit', $pageSize, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+
+        $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        return [
+            'items' => $items,
+            'meta' => [
+                'total' => $total,
+                'page' => $page,
+                'per_page' => $pageSize,
+                'last_page' => (int) ceil($total / $pageSize)
+            ]
+        ];
+    }
+
     public function getMaterialViewsList(int $organizationId, ?int $managerId, array $filters = [], int $page = 1): array
     {
         $where = ['m.organization_id = :org_id'];
@@ -241,7 +332,7 @@ class DbMetricsRepository implements MetricsRepositoryInterface
         $countStmt->execute($params);
         $total = (int)$countStmt->fetchColumn();
 
-        $pageSize = \App\Infrastructure\Config\PaginationConfig::PAGE_SIZE;
+        $pageSize = \App\Infrastructure\Config\MetricsPaginationConfig::PAGE_SIZE;
         $offset = ($page - 1) * $pageSize;
 
         $sql = "SELECT 
@@ -283,7 +374,7 @@ class DbMetricsRepository implements MetricsRepositoryInterface
         ];
     }
 
-    public function getRepAdoptionMetrics(int $organizationId, ?int $managerId, array $filters = []): array
+    public function getRepAdoptionMetrics(int $organizationId, ?int $managerId, array $filters = [], int $page = 1): array
     {
         // Build the universe of materials available to each rep (denominator for
         // adoption %). For a manager scope, that's the manager's materials; for
@@ -341,7 +432,7 @@ class DbMetricsRepository implements MetricsRepositoryInterface
 
         $repWhereSql = implode(' AND ', $repWhere);
 
-        $sql = "SELECT 
+        $groupedSql = "SELECT 
                     u.id as rep_id,
                     u.name,
                     u.email,
@@ -355,11 +446,29 @@ class DbMetricsRepository implements MetricsRepositoryInterface
                 LEFT JOIN materials m2 ON {$materialScopeJoin}
                 WHERE {$repWhereSql}
                   AND (mv.id IS NULL OR m2.id IS NOT NULL)
-                GROUP BY u.id, u.name, u.email, u.last_login_at
-                ORDER BY total_views DESC, u.name ASC";
+                GROUP BY u.id, u.name, u.email, u.last_login_at";
+
+        $countSql = "SELECT COUNT(*) FROM ({$groupedSql}) as t";
+
+        $countStmt = $this->pdo->prepare($countSql);
+        $countStmt->execute($repParams);
+        $total = (int)$countStmt->fetchColumn();
+
+        $pageSize = \App\Infrastructure\Config\MetricsPaginationConfig::PAGE_SIZE;
+        $offset = ($page - 1) * $pageSize;
+
+        $sql = "{$groupedSql}
+                ORDER BY total_views DESC, u.name ASC
+                LIMIT :limit OFFSET :offset";
 
         $stmt = $this->pdo->prepare($sql);
-        $stmt->execute($repParams);
+        foreach ($repParams as $key => $val) {
+            $stmt->bindValue($key, $val);
+        }
+        $stmt->bindValue(':limit', $pageSize, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         // Compute adoption percent = distinct materials viewed / available materials.
@@ -372,7 +481,15 @@ class DbMetricsRepository implements MetricsRepositoryInterface
         }
         unset($row);
 
-        return $rows;
+        return [
+            'items' => $rows,
+            'meta' => [
+                'total' => $total,
+                'page' => $page,
+                'per_page' => $pageSize,
+                'last_page' => (int) ceil($total / $pageSize)
+            ]
+        ];
     }
 
     /**
@@ -436,5 +553,106 @@ class DbMetricsRepository implements MetricsRepositoryInterface
         $stmt->execute($params);
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Paginated detail list for study views ("Registro de Visualizaciones de
+     * Estudios" table). Mirrors getMaterialViewsList's row-level pattern but
+     * reads study_views joined through material_studies -> materials.
+     */
+    public function getStudyViewsList(int $organizationId, ?int $managerId, array $filters = [], int $page = 1): array
+    {
+        $where = ['m.organization_id = :org_id'];
+        $params = [':org_id' => $organizationId];
+
+        if ($managerId !== null) {
+            $where[] = 'm.manager_id = :manager_id';
+            $params[':manager_id'] = $managerId;
+        }
+
+        $materialIds = $this->intIds($filters['material_ids'] ?? null);
+        if (!empty($materialIds)) {
+            $where[] = 'm.id IN ' . $this->buildInClause($materialIds, 'mat', $params);
+        }
+
+        $studyIds = $this->intIds($filters['study_ids'] ?? null);
+        if (!empty($studyIds)) {
+            $where[] = 'ms.id IN ' . $this->buildInClause($studyIds, 'study', $params);
+        }
+
+        if (!empty($filters['start_date'])) {
+            $where[] = 'DATE(sv.opened_at) >= :start_date';
+            $params[':start_date'] = $filters['start_date'];
+        }
+
+        if (!empty($filters['end_date'])) {
+            $where[] = 'DATE(sv.opened_at) <= :end_date';
+            $params[':end_date'] = $filters['end_date'];
+        }
+
+        // Resolve the rep behind each view: direct rep view (sv.viewer_id) takes
+        // precedence, otherwise the rep that owns the visit session (vs.rep_id).
+        $repJoin = "LEFT JOIN users rep ON rep.id = COALESCE(sv.viewer_id, vs.rep_id)";
+
+        $repIds = $this->intIds($filters['rep_ids'] ?? null);
+        if (!empty($repIds)) {
+            $where[] = 'COALESCE(sv.viewer_id, vs.rep_id) IN ' . $this->buildInClause($repIds, 'rep', $params);
+        }
+
+        $whereSql = implode(' AND ', $where);
+
+        $countSql = "SELECT COUNT(*) FROM study_views sv
+                     JOIN material_studies ms ON ms.id = sv.study_id
+                     JOIN materials m ON m.id = ms.material_id
+                     LEFT JOIN visit_sessions vs ON vs.id = sv.visit_session_id
+                     {$repJoin}
+                     WHERE {$whereSql}";
+
+        $countStmt = $this->pdo->prepare($countSql);
+        $countStmt->execute($params);
+        $total = (int)$countStmt->fetchColumn();
+
+        $pageSize = \App\Infrastructure\Config\MetricsPaginationConfig::PAGE_SIZE;
+        $offset = ($page - 1) * $pageSize;
+
+        $sql = "SELECT 
+                    sv.id,
+                    ms.id as study_id,
+                    ms.title as study_title,
+                    m.id as material_id,
+                    m.title as material_title,
+                    m.cover_path,
+                    sv.viewer_type,
+                    sv.opened_at,
+                    vs.doctor_name,
+                    rep.name as rep_name
+                FROM study_views sv
+                JOIN material_studies ms ON ms.id = sv.study_id
+                JOIN materials m ON m.id = ms.material_id
+                LEFT JOIN visit_sessions vs ON vs.id = sv.visit_session_id
+                {$repJoin}
+                WHERE {$whereSql}
+                ORDER BY sv.opened_at DESC
+                LIMIT :limit OFFSET :offset";
+
+        $stmt = $this->pdo->prepare($sql);
+        foreach ($params as $key => $val) {
+            $stmt->bindValue($key, $val);
+        }
+        $stmt->bindValue(':limit', $pageSize, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+
+        $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        return [
+            'items' => $items,
+            'meta' => [
+                'total' => $total,
+                'page' => $page,
+                'per_page' => $pageSize,
+                'last_page' => (int) ceil($total / $pageSize)
+            ]
+        ];
     }
 }

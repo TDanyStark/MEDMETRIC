@@ -24,12 +24,24 @@ interface MetricsRepositoryInterface
     public function getMaterialViewsList(int $organizationId, ?int $managerId, array $filters = [], int $page = 1): array;
 
     /**
-     * Adoption metrics per representative: how many distinct materials each rep
-     * has opened, total views, last activity and adoption percentage.
+     * Paginated sibling of getTopMaterialsMetrics(), exclusive to the
+     * "Detalle de materiales" table. Same aggregation (WHERE/JOINs/GROUP BY)
+     * as getTopMaterialsMetrics, but returns {items, meta} with
+     * MetricsPaginationConfig::PAGE_SIZE. getTopMaterialsMetrics is never
+     * modified — it keeps feeding the chart with its own $limit contract.
      *
      * @return array
      */
-    public function getRepAdoptionMetrics(int $organizationId, ?int $managerId, array $filters = []): array;
+    public function getTopMaterialsList(int $organizationId, ?int $managerId, array $filters = [], int $page = 1): array;
+
+    /**
+     * Adoption metrics per representative: how many distinct materials each rep
+     * has opened, total views, last activity and adoption percentage.
+     * Paginated — returns {items, meta}.
+     *
+     * @return array
+     */
+    public function getRepAdoptionMetrics(int $organizationId, ?int $managerId, array $filters = [], int $page = 1): array;
 
     /**
      * Study views metrics — fully separate report from material metrics
@@ -39,4 +51,13 @@ interface MetricsRepositoryInterface
      * @return array
      */
     public function getStudyViewsMetrics(int $organizationId, ?int $managerId, array $filters = []): array;
+
+    /**
+     * Paginated detail list for study views ("Registro de Visualizaciones de
+     * Estudios" table). Mirrors getMaterialViewsList's row-level detail
+     * pattern but reads study_views joined through material_studies.
+     *
+     * @return array
+     */
+    public function getStudyViewsList(int $organizationId, ?int $managerId, array $filters = [], int $page = 1): array;
 }

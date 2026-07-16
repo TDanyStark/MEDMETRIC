@@ -6,7 +6,14 @@ namespace App\Application\Actions\Metrics;
 
 use Psr\Http\Message\ResponseInterface as Response;
 
-class GetRepAdoptionAction extends MetricsAction
+/**
+ * GET /metrics/top-materials-list
+ *
+ * Paginated sibling of GetTopMaterialsAction, exclusive to the "Detalle de
+ * materiales" table. GetTopMaterialsAction/getTopMaterialsMetrics keep
+ * feeding the TopMaterialsChart unchanged.
+ */
+class GetTopMaterialsListAction extends MetricsAction
 {
     /**
      * {@inheritdoc}
@@ -22,12 +29,16 @@ class GetRepAdoptionAction extends MetricsAction
             $managerId = $authUser ? $authUser->getId() : 0;
         }
 
-        // rep-adoption ignores material_ids (it's per-rep) but uses rep_ids + dates.
         $filters = $this->buildCommonFilters();
+
+        $q = $this->request->getQueryParams()['q'] ?? null;
+        if ($q !== null && $q !== '') {
+            $filters['q'] = trim($q);
+        }
 
         $page = (int)($this->request->getQueryParams()['page'] ?? 1);
 
-        $metrics = $this->metricsRepository->getRepAdoptionMetrics($organizationId, $managerId, $filters, $page);
+        $metrics = $this->metricsRepository->getTopMaterialsList($organizationId, $managerId, $filters, $page);
 
         return $this->respondWithData($metrics);
     }

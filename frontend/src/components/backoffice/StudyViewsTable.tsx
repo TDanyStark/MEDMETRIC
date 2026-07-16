@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { FileIcon, Eye } from "lucide-react";
+import { FileIcon, BookOpen } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -10,19 +10,19 @@ import { PaginationBar } from "@/components/backoffice/Workbench";
 import { metricsApi } from "@/services/metrics";
 import { cn, formatDateTime } from "@/lib/utils";
 
-interface MaterialViewsTableProps {
+interface StudyViewsTableProps {
   materialIds: number[];
   repIds: number[];
   startDate: string;
   endDate: string;
 }
 
-export function MaterialViewsTable({
+export function StudyViewsTable({
   materialIds,
   repIds,
   startDate,
   endDate,
-}: MaterialViewsTableProps) {
+}: StudyViewsTableProps) {
   const [page, setPage] = useState(1);
 
   const materialKey = materialIds.join(",");
@@ -36,7 +36,7 @@ export function MaterialViewsTable({
   const { data: viewsResponse, isLoading } = useQuery({
     queryKey: [
       "metrics",
-      "material-views-list",
+      "study-views-list",
       materialKey,
       repKey,
       startDate,
@@ -45,7 +45,7 @@ export function MaterialViewsTable({
     ],
     queryFn: () =>
       metricsApi
-        .getMaterialViewsList({
+        .getStudyViewsList({
           material_id: materialIds.length ? materialIds : undefined,
           rep_id: repIds.length ? repIds : undefined,
           start_date: startDate || undefined,
@@ -62,9 +62,9 @@ export function MaterialViewsTable({
     <div className="flex flex-col gap-6 animate-in fade-in duration-500 mt-8">
       <div className="rounded-3xl border border-border/50 bg-background/50 p-6 shadow-sm">
         <div className="flex items-center gap-2 mb-6">
-          <Eye className="h-5 w-5 text-muted-foreground" />
+          <BookOpen className="h-5 w-5 text-muted-foreground" />
           <h3 className="text-xl font-display font-medium">
-            Registro de Visualizaciones
+            Registro de Visualizaciones de Estudios
           </h3>
         </div>
 
@@ -74,6 +74,7 @@ export function MaterialViewsTable({
               <tr>
                 <th className="px-4 py-3 font-medium">Fecha</th>
                 <th className="px-4 py-3 font-medium">Material</th>
+                <th className="px-4 py-3 font-medium">Estudio</th>
                 <th className="px-4 py-3 font-medium">Visualizador</th>
                 <th className="px-4 py-3 font-medium">Representante</th>
                 <th className="px-4 py-3 font-medium">Médico</th>
@@ -83,7 +84,7 @@ export function MaterialViewsTable({
               {isLoading ? (
                 <tr>
                   <td
-                    colSpan={5}
+                    colSpan={6}
                     className="px-4 py-12 text-center text-muted-foreground"
                   >
                     Cargando datos...
@@ -92,10 +93,10 @@ export function MaterialViewsTable({
               ) : viewsList?.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={5}
+                    colSpan={6}
                     className="px-4 py-12 text-center text-muted-foreground"
                   >
-                    No hay registros de visualizaciones para este filtro
+                    No hay registros de visualizaciones de estudios para este filtro
                   </td>
                 </tr>
               ) : (
@@ -132,6 +133,18 @@ export function MaterialViewsTable({
                         </Tooltip>
                       </div>
                     </td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="inline-block align-middle line-clamp-2 max-w-[220px] cursor-default">
+                            {item.study_title}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="max-w-xs">{item.study_title}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </td>
                     <td className="px-4 py-3">
                       <span
                         className={cn(
@@ -145,28 +158,36 @@ export function MaterialViewsTable({
                       </span>
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span className="inline-block align-middle truncate max-w-[200px] cursor-default">
-                            {item.rep_name}
-                          </span>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="max-w-xs">{item.rep_name}</p>
-                        </TooltipContent>
-                      </Tooltip>
+                      {item.rep_name ? (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="inline-block align-middle truncate max-w-[200px] cursor-default">
+                              {item.rep_name}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="max-w-xs">{item.rep_name}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      ) : (
+                        <span className="text-muted-foreground/50">—</span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span className="inline-block align-middle truncate max-w-[200px] cursor-default">
-                            {item.doctor_name}
-                          </span>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="max-w-xs">{item.doctor_name}</p>
-                        </TooltipContent>
-                      </Tooltip>
+                      {item.doctor_name ? (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="inline-block align-middle truncate max-w-[200px] cursor-default">
+                              {item.doctor_name}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="max-w-xs">{item.doctor_name}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      ) : (
+                        <span className="text-muted-foreground/50">—</span>
+                      )}
                     </td>
                   </tr>
                 ))

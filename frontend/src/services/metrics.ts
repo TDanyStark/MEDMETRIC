@@ -55,6 +55,19 @@ export interface MaterialViewListMetric {
   rep_name: string | null
 }
 
+export interface StudyViewListMetric {
+  id: number
+  study_id: number
+  study_title: string
+  material_id: number
+  material_title: string
+  cover_path: string | null
+  viewer_type: 'rep' | 'doctor'
+  opened_at: string
+  doctor_name: string | null
+  rep_name: string | null
+}
+
 export interface PaginatedData<T> {
   items: T[]
   meta: {
@@ -120,14 +133,15 @@ class MetricsService {
     return api.get<{ data: RepLastLoginMetric[] }>('/metrics/rep-last-login')
   }
 
-  async getRepAdoption(filters?: { rep_id?: IdFilter; start_date?: string; end_date?: string }) {
+  async getRepAdoption(filters?: { rep_id?: IdFilter; start_date?: string; end_date?: string; page?: number }) {
     const params = new URLSearchParams()
     appendIds(params, 'rep_id', filters?.rep_id)
     if (filters?.start_date) params.append('start_date', filters.start_date)
     if (filters?.end_date) params.append('end_date', filters.end_date)
+    if (filters?.page) params.append('page', filters.page.toString())
 
     const qs = params.toString()
-    return api.get<{ data: RepAdoptionMetric[] }>(`/metrics/rep-adoption${qs ? `?${qs}` : ''}`)
+    return api.get<{ data: PaginatedData<RepAdoptionMetric> }>(`/metrics/rep-adoption${qs ? `?${qs}` : ''}`)
   }
 
   async getTopMaterials(limit = 10, filters?: BaseMetricFilters & { q?: string }) {
@@ -142,6 +156,17 @@ class MetricsService {
     return api.get<{ data: TopMaterialMetric[] }>(`/metrics/top-materials?${params.toString()}`)
   }
 
+  async getTopMaterialsList(filters?: BaseMetricFilters & { page?: number }) {
+    const params = new URLSearchParams()
+    appendIds(params, 'material_id', filters?.material_id)
+    appendIds(params, 'rep_id', filters?.rep_id)
+    if (filters?.start_date) params.append('start_date', filters.start_date)
+    if (filters?.end_date) params.append('end_date', filters.end_date)
+    if (filters?.page) params.append('page', filters.page.toString())
+
+    return api.get<{ data: PaginatedData<TopMaterialMetric> }>(`/metrics/top-materials-list?${params.toString()}`)
+  }
+
   async getStudyViewsMetrics(filters?: StudyMetricFilters) {
     const params = new URLSearchParams()
     appendIds(params, 'study_id', filters?.study_id)
@@ -152,6 +177,18 @@ class MetricsService {
 
     const qs = params.toString()
     return api.get<{ data: StudyViewsMetric[] }>(`/metrics/study-views${qs ? `?${qs}` : ''}`)
+  }
+
+  async getStudyViewsList(filters?: StudyMetricFilters & { page?: number }) {
+    const params = new URLSearchParams()
+    appendIds(params, 'study_id', filters?.study_id)
+    appendIds(params, 'material_id', filters?.material_id)
+    appendIds(params, 'rep_id', filters?.rep_id)
+    if (filters?.start_date) params.append('start_date', filters.start_date)
+    if (filters?.end_date) params.append('end_date', filters.end_date)
+    if (filters?.page) params.append('page', filters.page.toString())
+
+    return api.get<{ data: PaginatedData<StudyViewListMetric> }>(`/metrics/study-views-list?${params.toString()}`)
   }
 }
 

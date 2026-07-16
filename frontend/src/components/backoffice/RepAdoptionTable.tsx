@@ -1,7 +1,9 @@
+import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Users, Eye, Layers, Filter } from 'lucide-react'
 import { metricsApi } from '@/services/metrics'
 import { cn, formatDateTime, getInitials } from '@/lib/utils'
+import { PaginationBar } from '@/components/backoffice/Workbench'
 
 interface RepAdoptionTableProps {
   repIds: number[]
@@ -24,19 +26,28 @@ export function RepAdoptionTable({
   onToggleRep,
 }: RepAdoptionTableProps) {
   const repKey = repIds.join(',')
+  const [page, setPage] = useState(1)
+
+  // Reset to first page whenever any global filter changes.
+  useEffect(() => {
+    setPage(1)
+  }, [repKey, startDate, endDate])
+
   const { data, isLoading } = useQuery({
-    queryKey: ['metrics', 'rep-adoption', repKey, startDate, endDate],
+    queryKey: ['metrics', 'rep-adoption', repKey, startDate, endDate, page],
     queryFn: () =>
       metricsApi
         .getRepAdoption({
           rep_id: repIds.length ? repIds : undefined,
           start_date: startDate || undefined,
           end_date: endDate || undefined,
+          page,
         })
         .then((res) => res.data),
   })
 
-  const reps = data ?? []
+  const reps = data?.items ?? []
+  const meta = data?.meta
 
   return (
     <div className="rounded-3xl border border-border/50 bg-background/50 p-6 shadow-sm">
@@ -148,6 +159,17 @@ export function RepAdoptionTable({
           </tbody>
         </table>
       </div>
+
+      {meta && (
+        <div className="mt-4">
+          <PaginationBar
+            page={meta.page}
+            lastPage={meta.last_page}
+            total={meta.total}
+            onPageChange={setPage}
+          />
+        </div>
+      )}
 
       {reps.length > 0 && (
         <p className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">

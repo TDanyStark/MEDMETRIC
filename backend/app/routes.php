@@ -69,8 +69,10 @@ use App\Application\Actions\Metrics\GetMaterialViewsAction;
 use App\Application\Actions\Metrics\GetMaterialViewsListAction;
 use App\Application\Actions\Metrics\GetRepLastLoginAction;
 use App\Application\Actions\Metrics\GetTopMaterialsAction;
+use App\Application\Actions\Metrics\GetTopMaterialsListAction;
 use App\Application\Actions\Metrics\GetRepAdoptionAction;
 use App\Application\Actions\Metrics\GetStudyViewsAction;
+use App\Application\Actions\Metrics\GetStudyViewsListAction;
 use App\Application\Middleware\JwtMiddleware;
 use App\Application\Middleware\RoleMiddleware;
 use App\Infrastructure\Config\DoctorAccessConfig;
@@ -378,8 +380,10 @@ return function (App $app) {
             $metrics->get('/material-views-list', GetMaterialViewsListAction::class);
             $metrics->get('/rep-last-login', GetRepLastLoginAction::class);
             $metrics->get('/top-materials', GetTopMaterialsAction::class);
+            $metrics->get('/top-materials-list', GetTopMaterialsListAction::class);
             $metrics->get('/rep-adoption', GetRepAdoptionAction::class);
             $metrics->get('/study-views', GetStudyViewsAction::class);
+            $metrics->get('/study-views-list', GetStudyViewsListAction::class);
         })->add(function ($request, $handler) use ($app) {
             $responseFactory = $app->getContainer()->get(ResponseFactoryInterface::class);
             return (new RoleMiddleware($responseFactory, ['org_admin', 'manager']))->process($request, $handler);

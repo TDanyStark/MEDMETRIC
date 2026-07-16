@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
@@ -21,9 +22,11 @@ import { MultiMaterialSelect } from '@/components/ui/MultiMaterialSelect'
 import { MultiRepSelect } from '@/components/ui/MultiRepSelect'
 import { DatePicker } from '@/components/ui/DatePicker'
 import { MaterialViewsTable } from './MaterialViewsTable'
+import { StudyViewsTable } from './StudyViewsTable'
 import { ViewsTrendChart } from './ViewsTrendChart'
 import { TopMaterialsChart } from './TopMaterialsChart'
 import { RepAdoptionTable } from './RepAdoptionTable'
+import { PaginationBar } from './Workbench'
 
 export function MetricsDashboard() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -36,6 +39,13 @@ export function MetricsDashboard() {
   // Stable string keys for react-query cache invalidation.
   const materialKey = materialIds.join(',')
   const repKey = repIds.join(',')
+
+  const [detailPage, setDetailPage] = useState(1)
+
+  // Reset the "Detalle de materiales" table page whenever any global filter changes.
+  useEffect(() => {
+    setDetailPage(1)
+  }, [materialKey, repKey, startDate, endDate])
 
   const setIdsFilter = (key: string, ids: number[]) => {
     setSearchParams(
@@ -97,6 +107,15 @@ export function MetricsDashboard() {
     queryKey: ['metrics', 'top-materials', materialKey, repKey, startDate, endDate],
     queryFn: () => metricsApi.getTopMaterials(10, filterArgs).then((res) => res.data),
   })
+
+  const { data: topMaterialsListResponse, isLoading: isLoadingTopList } = useQuery({
+    queryKey: ['metrics', 'top-materials-list', materialKey, repKey, startDate, endDate, detailPage],
+    queryFn: () =>
+      metricsApi.getTopMaterialsList({ ...filterArgs, page: detailPage }).then((res) => res.data),
+  })
+
+  const topMaterialsList = topMaterialsListResponse?.items
+  const topMaterialsListMeta = topMaterialsListResponse?.meta
 
   const { data: repsLogin, isLoading: isLoadingLogins } = useQuery({
     queryKey: ['metrics', 'rep-last-login'],
@@ -276,20 +295,20 @@ export function MetricsDashboard() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border/50">
-              {isLoadingTop ? (
+              {isLoadingTopList ? (
                 <tr>
                   <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
                     Cargando...
                   </td>
                 </tr>
-              ) : topMaterials?.length === 0 ? (
+              ) : topMaterialsList?.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
                     No hay datos de visualizaciones aún
                   </td>
                 </tr>
               ) : (
-                topMaterials?.map((item) => (
+                topMaterialsList?.map((item) => (
                   <tr key={item.id} className="hover:bg-muted/30 transition-colors">
                     <td className="px-4 py-3 font-medium text-foreground">
                       <Tooltip>
@@ -335,10 +354,29 @@ export function MetricsDashboard() {
             </tbody>
           </table>
         </div>
+
+        {topMaterialsListMeta && (
+          <div className="mt-4">
+            <PaginationBar
+              page={topMaterialsListMeta.page}
+              lastPage={topMaterialsListMeta.last_page}
+              total={topMaterialsListMeta.total}
+              onPageChange={setDetailPage}
+            />
+          </div>
+        )}
       </div>
 
       {/* Registro detallado de visualizaciones */}
       <MaterialViewsTable
+        materialIds={materialIds}
+        repIds={repIds}
+        startDate={startDate}
+        endDate={endDate}
+      />
+
+      {/* Registro detallado de visualizaciones de estudios */}
+      <StudyViewsTable
         materialIds={materialIds}
         repIds={repIds}
         startDate={startDate}
