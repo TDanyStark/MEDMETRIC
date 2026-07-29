@@ -41,7 +41,9 @@ class GetStudyViewsAction extends MetricsAction
             $filters['study_ids'] = $studyIds;
         }
 
-        $metrics = $this->metricsRepository->getStudyViewsMetrics($organizationId, $managerId, $filters);
+        $timezone = $this->resolveOrgTimezone($this->organizationRepository, $authUser ? $authUser->getOrganizationId() : null);
+
+        $metrics = $this->metricsRepository->getStudyViewsMetrics($organizationId, $managerId, $filters, $timezone);
 
         return $this->respondWithData($metrics);
     }

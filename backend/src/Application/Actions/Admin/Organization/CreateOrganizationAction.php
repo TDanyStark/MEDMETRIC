@@ -8,6 +8,7 @@ use App\Application\Actions\Action;
 use App\Application\Actions\ActionError;
 use App\Application\Actions\ActionPayload;
 use App\Domain\Organization\OrganizationRepositoryInterface;
+use App\Infrastructure\Config\TimezoneConfig;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Log\LoggerInterface;
 
@@ -28,9 +29,26 @@ class CreateOrganizationAction extends Action
         $slug   = trim((string) ($body['slug']   ?? ''));
         $active = isset($body['active']) ? (bool) $body['active'] : true;
 
+        // Timezone is optional on create: omitted/empty -> null, which lets
+        // the DB column DEFAULT ('America/Santiago') apply. When provided,
+        // it must be one of the curated allow-list zones — a typo must be
+        // rejected, never silently coerced to the default.
+        $timezone = isset($body['timezone']) ? trim((string) $body['timezone']) : null;
+        if ($timezone === '') {
+            $timezone = null;
+        }
+
         // Validation
         if ($name === '') {
             $error = new ActionError(ActionError::VALIDATION_ERROR, 'Organization name is required.');
+            return $this->respond(new ActionPayload(422, null, $error));
+        }
+
+        if ($timezone !== null && !in_array($timezone, TimezoneConfig::LATAM_ZONES, true)) {
+            $error = new ActionError(
+                ActionError::VALIDATION_ERROR,
+                "Invalid timezone '{$timezone}'. Must be one of the supported zones (see GET /v1/timezones)."
+            );
             return $this->respond(new ActionPayload(422, null, $error));
         }
 
@@ -44,7 +62,7 @@ class CreateOrganizationAction extends Action
             return $this->respond(new ActionPayload(422, null, $error));
         }
 
-        $organization = $this->organizationRepository->create($name, $slug, $active);
+        $organization = $this->organizationRepository->create($name, $slug, $active, $timezone);
 
         $this->logger->info('Organization created', ['id' => $organization->getId(), 'name' => $name]);
 

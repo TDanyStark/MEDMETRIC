@@ -4,24 +4,33 @@ declare(strict_types=1);
 
 namespace App\Domain\Metrics;
 
+use App\Infrastructure\Config\TimezoneConfig;
+
 interface MetricsRepositoryInterface
 {
     /**
+     * $timezone is the organization's IANA identifier, used to convert
+     * org-local start_date/end_date filters into a UTC range and to bucket
+     * the returned rows by org-local calendar day (see
+     * App\Infrastructure\Support\OrgDateRange).
+     *
      * @return array
      */
-    public function getMaterialViewsMetrics(int $organizationId, ?int $managerId, array $filters = []): array;
+    public function getMaterialViewsMetrics(int $organizationId, ?int $managerId, array $filters = [], string $timezone = TimezoneConfig::DEFAULT_ZONE): array;
 
     /**
+     * No date filtering — not timezone-sensitive.
+     *
      * @return array
      */
     public function getRepLastLoginMetrics(int $organizationId, ?int $managerId, array $filters = []): array;
 
-    public function getTopMaterialsMetrics(int $organizationId, ?int $managerId, array $filters = [], int $limit = 10): array;
+    public function getTopMaterialsMetrics(int $organizationId, ?int $managerId, array $filters = [], int $limit = 10, string $timezone = TimezoneConfig::DEFAULT_ZONE): array;
 
     /**
      * @return array
      */
-    public function getMaterialViewsList(int $organizationId, ?int $managerId, array $filters = [], int $page = 1): array;
+    public function getMaterialViewsList(int $organizationId, ?int $managerId, array $filters = [], int $page = 1, string $timezone = TimezoneConfig::DEFAULT_ZONE): array;
 
     /**
      * Paginated sibling of getTopMaterialsMetrics(), exclusive to the
@@ -32,7 +41,7 @@ interface MetricsRepositoryInterface
      *
      * @return array
      */
-    public function getTopMaterialsList(int $organizationId, ?int $managerId, array $filters = [], int $page = 1): array;
+    public function getTopMaterialsList(int $organizationId, ?int $managerId, array $filters = [], int $page = 1, string $timezone = TimezoneConfig::DEFAULT_ZONE): array;
 
     /**
      * Adoption metrics per representative: how many distinct materials each rep
@@ -41,7 +50,7 @@ interface MetricsRepositoryInterface
      *
      * @return array
      */
-    public function getRepAdoptionMetrics(int $organizationId, ?int $managerId, array $filters = [], int $page = 1): array;
+    public function getRepAdoptionMetrics(int $organizationId, ?int $managerId, array $filters = [], int $page = 1, string $timezone = TimezoneConfig::DEFAULT_ZONE): array;
 
     /**
      * Study views metrics — fully separate report from material metrics
@@ -50,7 +59,7 @@ interface MetricsRepositoryInterface
      *
      * @return array
      */
-    public function getStudyViewsMetrics(int $organizationId, ?int $managerId, array $filters = []): array;
+    public function getStudyViewsMetrics(int $organizationId, ?int $managerId, array $filters = [], string $timezone = TimezoneConfig::DEFAULT_ZONE): array;
 
     /**
      * Paginated detail list for study views ("Registro de Visualizaciones de
@@ -59,5 +68,5 @@ interface MetricsRepositoryInterface
      *
      * @return array
      */
-    public function getStudyViewsList(int $organizationId, ?int $managerId, array $filters = [], int $page = 1): array;
+    public function getStudyViewsList(int $organizationId, ?int $managerId, array $filters = [], int $page = 1, string $timezone = TimezoneConfig::DEFAULT_ZONE): array;
 }

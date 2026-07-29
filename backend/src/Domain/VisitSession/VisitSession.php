@@ -19,7 +19,9 @@ class VisitSession implements JsonSerializable
         private bool    $active,
         private string  $createdAt,
         private string  $updatedAt,
-        private ?string $repName = null
+        private ?string $repName = null,
+        private ?string $organizationName = null,
+        private ?string $organizationTimezone = null
     ) {}
 
     public function getId(): int              { return $this->id; }
@@ -33,6 +35,8 @@ class VisitSession implements JsonSerializable
     public function getCreatedAt(): string    { return $this->createdAt; }
     public function getUpdatedAt(): string    { return $this->updatedAt; }
     public function getRepName(): ?string     { return $this->repName; }
+    public function getOrganizationName(): ?string { return $this->organizationName; }
+    public function getOrganizationTimezone(): ?string { return $this->organizationTimezone; }
 
     public function isClosed(): bool { return !$this->active; }
 
@@ -50,6 +54,8 @@ class VisitSession implements JsonSerializable
             'created_at'      => $this->createdAt,
             'updated_at'      => $this->updatedAt,
             'rep_name'        => $this->repName,
+            'organization_name' => $this->organizationName,
+            'organization_timezone' => $this->organizationTimezone,
         ];
     }
 
@@ -67,6 +73,8 @@ class VisitSession implements JsonSerializable
             createdAt:      $row['created_at'],
             updatedAt:      $row['updated_at'],
             repName:        $row['rep_name'] ?? null,
+            organizationName: $row['organization_name'] ?? null,
+            organizationTimezone: $row['organization_timezone'] ?? null,
         );
     }
 }

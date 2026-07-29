@@ -8,6 +8,7 @@ use App\Application\Actions\Action;
 use App\Application\Actions\ActionError;
 use App\Application\Actions\ActionPayload;
 use App\Domain\Organization\OrganizationRepositoryInterface;
+use App\Infrastructure\Config\TimezoneConfig;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Log\LoggerInterface;
 
@@ -44,6 +45,24 @@ class UpdateOrganizationAction extends Action
                 $error = new ActionError(ActionError::VALIDATION_ERROR, 'Organization name cannot be empty.');
                 return $this->respond(new ActionPayload(422, null, $error));
             }
+        }
+
+        // Timezone: only validated/applied when explicitly present in the
+        // request. Must be one of the curated allow-list zones — a typo
+        // must be rejected, never silently coerced to the previous/default
+        // value.
+        if (isset($body['timezone'])) {
+            $timezone = trim((string) $body['timezone']);
+
+            if ($timezone === '' || !in_array($timezone, TimezoneConfig::LATAM_ZONES, true)) {
+                $error = new ActionError(
+                    ActionError::VALIDATION_ERROR,
+                    "Invalid timezone '{$timezone}'. Must be one of the supported zones (see GET /v1/timezones)."
+                );
+                return $this->respond(new ActionPayload(422, null, $error));
+            }
+
+            $body['timezone'] = $timezone;
         }
 
         $organization = $this->organizationRepository->update($id, (array) $body);

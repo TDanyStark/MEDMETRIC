@@ -13,6 +13,7 @@ class Organization implements JsonSerializable
         private string $name,
         private string $slug,
         private bool   $active,
+        private string $timezone,
         private string $createdAt,
         private string $updatedAt
     ) {}
@@ -21,6 +22,7 @@ class Organization implements JsonSerializable
     public function getName(): string   { return $this->name; }
     public function getSlug(): string   { return $this->slug; }
     public function isActive(): bool    { return $this->active; }
+    public function getTimezone(): string { return $this->timezone; }
     public function getCreatedAt(): string { return $this->createdAt; }
     public function getUpdatedAt(): string { return $this->updatedAt; }
 
@@ -31,6 +33,7 @@ class Organization implements JsonSerializable
             'name'       => $this->name,
             'slug'       => $this->slug,
             'active'     => $this->active,
+            'timezone'   => $this->timezone,
             'created_at' => $this->createdAt,
             'updated_at' => $this->updatedAt,
         ];
@@ -43,6 +46,7 @@ class Organization implements JsonSerializable
             name:      $row['name'],
             slug:      $row['slug'],
             active:    (bool) $row['active'],
+            timezone:  $row['timezone'],
             createdAt: $row['created_at'],
             updatedAt: $row['updated_at'],
         );

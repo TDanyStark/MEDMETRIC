@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Infrastructure\Persistence\Metrics;
 
 use App\Domain\Metrics\MetricsRepositoryInterface;
+use App\Infrastructure\Config\TimezoneConfig;
 use App\Infrastructure\Database\Connection;
+use App\Infrastructure\Support\OrgDateRange;
 use PDO;
 
 class DbMetricsRepository implements MetricsRepositoryInterface
@@ -55,7 +57,102 @@ class DbMetricsRepository implements MetricsRepositoryInterface
         return '(' . implode(', ', $placeholders) . ')';
     }
 
-    public function getMaterialViewsMetrics(int $organizationId, ?int $managerId, array $filters = []): array
+    /**
+     * Build 0-2 half-open UTC range SQL fragments for an org-local
+     * start_date/end_date calendar filter pair:
+     *   ["$column >= :from_utc{$suffix}", "$column < :to_utc_exclusive{$suffix}"]
+     * and fill $params by reference with the converted UTC bounds
+     * (via OrgDateRange::boundsForLocalDates()).
+     *
+     * Used both to append to a WHERE-array (independent AND-ed predicates)
+     * and to append to a JOIN...ON condition string (see
+     * getTopMaterialsMetrics/getTopMaterialsList/getRepAdoptionMetrics,
+     * where the date filter MUST stay in the ON clause — not WHERE — so
+     * rows with 0 matching child rows still survive the LEFT JOIN).
+     *
+     * $suffix disambiguates placeholder names when a single query needs
+     * more than one independent date-range fragment set (not currently the
+     * case, but keeps this helper safe to reuse that way in the future).
+     *
+     * @return string[] 0, 1 or 2 SQL fragments
+     */
+    private function dateRangeFragments(array $filters, string $column, string $timezone, array &$params, string $suffix = ''): array
+    {
+        $fromLocal = !empty($filters['start_date']) ? $filters['start_date'] : null;
+        $toLocal   = !empty($filters['end_date']) ? $filters['end_date'] : null;
+
+        [$fromUtc, $toUtcExclusive] = OrgDateRange::boundsForLocalDates($fromLocal, $toLocal, $timezone);
+
+        $fragments = [];
+
+        if ($fromUtc !== null) {
+            $key = ':from_utc' . $suffix;
+            $fragments[] = "{$column} >= {$key}";
+            $params[$key] = $fromUtc;
+        }
+
+        if ($toUtcExclusive !== null) {
+            $key = ':to_utc_exclusive' . $suffix;
+            $fragments[] = "{$column} < {$key}";
+            $params[$key] = $toUtcExclusive;
+        }
+
+        return $fragments;
+    }
+
+    /**
+     * Bucket raw (opened_at, viewer_type, session_key) rows into
+     * [{date, viewer_type, views, sessions}, ...] grouped by ORG-LOCAL
+     * calendar day (not UTC day — see OrgDateRange::localDateBucket()),
+     * ordered by date DESC, capped at 90 day×viewer_type buckets (mirrors
+     * the previous SQL-level `GROUP BY DATE(...) ... LIMIT 90` shape).
+     *
+     * Distinct session counting MUST happen per-bucket in PHP (not via a
+     * pre-aggregated-by-hour SQL step) because a session's views could
+     * otherwise be double counted across day buckets if aggregated at a
+     * coarser SQL grain first.
+     *
+     * @param array<int, array{opened_at: string, viewer_type: string, session_key: int|string}> $rows
+     * @return array<int, array{date: string, viewer_type: string, views: int, sessions: int}>
+     */
+    private function bucketByLocalDay(array $rows, string $timezone): array
+    {
+        $buckets = [];
+
+        foreach ($rows as $row) {
+            $localDate = OrgDateRange::localDateBucket((string) $row['opened_at'], $timezone);
+            $viewerType = (string) $row['viewer_type'];
+            $bucketKey = $localDate . '|' . $viewerType;
+
+            if (!isset($buckets[$bucketKey])) {
+                $buckets[$bucketKey] = [
+                    'date' => $localDate,
+                    'viewer_type' => $viewerType,
+                    'views' => 0,
+                    'sessions' => [],
+                ];
+            }
+
+            $buckets[$bucketKey]['views']++;
+            $buckets[$bucketKey]['sessions'][$row['session_key']] = true;
+        }
+
+        $result = [];
+        foreach ($buckets as $bucket) {
+            $result[] = [
+                'date' => $bucket['date'],
+                'viewer_type' => $bucket['viewer_type'],
+                'views' => $bucket['views'],
+                'sessions' => count($bucket['sessions']),
+            ];
+        }
+
+        usort($result, static fn(array $a, array $b) => strcmp($b['date'], $a['date']));
+
+        return array_slice($result, 0, 90);
+    }
+
+    public function getMaterialViewsMetrics(int $organizationId, ?int $managerId, array $filters = [], string $timezone = TimezoneConfig::DEFAULT_ZONE): array
     {
         $where = ['m.organization_id = :org_id'];
         $params = [':org_id' => $organizationId];
@@ -75,34 +172,44 @@ class DbMetricsRepository implements MetricsRepositoryInterface
             $where[] = "mv.viewer_type = 'rep' AND mv.viewer_id IN " . $this->buildInClause($repIds, 'rep', $params);
         }
 
-        if (!empty($filters['start_date'])) {
-            $where[] = 'DATE(mv.opened_at) >= :start_date';
-            $params[':start_date'] = $filters['start_date'];
+        // Bound the row fetch at the DB level: when the caller did not
+        // supply an explicit start_date/end_date, default to the last 90
+        // org-local calendar days (mirrors the pre-timezone-change SQL
+        // `GROUP BY DATE(...) ... LIMIT 90` intent). Without this, raw rows
+        // are now fetched unfiltered into PHP for org-local bucketing
+        // (CONVERT_TZ is unavailable on Hostinger), which on a large org
+        // with no date filter would pull its entire view history into PHP
+        // memory before slicing to 90 buckets.
+        if (empty($filters['start_date']) && empty($filters['end_date'])) {
+            [$filters['start_date'], $filters['end_date']] = OrgDateRange::lastNLocalDays(90, $timezone);
         }
 
-        if (!empty($filters['end_date'])) {
-            $where[] = 'DATE(mv.opened_at) <= :end_date';
-            $params[':end_date'] = $filters['end_date'];
+        foreach ($this->dateRangeFragments($filters, 'mv.opened_at', $timezone, $params) as $fragment) {
+            $where[] = $fragment;
         }
 
         $whereSql = implode(' AND ', $where);
 
-        $sql = "SELECT 
-                    DATE(mv.opened_at) as date,
+        // Day bucketing MUST happen org-local, not UTC (see bucketByLocalDay()
+        // docblock), so we fetch raw rows here and group in PHP instead of
+        // `GROUP BY DATE(mv.opened_at)`. IFNULL(mv.visit_session_id, mv.id)
+        // preserves the original "sessions" distinct-count semantics
+        // (fallback to the view's own id when it has no session).
+        $sql = "SELECT
+                    mv.opened_at,
                     mv.viewer_type,
-                    COUNT(mv.id) as views,
-                    COUNT(DISTINCT IFNULL(mv.visit_session_id, mv.id)) as sessions
+                    IFNULL(mv.visit_session_id, mv.id) as session_key
                 FROM material_views mv
                 JOIN materials m ON m.id = mv.material_id
                 WHERE {$whereSql}
-                GROUP BY DATE(mv.opened_at), mv.viewer_type
-                ORDER BY date DESC
-                LIMIT 90";
+                ORDER BY mv.opened_at DESC";
 
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($params);
 
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        return $this->bucketByLocalDay($rows, $timezone);
     }
 
     public function getRepLastLoginMetrics(int $organizationId, ?int $managerId, array $filters = []): array
@@ -136,7 +243,7 @@ class DbMetricsRepository implements MetricsRepositoryInterface
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function getTopMaterialsMetrics(int $organizationId, ?int $managerId, array $filters = [], int $limit = 10): array
+    public function getTopMaterialsMetrics(int $organizationId, ?int $managerId, array $filters = [], int $limit = 10, string $timezone = TimezoneConfig::DEFAULT_ZONE): array
     {
         $where = ['m.organization_id = :org_id'];
         $params = [':org_id' => $organizationId];
@@ -159,13 +266,8 @@ class DbMetricsRepository implements MetricsRepositoryInterface
         // Date and rep filters are applied to the JOIN ON clause so that materials
         // with 0 views in the selected scope still appear in the result set.
         $viewsJoinCondition = "mv.material_id = m.id";
-        if (!empty($filters['start_date'])) {
-            $viewsJoinCondition .= " AND DATE(mv.opened_at) >= :start_date";
-            $params[':start_date'] = $filters['start_date'];
-        }
-        if (!empty($filters['end_date'])) {
-            $viewsJoinCondition .= " AND DATE(mv.opened_at) <= :end_date";
-            $params[':end_date'] = $filters['end_date'];
+        foreach ($this->dateRangeFragments($filters, 'mv.opened_at', $timezone, $params) as $fragment) {
+            $viewsJoinCondition .= " AND {$fragment}";
         }
         $repIds = $this->intIds($filters['rep_ids'] ?? null);
         if (!empty($repIds)) {
@@ -201,7 +303,7 @@ class DbMetricsRepository implements MetricsRepositoryInterface
      * aggregation; only adds a COUNT(*) over the grouped subquery plus
      * LIMIT/OFFSET on the same ORDER BY (total_views DESC).
      */
-    public function getTopMaterialsList(int $organizationId, ?int $managerId, array $filters = [], int $page = 1): array
+    public function getTopMaterialsList(int $organizationId, ?int $managerId, array $filters = [], int $page = 1, string $timezone = TimezoneConfig::DEFAULT_ZONE): array
     {
         $where = ['m.organization_id = :org_id'];
         $params = [':org_id' => $organizationId];
@@ -224,13 +326,8 @@ class DbMetricsRepository implements MetricsRepositoryInterface
         // Date and rep filters are applied to the JOIN ON clause so that materials
         // with 0 views in the selected scope still appear in the result set.
         $viewsJoinCondition = "mv.material_id = m.id";
-        if (!empty($filters['start_date'])) {
-            $viewsJoinCondition .= " AND DATE(mv.opened_at) >= :start_date";
-            $params[':start_date'] = $filters['start_date'];
-        }
-        if (!empty($filters['end_date'])) {
-            $viewsJoinCondition .= " AND DATE(mv.opened_at) <= :end_date";
-            $params[':end_date'] = $filters['end_date'];
+        foreach ($this->dateRangeFragments($filters, 'mv.opened_at', $timezone, $params) as $fragment) {
+            $viewsJoinCondition .= " AND {$fragment}";
         }
         $repIds = $this->intIds($filters['rep_ids'] ?? null);
         if (!empty($repIds)) {
@@ -286,7 +383,7 @@ class DbMetricsRepository implements MetricsRepositoryInterface
         ];
     }
 
-    public function getMaterialViewsList(int $organizationId, ?int $managerId, array $filters = [], int $page = 1): array
+    public function getMaterialViewsList(int $organizationId, ?int $managerId, array $filters = [], int $page = 1, string $timezone = TimezoneConfig::DEFAULT_ZONE): array
     {
         $where = ['m.organization_id = :org_id'];
         $params = [':org_id' => $organizationId];
@@ -301,14 +398,8 @@ class DbMetricsRepository implements MetricsRepositoryInterface
             $where[] = 'm.id IN ' . $this->buildInClause($materialIds, 'mat', $params);
         }
         
-        if (!empty($filters['start_date'])) {
-            $where[] = 'DATE(mv.opened_at) >= :start_date';
-            $params[':start_date'] = $filters['start_date'];
-        }
-
-        if (!empty($filters['end_date'])) {
-            $where[] = 'DATE(mv.opened_at) <= :end_date';
-            $params[':end_date'] = $filters['end_date'];
+        foreach ($this->dateRangeFragments($filters, 'mv.opened_at', $timezone, $params) as $fragment) {
+            $where[] = $fragment;
         }
 
         // Resolve the rep behind each view: direct rep view (mv.viewer_id) takes
@@ -374,7 +465,7 @@ class DbMetricsRepository implements MetricsRepositoryInterface
         ];
     }
 
-    public function getRepAdoptionMetrics(int $organizationId, ?int $managerId, array $filters = [], int $page = 1): array
+    public function getRepAdoptionMetrics(int $organizationId, ?int $managerId, array $filters = [], int $page = 1, string $timezone = TimezoneConfig::DEFAULT_ZONE): array
     {
         // Build the universe of materials available to each rep (denominator for
         // adoption %). For a manager scope, that's the manager's materials; for
@@ -407,13 +498,8 @@ class DbMetricsRepository implements MetricsRepositoryInterface
         // rep-type views. Date filters apply to the LEFT JOIN so reps with 0
         // views still appear.
         $viewJoin = "mv.viewer_id = u.id AND mv.viewer_type = 'rep'";
-        if (!empty($filters['start_date'])) {
-            $viewJoin .= " AND DATE(mv.opened_at) >= :start_date";
-            $repParams[':start_date'] = $filters['start_date'];
-        }
-        if (!empty($filters['end_date'])) {
-            $viewJoin .= " AND DATE(mv.opened_at) <= :end_date";
-            $repParams[':end_date'] = $filters['end_date'];
+        foreach ($this->dateRangeFragments($filters, 'mv.opened_at', $timezone, $repParams) as $fragment) {
+            $viewJoin .= " AND {$fragment}";
         }
 
         // Use distinct placeholder names because native (non-emulated) prepared
@@ -499,7 +585,7 @@ class DbMetricsRepository implements MetricsRepositoryInterface
      * org/manager scoping, since material_studies has no organization_id of
      * its own). Never merged into getTopMaterialsMetrics/getRepAdoptionMetrics.
      */
-    public function getStudyViewsMetrics(int $organizationId, ?int $managerId, array $filters = []): array
+    public function getStudyViewsMetrics(int $organizationId, ?int $managerId, array $filters = [], string $timezone = TimezoneConfig::DEFAULT_ZONE): array
     {
         $where = ['m.organization_id = :org_id'];
         $params = [':org_id' => $organizationId];
@@ -524,35 +610,40 @@ class DbMetricsRepository implements MetricsRepositoryInterface
             $where[] = "sv.viewer_type = 'rep' AND sv.viewer_id IN " . $this->buildInClause($repIds, 'rep', $params);
         }
 
-        if (!empty($filters['start_date'])) {
-            $where[] = 'DATE(sv.opened_at) >= :start_date';
-            $params[':start_date'] = $filters['start_date'];
+        // Bound the row fetch at the DB level: when the caller did not
+        // supply an explicit start_date/end_date, default to the last 90
+        // org-local calendar days (mirrors the pre-timezone-change SQL
+        // `GROUP BY DATE(...) ... LIMIT 90` intent). See getMaterialViewsMetrics
+        // for the full rationale.
+        if (empty($filters['start_date']) && empty($filters['end_date'])) {
+            [$filters['start_date'], $filters['end_date']] = OrgDateRange::lastNLocalDays(90, $timezone);
         }
 
-        if (!empty($filters['end_date'])) {
-            $where[] = 'DATE(sv.opened_at) <= :end_date';
-            $params[':end_date'] = $filters['end_date'];
+        foreach ($this->dateRangeFragments($filters, 'sv.opened_at', $timezone, $params) as $fragment) {
+            $where[] = $fragment;
         }
 
         $whereSql = implode(' AND ', $where);
 
+        // Day bucketing MUST happen org-local, not UTC (see bucketByLocalDay()
+        // docblock), so we fetch raw rows here and group in PHP instead of
+        // `GROUP BY DATE(sv.opened_at)`.
         $sql = "SELECT
-                    DATE(sv.opened_at) as date,
+                    sv.opened_at,
                     sv.viewer_type,
-                    COUNT(sv.id) as views,
-                    COUNT(DISTINCT IFNULL(sv.visit_session_id, sv.id)) as sessions
+                    IFNULL(sv.visit_session_id, sv.id) as session_key
                 FROM study_views sv
                 JOIN material_studies ms ON ms.id = sv.study_id
                 JOIN materials m ON m.id = ms.material_id
                 WHERE {$whereSql}
-                GROUP BY DATE(sv.opened_at), sv.viewer_type
-                ORDER BY date DESC
-                LIMIT 90";
+                ORDER BY sv.opened_at DESC";
 
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($params);
 
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        return $this->bucketByLocalDay($rows, $timezone);
     }
 
     /**
@@ -560,7 +651,7 @@ class DbMetricsRepository implements MetricsRepositoryInterface
      * Estudios" table). Mirrors getMaterialViewsList's row-level pattern but
      * reads study_views joined through material_studies -> materials.
      */
-    public function getStudyViewsList(int $organizationId, ?int $managerId, array $filters = [], int $page = 1): array
+    public function getStudyViewsList(int $organizationId, ?int $managerId, array $filters = [], int $page = 1, string $timezone = TimezoneConfig::DEFAULT_ZONE): array
     {
         $where = ['m.organization_id = :org_id'];
         $params = [':org_id' => $organizationId];
@@ -580,14 +671,8 @@ class DbMetricsRepository implements MetricsRepositoryInterface
             $where[] = 'ms.id IN ' . $this->buildInClause($studyIds, 'study', $params);
         }
 
-        if (!empty($filters['start_date'])) {
-            $where[] = 'DATE(sv.opened_at) >= :start_date';
-            $params[':start_date'] = $filters['start_date'];
-        }
-
-        if (!empty($filters['end_date'])) {
-            $where[] = 'DATE(sv.opened_at) <= :end_date';
-            $params[':end_date'] = $filters['end_date'];
+        foreach ($this->dateRangeFragments($filters, 'sv.opened_at', $timezone, $params) as $fragment) {
+            $where[] = $fragment;
         }
 
         // Resolve the rep behind each view: direct rep view (sv.viewer_id) takes

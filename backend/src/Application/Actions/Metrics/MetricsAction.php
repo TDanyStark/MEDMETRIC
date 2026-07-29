@@ -5,17 +5,26 @@ declare(strict_types=1);
 namespace App\Application\Actions\Metrics;
 
 use App\Application\Actions\Action;
+use App\Application\Actions\Concerns\ResolvesOrgTimezone;
 use App\Domain\Metrics\MetricsRepositoryInterface;
+use App\Domain\Organization\OrganizationRepositoryInterface;
 use Psr\Log\LoggerInterface;
 
 abstract class MetricsAction extends Action
 {
-    protected MetricsRepositoryInterface $metricsRepository;
+    use ResolvesOrgTimezone;
 
-    public function __construct(LoggerInterface $logger, MetricsRepositoryInterface $metricsRepository)
-    {
+    protected MetricsRepositoryInterface $metricsRepository;
+    protected OrganizationRepositoryInterface $organizationRepository;
+
+    public function __construct(
+        LoggerInterface $logger,
+        MetricsRepositoryInterface $metricsRepository,
+        OrganizationRepositoryInterface $organizationRepository
+    ) {
         parent::__construct($logger);
         $this->metricsRepository = $metricsRepository;
+        $this->organizationRepository = $organizationRepository;
     }
 
     /**

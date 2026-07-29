@@ -49,27 +49,25 @@ class LoginAction extends Action
         // Update last_login_at
         $this->authRepository->updateLastLogin((int) $user['id']);
 
-        $tokenPayload = [
-            'id'              => (int)  $user['id'],
-            'email'           => $user['email'],
-            'name'            => $user['name'],
-            'role'            => $user['role'],
-            'organization_id' => $user['organization_id'] !== null ? (int) $user['organization_id'] : null,
+        // Explicit field-by-field projection: the repository row also carries
+        // password_hash, which must never reach the token or the response.
+        $publicUser = [
+            'id'                => (int)  $user['id'],
+            'email'             => $user['email'],
+            'name'              => $user['name'],
+            'role'              => $user['role'],
+            'organization_id'   => $user['organization_id'] !== null ? (int) $user['organization_id'] : null,
+            'organization_name' => $user['organization_name'] ?? null,
+            'organization_timezone' => $user['organization_timezone'] ?? null,
         ];
 
-        $token = $this->jwtService->generate($tokenPayload);
+        $token = $this->jwtService->generate($publicUser);
 
         $this->logger->info('Login successful', ['user_id' => $user['id'], 'role' => $user['role']]);
 
         return $this->respondWithData([
             'token' => $token,
-            'user'  => [
-                'id'              => (int)  $user['id'],
-                'email'           => $user['email'],
-                'name'            => $user['name'],
-                'role'            => $user['role'],
-                'organization_id' => $user['organization_id'] !== null ? (int) $user['organization_id'] : null,
-            ],
+            'user'  => $publicUser,
         ]);
     }
 }

@@ -34,7 +34,9 @@ class GetTopMaterialsAction extends MetricsAction
             $filters['q'] = trim($q);
         }
 
-        $metrics = $this->metricsRepository->getTopMaterialsMetrics($organizationId, $managerId, $filters, $limit);
+        $timezone = $this->resolveOrgTimezone($this->organizationRepository, $authUser ? $authUser->getOrganizationId() : null);
+
+        $metrics = $this->metricsRepository->getTopMaterialsMetrics($organizationId, $managerId, $filters, $limit, $timezone);
 
         return $this->respondWithData($metrics);
     }

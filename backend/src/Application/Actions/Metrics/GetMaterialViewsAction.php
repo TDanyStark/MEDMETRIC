@@ -24,7 +24,9 @@ class GetMaterialViewsAction extends MetricsAction
 
         $filters = $this->buildCommonFilters();
 
-        $metrics = $this->metricsRepository->getMaterialViewsMetrics($organizationId, $managerId, $filters);
+        $timezone = $this->resolveOrgTimezone($this->organizationRepository, $authUser ? $authUser->getOrganizationId() : null);
+
+        $metrics = $this->metricsRepository->getMaterialViewsMetrics($organizationId, $managerId, $filters, $timezone);
 
         return $this->respondWithData($metrics);
     }

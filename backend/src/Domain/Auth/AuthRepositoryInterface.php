@@ -13,6 +13,14 @@ interface AuthRepositoryInterface
     public function findByEmail(string $email): ?array;
 
     /**
+     * Find a user by primary key and return a full row (including password_hash).
+     * Returns null if not found.
+     *
+     * Returns the SAME column set as findByEmail().
+     */
+    public function findById(int $id): ?array;
+
+    /**
      * Update the last_login_at timestamp for a user.
      */
     public function updateLastLogin(int $userId): void;

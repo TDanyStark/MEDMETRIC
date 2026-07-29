@@ -11,6 +11,9 @@ use App\Application\Actions\Admin\Brand\UpdateBrandAction;
 use App\Application\Actions\Admin\Organization\CreateOrganizationAction;
 use App\Application\Actions\Admin\Organization\ListOrganizationsAction;
 use App\Application\Actions\Admin\Organization\UpdateOrganizationAction;
+use App\Application\Actions\OrgAdmin\Organization\GetMyOrganizationAction;
+use App\Application\Actions\OrgAdmin\Organization\UpdateMyOrganizationAction;
+use App\Application\Actions\Timezone\ListTimezonesAction;
 use App\Application\Actions\Admin\User\CreateAdminUserAction;
 use App\Application\Actions\Admin\User\CreateOrgAdminAction;
 use App\Application\Actions\Admin\User\GetRepSubscriptionsAction;
@@ -23,6 +26,9 @@ use App\Application\Actions\Admin\User\UpdateRepSubscriptionsAction;
 use App\Application\Actions\Auth\ChangePasswordAction;
 use App\Application\Actions\Auth\LoginAction;
 use App\Application\Actions\Auth\MeAction;
+use App\Application\Actions\Comment\CreateCommentAction;
+use App\Application\Actions\Comment\DeleteCommentAction;
+use App\Application\Actions\Comment\ListCommentsAction;
 use App\Application\Actions\Doctor\CreateDoctorAction;
 use App\Application\Actions\Doctor\DeleteDoctorAction;
 use App\Application\Actions\Doctor\ListDoctorsAction;
@@ -57,6 +63,8 @@ use App\Application\Actions\Manager\Rep\AssignRepAction;
 use App\Application\Actions\Manager\Rep\GetAvailableRepsAction;
 use App\Application\Actions\Manager\Rep\ListAssignedRepsAction;
 use App\Application\Actions\Manager\Rep\RemoveRepAction;
+use App\Application\Actions\Public\Comment\CreatePublicCommentAction;
+use App\Application\Actions\Public\Comment\ListPublicCommentsAction;
 use App\Application\Actions\Public\Material\GetMaterialResourceAction;
 use App\Application\Actions\Public\Material\OpenMaterialAction;
 use App\Application\Actions\Public\Session\GetPublicSessionAction;
@@ -75,6 +83,7 @@ use App\Application\Actions\Metrics\GetStudyViewsAction;
 use App\Application\Actions\Metrics\GetStudyViewsListAction;
 use App\Application\Middleware\JwtMiddleware;
 use App\Application\Middleware\RoleMiddleware;
+use App\Infrastructure\Config\CommentAccessConfig;
 use App\Infrastructure\Config\DoctorAccessConfig;
 use App\Infrastructure\Database\Connection;
 use Psr\Http\Message\ResponseFactoryInterface;
@@ -191,6 +200,15 @@ return function (App $app) {
         })->add(JwtMiddleware::class);
 
         // -------------------------------------------------------------------------
+        // Timezones catalog (JWT required, any role). Curated allow-list —
+        // single source of truth shared by backend validation and the
+        // frontend timezone selectors (superadmin org forms, org_admin
+        // organization settings). See ListTimezonesAction for the auth
+        // rationale.
+        // -------------------------------------------------------------------------
+        $group->get('/timezones', ListTimezonesAction::class)->add(JwtMiddleware::class);
+
+        // -------------------------------------------------------------------------
         // Super Admin routes (JWT + superadmin role required)
         // Super Admin manages: organizations, org_admins
         // -------------------------------------------------------------------------
@@ -276,6 +294,15 @@ return function (App $app) {
                 $mb->get('',  GetManagerBrandsAction::class);
                 $mb->post('', AssignBrandsToManagerAction::class);
                 $mb->delete('', RemoveBrandsFromManagerAction::class);
+            });
+
+            // Organization (org_admin manages ONLY their own organization's
+            // settings, e.g. timezone — no {id} param, resolved from the
+            // authenticated user's organization_id, see
+            // GetMyOrganizationAction / UpdateMyOrganizationAction)
+            $orgAdmin->group('/organization', function (RouteCollectorProxy $org) {
+                $org->get('', GetMyOrganizationAction::class);
+                $org->put('', UpdateMyOrganizationAction::class);
             });
 
         })->add(function ($request, $handler) use ($app) {
@@ -390,6 +417,24 @@ return function (App $app) {
         })->add(JwtMiddleware::class);
 
         // -------------------------------------------------------------------------
+        // Comment routes (JWT + CommentAccessConfig roles). superadmin is
+        // deliberately EXCLUDED from every allow-list here (locked decision).
+        // -------------------------------------------------------------------------
+        $group->group('/comments', function (RouteCollectorProxy $comments) use ($app) {
+            $comments->get('', ListCommentsAction::class);
+            $comments->post('', CreateCommentAction::class);
+
+            $comments->delete('/{id}', DeleteCommentAction::class)
+                ->add(function ($request, $handler) use ($app) {
+                    $responseFactory = $app->getContainer()->get(ResponseFactoryInterface::class);
+                    return (new RoleMiddleware($responseFactory, CommentAccessConfig::DELETE_ROLES))->process($request, $handler);
+                });
+        })->add(function ($request, $handler) use ($app) {
+            $responseFactory = $app->getContainer()->get(ResponseFactoryInterface::class);
+            return (new RoleMiddleware($responseFactory, CommentAccessConfig::LIST_ROLES))->process($request, $handler);
+        })->add(JwtMiddleware::class);
+
+        // -------------------------------------------------------------------------
         // Public routes (no authentication required)
         // For doctor access via token
         // -------------------------------------------------------------------------
@@ -408,6 +453,14 @@ return function (App $app) {
             // Study resource endpoint (nested study links opened by the doctor)
             $public->group('/study/{id}', function (RouteCollectorProxy $study) {
                 $study->get('/resource', GetStudyResourceAction::class);
+            });
+
+            // Doctor comments on their own visit session (no auth — token IS
+            // the credential). See CommentAccessConfig for the authenticated
+            // equivalent; superadmin/doctor-delete never exist for this route.
+            $public->group('/session/{token}/comments', function (RouteCollectorProxy $comments) {
+                $comments->get('', ListPublicCommentsAction::class);
+                $comments->post('', CreatePublicCommentAction::class);
             });
             
         });

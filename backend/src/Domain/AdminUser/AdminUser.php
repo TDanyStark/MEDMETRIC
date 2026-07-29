@@ -16,6 +16,7 @@ class AdminUser implements JsonSerializable
         private int     $id,
         private int     $organizationId,
         private string  $organizationName,
+        private ?string $organizationTimezone,
         private int     $roleId,
         private string  $role,
         private string  $name,
@@ -29,6 +30,7 @@ class AdminUser implements JsonSerializable
     public function getId(): int               { return $this->id; }
     public function getOrganizationId(): int   { return $this->organizationId; }
     public function getOrganizationName(): string { return $this->organizationName; }
+    public function getOrganizationTimezone(): ?string { return $this->organizationTimezone; }
     public function getRoleId(): int           { return $this->roleId; }
     public function getRole(): string          { return $this->role; }
     public function getName(): string          { return $this->name; }
@@ -44,6 +46,7 @@ class AdminUser implements JsonSerializable
             'id'                => $this->id,
             'organization_id'   => $this->organizationId,
             'organization_name' => $this->organizationName,
+            'organization_timezone' => $this->organizationTimezone,
             'role_id'           => $this->roleId,
             'role'              => $this->role,
             'name'              => $this->name,
@@ -61,6 +64,7 @@ class AdminUser implements JsonSerializable
             id:               (int)  $row['id'],
             organizationId:   (int)  $row['organization_id'],
             organizationName: $row['organization_name'],
+            organizationTimezone: $row['organization_timezone'] ?? null,
             roleId:           (int)  $row['role_id'],
             role:             $row['role'],
             name:             $row['name'],

@@ -36,12 +36,16 @@ class JwtService implements JwtServiceInterface
             'iat' => $now,
             'exp' => $now + $ttl,
             'sub' => (string) $user['id'],
+            // NOTE: this is an explicit whitelist — any key not listed here is
+            // silently dropped from the token. When adding a claim, it MUST be
+            // added here as well as at the call site building the payload.
             'user' => [
-                'id'              => $user['id'],
-                'email'           => $user['email'],
-                'name'            => $user['name'],
-                'role'            => $user['role'],
-                'organization_id' => $user['organization_id'] ?? null,
+                'id'                => $user['id'],
+                'email'             => $user['email'],
+                'name'              => $user['name'],
+                'role'              => $user['role'],
+                'organization_id'   => $user['organization_id'] ?? null,
+                'organization_name' => $user['organization_name'] ?? null,
             ],
         ];
 

@@ -23,7 +23,8 @@ class DbAdminUserRepository implements AdminUserRepositoryInterface
     {
         return 'SELECT u.id,
                        u.organization_id,
-                       o.name  AS organization_name,
+                       o.name     AS organization_name,
+                       o.timezone AS organization_timezone,
                        u.role_id,
                        r.name  AS role,
                        u.name,

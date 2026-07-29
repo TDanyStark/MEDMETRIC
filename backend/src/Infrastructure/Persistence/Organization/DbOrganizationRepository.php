@@ -41,7 +41,7 @@ class DbOrganizationRepository implements OrganizationRepositoryInterface
         $total = (int) $countStmt->fetchColumn();
 
         // Get items
-        $sql = "SELECT id, name, slug, active, created_at, updated_at
+        $sql = "SELECT id, name, slug, active, timezone, created_at, updated_at
                 FROM   organizations
                 {$whereSql}
                 ORDER  BY name ASC
@@ -70,7 +70,7 @@ class DbOrganizationRepository implements OrganizationRepositoryInterface
     public function findById(int $id): Organization
     {
         $stmt = $this->pdo->prepare(
-            'SELECT id, name, slug, active, created_at, updated_at
+            'SELECT id, name, slug, active, timezone, created_at, updated_at
              FROM   organizations
              WHERE  id = :id
              LIMIT  1'
@@ -86,17 +86,29 @@ class DbOrganizationRepository implements OrganizationRepositoryInterface
         return Organization::fromRow($row);
     }
 
-    public function create(string $name, string $slug, bool $active): Organization
+    public function create(string $name, string $slug, bool $active, ?string $timezone = null): Organization
     {
-        $stmt = $this->pdo->prepare(
-            'INSERT INTO organizations (name, slug, active) VALUES (:name, :slug, :active)'
-        );
-
-        $stmt->execute([
-            ':name'   => $name,
-            ':slug'   => $slug,
-            ':active' => $active ? 1 : 0,
-        ]);
+        if ($timezone !== null) {
+            $stmt = $this->pdo->prepare(
+                'INSERT INTO organizations (name, slug, active, timezone) VALUES (:name, :slug, :active, :timezone)'
+            );
+            $stmt->execute([
+                ':name'     => $name,
+                ':slug'     => $slug,
+                ':active'   => $active ? 1 : 0,
+                ':timezone' => $timezone,
+            ]);
+        } else {
+            // Let the column DEFAULT ('America/Santiago') apply.
+            $stmt = $this->pdo->prepare(
+                'INSERT INTO organizations (name, slug, active) VALUES (:name, :slug, :active)'
+            );
+            $stmt->execute([
+                ':name'   => $name,
+                ':slug'   => $slug,
+                ':active' => $active ? 1 : 0,
+            ]);
+        }
 
         $id = (int) $this->pdo->lastInsertId();
 
@@ -124,6 +136,11 @@ class DbOrganizationRepository implements OrganizationRepositoryInterface
         if (isset($data['active'])) {
             $fields[] = 'active = :active';
             $params[':active'] = $data['active'] ? 1 : 0;
+        }
+
+        if (isset($data['timezone'])) {
+            $fields[] = 'timezone = :timezone';
+            $params[':timezone'] = $data['timezone'];
         }
 
         if (!empty($fields)) {

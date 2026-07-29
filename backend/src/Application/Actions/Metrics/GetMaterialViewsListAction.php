@@ -26,7 +26,9 @@ class GetMaterialViewsListAction extends MetricsAction
 
         $page = (int)($this->request->getQueryParams()['page'] ?? 1);
 
-        $metrics = $this->metricsRepository->getMaterialViewsList($organizationId, $managerId, $filters, $page);
+        $timezone = $this->resolveOrgTimezone($this->organizationRepository, $authUser ? $authUser->getOrganizationId() : null);
+
+        $metrics = $this->metricsRepository->getMaterialViewsList($organizationId, $managerId, $filters, $page, $timezone);
 
         return $this->respondWithData($metrics);
     }

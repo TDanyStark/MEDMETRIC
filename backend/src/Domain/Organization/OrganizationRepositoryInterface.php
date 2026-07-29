@@ -22,8 +22,12 @@ interface OrganizationRepositoryInterface
 
     /**
      * Create a new organization. Returns the created entity.
+     *
+     * $timezone must be a valid IANA identifier (see
+     * App\Infrastructure\Config\TimezoneConfig::LATAM_ZONES); null lets the
+     * DB column default ('America/Santiago') apply.
      */
-    public function create(string $name, string $slug, bool $active): Organization;
+    public function create(string $name, string $slug, bool $active, ?string $timezone = null): Organization;
 
     /**
      * Update an existing organization. Returns the updated entity.

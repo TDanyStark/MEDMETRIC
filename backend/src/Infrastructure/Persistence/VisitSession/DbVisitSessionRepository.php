@@ -9,6 +9,8 @@ use App\Domain\VisitSession\VisitSessionNotFoundException;
 use App\Domain\VisitSession\VisitSessionRepositoryInterface;
 use App\Infrastructure\Database\Connection;
 use App\Infrastructure\Config\PaginationConfig;
+use App\Infrastructure\Config\TimezoneConfig;
+use App\Infrastructure\Support\OrgDateRange;
 use PDO;
 
 class DbVisitSessionRepository implements VisitSessionRepositoryInterface
@@ -20,7 +22,7 @@ class DbVisitSessionRepository implements VisitSessionRepositoryInterface
         $this->pdo = Connection::getConnection();
     }
 
-    public function findAllByRep(int $repId, int $page = 1, ?string $q = null, ?string $date = null): array
+    public function findAllByRep(int $repId, int $page = 1, ?string $q = null, ?string $date = null, string $timezone = TimezoneConfig::DEFAULT_ZONE): array
     {
         $pageSize = PaginationConfig::PAGE_SIZE;
         $offset   = ($page - 1) * $pageSize;
@@ -34,8 +36,14 @@ class DbVisitSessionRepository implements VisitSessionRepositoryInterface
         }
 
         if ($date) {
-            $where[] = 'DATE(vs.created_at) = :date';
-            $params[':date'] = $date;
+            // Half-open UTC range for a single org-local calendar day
+            // (was `DATE(vs.created_at) = :date`, comparing a UTC-stored
+            // timestamp against a Chile-local calendar date with no
+            // conversion — see sdd/org-timezone).
+            [$fromUtc, $toUtcExclusive] = OrgDateRange::boundsForLocalDates($date, $date, $timezone);
+            $where[] = 'vs.created_at >= :date_from_utc AND vs.created_at < :date_to_utc_exclusive';
+            $params[':date_from_utc'] = $fromUtc;
+            $params[':date_to_utc_exclusive'] = $toUtcExclusive;
         }
 
         $whereClause = implode(' AND ', $where);
@@ -116,9 +124,12 @@ class DbVisitSessionRepository implements VisitSessionRepositoryInterface
     {
         $stmt = $this->pdo->prepare(
             'SELECT vs.id, vs.organization_id, vs.rep_id, vs.doctor_token, vs.doctor_id, vs.doctor_name, vs.notes, vs.active, vs.created_at, vs.updated_at,
-                    u.name as rep_name
-             FROM visit_sessions vs
-             LEFT JOIN users u ON vs.rep_id = u.id
+                    u.name as rep_name,
+                    o.name as organization_name,
+                    o.timezone as organization_timezone
+              FROM visit_sessions vs
+              LEFT JOIN users u ON vs.rep_id = u.id
+              LEFT JOIN organizations o ON vs.organization_id = o.id
              WHERE vs.doctor_token = :token AND vs.active = 1
              LIMIT 1'
         );

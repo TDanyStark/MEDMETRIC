@@ -80,6 +80,8 @@ class GetPublicSessionAction extends Action
                 'doctor_token' => $session->getDoctorToken(),
                 'doctor_name'  => $session->getDoctorName(),
                 'rep_name'     => $session->getRepName(),
+                'organization_name' => $session->getOrganizationName(),
+                'organization_timezone' => $session->getOrganizationTimezone(),
                 'notes'        => $session->getNotes(),
                 'created_at'   => $session->getCreatedAt(),
             ],
