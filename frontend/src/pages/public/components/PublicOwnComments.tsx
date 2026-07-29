@@ -21,7 +21,12 @@ export function PublicOwnComments({ comments, isLoading, isError, organizationTi
     return <ErrorState message="No pudimos cargar tus comentarios." />
   }
 
-  if (!comments || comments.length === 0) {
+  // Defensive guard (belt-and-suspenders): this component previously
+  // white-screened the unauthenticated, error-boundary-less public doctor
+  // page when the service layer returned a non-array (see comments.ts
+  // getPublicComments). Array.isArray protects against ANY future
+  // client/server contract drift at this exact site, not just this bug.
+  if (!Array.isArray(comments) || comments.length === 0) {
     return null
   }
 

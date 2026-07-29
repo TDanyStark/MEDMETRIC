@@ -119,7 +119,7 @@ export default function PublicVisitPage() {
 
         {viewerInfo.type === 'doctor' && (
           <PublicOwnComments
-            comments={ownCommentsQuery.data}
+            comments={ownCommentsQuery.data ?? []}
             isLoading={ownCommentsQuery.isLoading}
             isError={ownCommentsQuery.isError}
             organizationTimezone={sessionQuery.data.session.organization_timezone}
