@@ -191,7 +191,7 @@ export function SuperAdminOrgAdminsPage() {
                     <TableCell>
                       <Badge variant={item.active ? 'success' : 'outline'}>{item.active ? 'Activo' : 'Inactivo'}</Badge>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">{formatDateTime(item.last_login_at)}</TableCell>
+                    <TableCell className="text-muted-foreground">{formatDateTime(item.last_login_at, item.organization_timezone)}</TableCell>
                     <TableCell className="text-right">
                       <Button variant="ghost" size="sm" onClick={() => setEditingAdmin(item)} className="opacity-70 hover:opacity-100 transition-opacity">
                         <Pencil className="h-4 w-4" />

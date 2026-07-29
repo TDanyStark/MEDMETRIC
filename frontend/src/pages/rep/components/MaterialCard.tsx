@@ -4,6 +4,7 @@ import { Separator } from "@/components/ui/Separator";
 import { Material } from "@/types/rep";
 import { MaterialTypeLabel } from "@/components/ui/MaterialTypeLabel";
 import { formatDate } from "@/lib/utils";
+import { useAuth } from "@/contexts/useAuth";
 import {
   Tooltip,
   TooltipContent,
@@ -23,6 +24,7 @@ export function MaterialCard({
   onToggle,
   onPreview,
 }: MaterialCardProps) {
+  const { user } = useAuth();
   const firstStudy = item.studies?.[0];
   const extraStudiesCount = item.studies ? item.studies.length - 1 : 0;
   const FirstStudyIcon = firstStudy
@@ -39,7 +41,10 @@ export function MaterialCard({
           : "hover:border-primary/50 hover:shadow-lg border-border/40 bg-background/50 backdrop-blur-sm"
       }`}
     >
-      <div className="relative aspect-video bg-muted border-b border-border/10 overflow-hidden shrink-0">
+      <div
+        onClick={() => onToggle(item.id)}
+        className="relative aspect-video bg-muted border-b border-border/10 overflow-hidden shrink-0 cursor-pointer"
+      >
         {item.cover_url || item.cover_path ? (
           <img
             src={item.cover_url || `/api/v1/public/material/${item.id}/cover`}
@@ -59,7 +64,10 @@ export function MaterialCard({
         </div>
         <button
           type="button"
-          onClick={() => onToggle(item.id)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggle(item.id);
+          }}
           aria-pressed={isSelected}
           aria-label={
             isSelected ? "Quitar de la selección" : "Agregar a la selección"
@@ -76,7 +84,7 @@ export function MaterialCard({
       <CardContent className="p-4 pt-3 flex-1 flex flex-col">
         <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50 mb-2">
           <span>MAT-{item.id}</span>
-          <span>{formatDate(item.created_at)}</span>
+          <span>{formatDate(item.created_at, user?.organization_timezone)}</span>
         </div>
         <Tooltip>
           <TooltipTrigger asChild>

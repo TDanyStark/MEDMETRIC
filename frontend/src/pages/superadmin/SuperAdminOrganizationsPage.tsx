@@ -10,6 +10,7 @@ import {
   SearchToolbar,
   ToggleField,
 } from '@/components/backoffice/Workbench'
+import { TimezoneSelect } from '@/components/backoffice/TimezoneSelect'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -30,12 +31,14 @@ interface OrganizationFormState {
   name: string
   slug: string
   active: boolean
+  timezone: string | null
 }
 
 const emptyOrganizationForm: OrganizationFormState = {
   name: '',
   slug: '',
   active: true,
+  timezone: null,
 }
 
 export function SuperAdminOrganizationsPage() {
@@ -62,16 +65,18 @@ export function SuperAdminOrganizationsPage() {
       name: editingOrganization.name,
       slug: editingOrganization.slug,
       active: editingOrganization.active,
+      timezone: editingOrganization.timezone,
     })
     setIsDialogOpen(true)
   }, [editingOrganization])
 
   const saveMutation = useMutation({
     mutationFn: async () => {
+      const payload = { ...form, timezone: form.timezone ?? undefined }
       if (editingOrganization) {
-        return updateOrganization(editingOrganization.id, form)
+        return updateOrganization(editingOrganization.id, payload)
       }
-      return createOrganization(form)
+      return createOrganization(payload)
     },
     onSuccess: () => {
       toast.success(editingOrganization ? 'Organización actualizada.' : 'Organización creada.')
@@ -127,8 +132,9 @@ export function SuperAdminOrganizationsPage() {
             <Table>
               <TableHeader className="bg-muted/30">
                 <TableRow>
-                  <TableHead className="w-[30%]">Nombre</TableHead>
+                  <TableHead className="w-[26%]">Nombre</TableHead>
                   <TableHead>Slug</TableHead>
+                  <TableHead>Zona horaria</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead>Última Actualización</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
@@ -139,10 +145,11 @@ export function SuperAdminOrganizationsPage() {
                   <TableRow key={item.id} className="group transition-colors hover:bg-muted/20">
                     <TableCell className="font-medium text-foreground">{item.name}</TableCell>
                     <TableCell className="text-muted-foreground">{item.slug}</TableCell>
+                    <TableCell className="text-muted-foreground">{item.timezone}</TableCell>
                     <TableCell>
                       <Badge variant={item.active ? 'success' : 'outline'}>{item.active ? 'Activa' : 'Inactiva'}</Badge>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">{formatDateTime(item.updated_at)}</TableCell>
+                    <TableCell className="text-muted-foreground">{formatDateTime(item.updated_at, item.timezone)}</TableCell>
                     <TableCell className="text-right">
                       <Button variant="ghost" size="sm" onClick={() => setEditingOrganization(item)} className="opacity-70 hover:opacity-100 transition-opacity">
                         <Pencil className="h-4 w-4" />
@@ -187,6 +194,11 @@ export function SuperAdminOrganizationsPage() {
               value={form.slug}
               onChange={event => setForm(current => ({ ...current, slug: event.target.value }))}
               placeholder="Se autogenera si lo omites"
+            />
+            <TimezoneSelect
+              instanceId="organization-timezone"
+              value={form.timezone}
+              onChange={timezone => setForm(current => ({ ...current, timezone }))}
             />
             <ToggleField
               checked={form.active}

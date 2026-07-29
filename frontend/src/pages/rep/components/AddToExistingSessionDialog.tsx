@@ -16,6 +16,9 @@ import { Badge } from "@/components/ui/Badge";
 import { listRepSessions, addMaterialsToSession } from "@/services/rep";
 import { RepSession } from "@/types/rep";
 import { formatDateTime } from "@/lib/utils";
+import { useAuth } from "@/contexts/useAuth";
+import { buildPublicVisitUrl } from "@/lib/share";
+import { copyVisitShareMessage } from "@/lib/shareVisitLink";
 import { LoadingState } from "@/components/ui/LoadingState";
 
 interface AddToExistingSessionDialogProps {
@@ -31,6 +34,7 @@ export function AddToExistingSessionDialog({
   selectedMaterialIds,
   onSuccess,
 }: AddToExistingSessionDialogProps) {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [sessionSearch, setSessionSearch] = useState("");
   const [targetSessionForAdd, setTargetSessionForAdd] =
@@ -69,15 +73,6 @@ export function AddToExistingSessionDialog({
     setAddDone(false);
   };
 
-  const copyToClipboard = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      toast.success("Enlace copiado al portapapeles");
-    } catch {
-      toast.error("No se pudo copiar el enlace");
-    }
-  };
-
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent>
@@ -106,14 +101,15 @@ export function AddToExistingSessionDialog({
               <div className="flex w-full items-center gap-2">
                 <Input
                   readOnly
-                  value={`${window.location.origin}/public/visit/${targetSessionForAdd.doctor_token}`}
+                  value={buildPublicVisitUrl(targetSessionForAdd.doctor_token)}
                   className="flex-1"
                 />
                 <Button
                   variant="secondary"
                   onClick={() =>
-                    copyToClipboard(
-                      `${window.location.origin}/public/visit/${targetSessionForAdd!.doctor_token}`,
+                    void copyVisitShareMessage(
+                      targetSessionForAdd.doctor_token,
+                      targetSessionForAdd.doctor_name,
                     )
                   }
                 >
@@ -170,7 +166,7 @@ export function AddToExistingSessionDialog({
                       )}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {formatDateTime(session.created_at)}
+                      {formatDateTime(session.created_at, user?.organization_timezone)}
                     </p>
                   </div>
                   <Badge variant="outline" className="shrink-0 text-xs">

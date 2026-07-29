@@ -9,6 +9,7 @@ import {
 import { PaginationBar } from "@/components/backoffice/Workbench";
 import { metricsApi } from "@/services/metrics";
 import { cn, formatDateTime } from "@/lib/utils";
+import { useAuth } from "@/contexts/useAuth";
 
 interface MaterialViewsTableProps {
   materialIds: number[];
@@ -23,6 +24,7 @@ export function MaterialViewsTable({
   startDate,
   endDate,
 }: MaterialViewsTableProps) {
+  const { user } = useAuth();
   const [page, setPage] = useState(1);
 
   const materialKey = materialIds.join(",");
@@ -105,7 +107,7 @@ export function MaterialViewsTable({
                     className="hover:bg-muted/30 transition-colors"
                   >
                     <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
-                      {formatDateTime(item.opened_at)}
+                      {formatDateTime(item.opened_at, user?.organization_timezone)}
                     </td>
                     <td className="px-4 py-3 font-medium text-foreground">
                       <div className="flex items-center gap-2">

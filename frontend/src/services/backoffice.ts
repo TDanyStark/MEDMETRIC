@@ -39,12 +39,27 @@ export function listOrganizations(params: { q?: string; page?: number }) {
   return api.get<ApiResponse<PaginatedData<Organization>>>(`/superadmin/organizations${buildQuery(params)}`).then(unwrap)
 }
 
-export function createOrganization(payload: { name: string; slug: string; active: boolean }) {
+export function createOrganization(payload: { name: string; slug: string; active: boolean; timezone?: string }) {
   return api.post<ApiResponse<Organization>>('/superadmin/organizations', payload).then(unwrap)
 }
 
-export function updateOrganization(id: number, payload: Partial<{ name: string; slug: string; active: boolean }>) {
+export function updateOrganization(id: number, payload: Partial<{ name: string; slug: string; active: boolean; timezone: string }>) {
   return api.put<ApiResponse<Organization>>(`/superadmin/organizations/${id}`, payload).then(unwrap)
+}
+
+/** Curated IANA timezone allow-list — single source of truth lives on the backend (GET /v1/timezones). */
+export function listTimezones() {
+  return api.get<ApiResponse<string[]>>('/timezones').then(unwrap)
+}
+
+/** org_admin's own organization (self-scoped server-side, no id param). */
+export function getMyOrganization() {
+  return api.get<ApiResponse<Organization>>('/org-admin/organization').then(unwrap)
+}
+
+/** org_admin updates their OWN organization's timezone (server enforces the scope). */
+export function updateMyOrganizationTimezone(payload: { timezone: string }) {
+  return api.put<ApiResponse<Organization>>('/org-admin/organization', payload).then(unwrap)
 }
 
 export function listOrgAdmins(params: { organization_id?: number | null; q?: string; page?: number }) {

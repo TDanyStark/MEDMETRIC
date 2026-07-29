@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ExternalLink, Copy, PackagePlus } from "lucide-react";
-import { toast } from "sonner";
 import { useSearchParams, Link } from "react-router-dom";
 
 import {
@@ -26,6 +25,9 @@ import {
   updateSearchParams,
 } from "@/lib/search";
 import { formatDateTime } from "@/lib/utils";
+import { useAuth } from "@/contexts/useAuth";
+import { PUBLIC_VISIT_PATH } from "@/lib/share";
+import { copyVisitShareMessage } from "@/lib/shareVisitLink";
 import { listRepSessions } from "@/services/rep";
 import { RepSession } from "@/types/rep";
 import { LoadingState } from "@/components/ui/LoadingState";
@@ -33,6 +35,7 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { AddMaterialsDialog } from "./components/AddMaterialsDialog";
 
 export function RepHistoryPage() {
+  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const page = getNumberParam(searchParams, "page");
   const q = getStringParam(searchParams, "q");
@@ -46,15 +49,6 @@ export function RepHistoryPage() {
 
   const [addMaterialsTarget, setAddMaterialsTarget] =
     useState<RepSession | null>(null);
-
-  const copyToClipboard = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      toast.success("Enlace copiado al portapapeles");
-    } catch {
-      toast.error("No se pudo copiar el enlace");
-    }
-  };
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8 animate-in fade-in duration-500">
@@ -150,7 +144,7 @@ export function RepHistoryPage() {
                         </span>
                       </TableCell>
                       <TableCell className="text-sm">
-                        {formatDateTime(item.created_at)}
+                        {formatDateTime(item.created_at, user?.organization_timezone)}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
@@ -164,7 +158,7 @@ export function RepHistoryPage() {
                           </Button>
                           <Button variant="ghost" size="sm" asChild>
                             <Link
-                              to={`/public/visit/${item.doctor_token}`}
+                              to={`${PUBLIC_VISIT_PATH}/${item.doctor_token}`}
                               target="_blank"
                             >
                               <ExternalLink className="h-4 w-4 mr-2" /> Abrir
@@ -174,8 +168,9 @@ export function RepHistoryPage() {
                             variant="outline"
                             size="sm"
                             onClick={() =>
-                              copyToClipboard(
-                                `${window.location.origin}/public/visit/${item.doctor_token}`,
+                              void copyVisitShareMessage(
+                                item.doctor_token,
+                                item.doctor_name,
                               )
                             }
                           >

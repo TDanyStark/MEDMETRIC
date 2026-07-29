@@ -32,6 +32,17 @@ function normalizeUser(value: unknown): User | null {
       user.organization_id === null || user.organization_id === undefined
         ? null
         : Number(user.organization_id),
+    // OJO: esta funcion reconstruye el User desde cero con una lista blanca de
+    // campos. Cualquier campo que no se liste aqui se descarta EN SILENCIO,
+    // aunque la API lo devuelva correctamente.
+    organization_name:
+      user.organization_name === null || user.organization_name === undefined
+        ? null
+        : String(user.organization_name),
+    organization_timezone:
+      user.organization_timezone === null || user.organization_timezone === undefined
+        ? null
+        : String(user.organization_timezone),
   }
 }
 

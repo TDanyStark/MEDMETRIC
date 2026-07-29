@@ -25,17 +25,33 @@ export function parseUTCDate(dateStr: string): Date {
   return new Date(isoStr)
 }
 
-export function formatDate(dateStr: string | null | undefined): string {
+/**
+ * `timeZone` is an OPTIONAL explicit IANA zone (e.g. an org's `organization_timezone`).
+ * Omitted/undefined/null => no `timeZone` is passed to `Intl`, which falls back to the
+ * browser's local timezone — this is the PRE-EXISTING behavior, preserved on purpose so
+ * every call site that hasn't been migrated to pass an explicit org timezone keeps
+ * rendering exactly as it did before (zero regression). New/updated call sites should
+ * pass the viewer's organization timezone so dates render in ORG-local time instead of
+ * browser-local time (see sdd/org-timezone design).
+ */
+export function formatDate(
+  dateStr: string | null | undefined,
+  timeZone?: string | null,
+): string {
   if (!dateStr) return '—'
 
   return parseUTCDate(dateStr).toLocaleDateString('es-MX', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
+    ...(timeZone ? { timeZone } : {}),
   })
 }
 
-export function formatDateTime(dateStr: string | null | undefined): string {
+export function formatDateTime(
+  dateStr: string | null | undefined,
+  timeZone?: string | null,
+): string {
   if (!dateStr) return '—'
 
   return parseUTCDate(dateStr).toLocaleString('es-MX', {
@@ -44,6 +60,7 @@ export function formatDateTime(dateStr: string | null | undefined): string {
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
+    ...(timeZone ? { timeZone } : {}),
   })
 }
 
@@ -63,4 +80,18 @@ export function titleCase(value: string): string {
     .filter(Boolean)
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ')
+}
+
+const HONORIFICS = new Set(['dr', 'dra', 'lic', 'mtro', 'mtra', 'doctor', 'doctora'])
+
+/**
+ * Primer nombre real de una persona, saltando honorificos ("Dr.", "Dra", "Lic.", ...).
+ * Devuelve '' cuando no hay un nombre utilizable (vacio, null, o solo honorificos).
+ * Preserva acentos y caracteres no ASCII tal cual (sin normalizar).
+ */
+export function firstName(fullName?: string | null): string {
+  const parts = (fullName ?? '').trim().split(/\s+/).filter(Boolean)
+  const first = parts.find(part => !HONORIFICS.has(part.replace(/\./g, '').toLowerCase()))
+
+  return first ?? ''
 }

@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { formatDate } from '@/lib/utils'
 import { Doctor } from '@/types/doctor'
+import { useAuth } from '@/contexts/useAuth'
 
 interface DoctorsTableProps {
   doctors: Doctor[]
@@ -25,6 +26,7 @@ function daysSinceLabel(days: number | null): string {
 }
 
 export function DoctorsTable({ doctors, onEdit, onDelete }: DoctorsTableProps) {
+  const { user } = useAuth()
   return (
     <div className="rounded-3xl border border-border/50 bg-background/50 shadow-sm overflow-hidden">
       <Table>
@@ -63,7 +65,7 @@ export function DoctorsTable({ doctors, onEdit, onDelete }: DoctorsTableProps) {
               <TableCell className="text-muted-foreground">
                 {doctor.adoption_level ? <Badge variant="accent">{doctor.adoption_level}</Badge> : '—'}
               </TableCell>
-              <TableCell className="text-sm">{formatDate(doctor.last_visit_date)}</TableCell>
+              <TableCell className="text-sm">{formatDate(doctor.last_visit_date, user?.organization_timezone)}</TableCell>
               <TableCell className="text-sm">{daysSinceLabel(doctor.days_since_last_visit)}</TableCell>
               <TableCell className="text-muted-foreground">
                 {doctor.assigned_rep_id ? `ID ${doctor.assigned_rep_id}` : 'Sin asignar'}

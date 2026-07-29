@@ -4,6 +4,7 @@ import { Users, Eye, Layers, Filter } from 'lucide-react'
 import { metricsApi } from '@/services/metrics'
 import { cn, formatDateTime, getInitials } from '@/lib/utils'
 import { PaginationBar } from '@/components/backoffice/Workbench'
+import { useAuth } from '@/contexts/useAuth'
 
 interface RepAdoptionTableProps {
   repIds: number[]
@@ -25,6 +26,7 @@ export function RepAdoptionTable({
   endDate,
   onToggleRep,
 }: RepAdoptionTableProps) {
+  const { user } = useAuth()
   const repKey = repIds.join(',')
   const [page, setPage] = useState(1)
 
@@ -145,7 +147,7 @@ export function RepAdoptionTable({
                     </td>
                     <td className="px-4 py-3 text-right text-muted-foreground whitespace-nowrap">
                       {rep.last_view_at ? (
-                        formatDateTime(rep.last_view_at)
+                        formatDateTime(rep.last_view_at, user?.organization_timezone)
                       ) : (
                         <span className="text-xs italic text-muted-foreground/50">
                           Sin actividad

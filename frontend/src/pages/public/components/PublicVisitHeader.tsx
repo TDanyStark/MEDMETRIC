@@ -1,7 +1,7 @@
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
-import { Share2, User } from 'lucide-react'
-import { toast } from 'sonner'
+import { MessageSquarePlus, Share2, User } from 'lucide-react'
+import { copyVisitShareMessage } from '@/lib/shareVisitLink'
 import { formatDateTime } from '@/lib/utils'
 import { PublicSession } from '@/types'
 
@@ -9,14 +9,19 @@ interface PublicVisitHeaderProps {
   viewerType: 'rep' | 'doctor'
   session: PublicSession | undefined
   materialCount: number | undefined
+  onOpenComposer?: () => void
+  onOpenRepComposer?: () => void
 }
 
-export function PublicVisitHeader({ viewerType, session, materialCount }: PublicVisitHeaderProps) {
+export function PublicVisitHeader({ viewerType, session, materialCount, onOpenComposer, onOpenRepComposer }: PublicVisitHeaderProps) {
+  const orgTimezone = session?.organization_timezone
   const handleShare = () => {
-    const url = new URL(window.location.href)
-    url.searchParams.set('viewer_type', 'doctor')
-    navigator.clipboard.writeText(url.toString())
-    toast.success('Enlace de visita copiado para el médico')
+    if (!session) return
+
+    void copyVisitShareMessage(session.doctor_token, session.doctor_name, {
+      repName: session.rep_name,
+      organizationName: session.organization_name,
+    })
   }
 
   return (
@@ -33,7 +38,7 @@ export function PublicVisitHeader({ viewerType, session, materialCount }: Public
             </Badge>
           )}
           <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest">
-            {formatDateTime(session?.created_at ?? '')}
+            {formatDateTime(session?.created_at ?? '', orgTimezone)}
           </span>
         </div>
         <h1 className="text-2xl lg:text-3xl font-bold tracking-tight text-foreground">
@@ -64,6 +69,26 @@ export function PublicVisitHeader({ viewerType, session, materialCount }: Public
           >
             <Share2 className="w-4 h-4" />
             Compartir con Médico
+          </Button>
+        )}
+        {viewerType === 'rep' && onOpenRepComposer && (
+          <Button
+            size="sm"
+            className="rounded-full gap-2"
+            onClick={onOpenRepComposer}
+          >
+            <MessageSquarePlus className="w-4 h-4" />
+            Comentar
+          </Button>
+        )}
+        {viewerType === 'doctor' && onOpenComposer && (
+          <Button
+            size="sm"
+            className="rounded-full gap-2"
+            onClick={onOpenComposer}
+          >
+            <MessageSquarePlus className="w-4 h-4" />
+            Dejar un comentario
           </Button>
         )}
         <Badge variant="outline" className="rounded-full bg-background/50 backdrop-blur-sm border-border/50 px-4 py-1.5 shadow-sm">

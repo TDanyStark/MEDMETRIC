@@ -16,6 +16,7 @@ const PublicVisitPage = lazy(() => import('./pages/public/PublicVisitPage'))
 const PublicErrorPage = lazy(() => import('./pages/public/PublicErrorPage'))
 const RoleHomePage = lazy(() => import('./pages/RoleHomePage'))
 const DoctorsPage = lazy(() => import('./pages/doctors/DoctorsPage').then(m => ({ default: m.DoctorsPage })))
+const CommentsPage = lazy(() => import('./pages/comments/CommentsPage').then(m => ({ default: m.CommentsPage })))
 
 // Manager pages
 const ManagerBrandsPage = lazy(() => import('./pages/manager/ManagerBrandsPage').then(m => ({ default: m.ManagerBrandsPage })))
@@ -32,6 +33,7 @@ const OrgAdminBrandsPage = lazy(() => import('./pages/org-admin/OrgAdminBrandsPa
 const OrgAdminMaterialsPage = lazy(() => import('./pages/org-admin/OrgAdminMaterialsPage').then(m => ({ default: m.OrgAdminMaterialsPage })))
 const OrgAdminMetricsPage = lazy(() => import('./pages/org-admin/OrgAdminMetricsPage').then(m => ({ default: m.OrgAdminMetricsPage })))
 const OrgAdminUsersPage = lazy(() => import('./pages/org-admin/OrgAdminUsersPage').then(m => ({ default: m.OrgAdminUsersPage })))
+const OrgAdminOrganizationPage = lazy(() => import('./pages/org-admin/OrgAdminOrganizationPage').then(m => ({ default: m.OrgAdminOrganizationPage })))
 
 // Shared material form (org-admin + manager, differentiated via `scope` prop)
 const MaterialFormPage = lazy(() => import('./pages/materials/MaterialFormPage').then(m => ({ default: m.MaterialFormPage })))
@@ -130,7 +132,9 @@ function App() {
                 <Route path="materials/new" element={<MaterialFormPage scope="org-admin" />} />
                 <Route path="materials/:id/edit" element={<MaterialFormPage scope="org-admin" />} />
                 <Route path="doctors" element={<DoctorsPage />} />
+                <Route path="comments" element={<CommentsPage />} />
                 <Route path="metrics" element={<OrgAdminMetricsPage />} />
+                <Route path="organization" element={<OrgAdminOrganizationPage />} />
               </Route>
 
               <Route
@@ -148,6 +152,7 @@ function App() {
                 <Route path="materials/:id/edit" element={<MaterialFormPage scope="manager" />} />
                 <Route path="reps" element={<ManagerRepsPage />} />
                 <Route path="doctors" element={<DoctorsPage />} />
+                <Route path="comments" element={<CommentsPage />} />
                 <Route path="metrics" element={<ManagerMetricsPage />} />
               </Route>
 
@@ -163,6 +168,7 @@ function App() {
                 <Route path="library" element={<RepLibraryPage />} />
                 <Route path="history" element={<RepHistoryPage />} />
                 <Route path="doctors" element={<DoctorsPage />} />
+                <Route path="comments" element={<CommentsPage />} />
               </Route>
 
               <Route path="*" element={<NotFoundPage />} />

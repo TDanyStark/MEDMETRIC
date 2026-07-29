@@ -28,6 +28,7 @@ import {
   updateSearchParams,
 } from "@/lib/search";
 import { formatDate } from "@/lib/utils";
+import { useAuth } from "@/contexts/useAuth";
 import {
   assignManagerReps,
   listAvailableManagerReps,
@@ -37,6 +38,7 @@ import {
 import { LoadingState } from "./components/ManagerHelpers";
 
 export function ManagerRepsPage() {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const q = getStringParam(searchParams, "q");
@@ -221,7 +223,7 @@ export function ManagerRepsPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">
-                        {formatDate(item.created_at)}
+                        {formatDate(item.created_at, user?.organization_timezone)}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end pr-2">

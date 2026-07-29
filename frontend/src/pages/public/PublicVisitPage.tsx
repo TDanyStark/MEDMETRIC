@@ -1,7 +1,8 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useParams } from 'react-router-dom'
 import api from '@/services/api'
+import { getPublicComments } from '@/services/comments'
 import { ApiResponse, PublicMaterial, PublicStudy, PublicVisitPayload } from '@/types'
 
 // Sub-components
@@ -9,6 +10,9 @@ import { PublicVisitLoading } from './components/PublicVisitLoading'
 import { PublicVisitError } from './components/PublicVisitError'
 import { PublicVisitHeader } from './components/PublicVisitHeader'
 import { PublicVisitSidebar } from './components/PublicVisitSidebar'
+import { PublicCommentDialog } from './components/PublicCommentDialog'
+import { PublicOwnComments } from './components/PublicOwnComments'
+import { RepCommentDialog } from './components/RepCommentDialog'
 
 export default function PublicVisitPage() {
   const { token = '' } = useParams()
@@ -42,6 +46,15 @@ export default function PublicVisitPage() {
     },
   })
 
+  const [isComposerOpen, setIsComposerOpen] = useState(false)
+  const [isRepComposerOpen, setIsRepComposerOpen] = useState(false)
+
+  const ownCommentsQuery = useQuery({
+    queryKey: ['public-comments', token],
+    enabled: Boolean(token) && viewerInfo.type === 'doctor',
+    queryFn: () => getPublicComments(token),
+  })
+
   const getMaterialHref = (material: PublicMaterial) => {
     const baseUrl = `/api/v1/public/material/${material.id}/resource`
     const params = new URLSearchParams({
@@ -66,9 +79,9 @@ export default function PublicVisitPage() {
     const baseUrl = `/api/v1/public/material/${material.id}/resource`
     const params = new URLSearchParams({
       session_token: token,
-      viewer_type: 'doctor'
+      viewer_type: 'doctor',
     })
-    
+
     return `${window.location.origin}${baseUrl}?${params.toString()}`
   }
 
@@ -90,6 +103,8 @@ export default function PublicVisitPage() {
           viewerType={viewerInfo.type}
           session={sessionQuery.data.session}
           materialCount={sessionQuery.data.material_count}
+          onOpenComposer={viewerInfo.type === 'doctor' ? () => setIsComposerOpen(true) : undefined}
+          onOpenRepComposer={viewerInfo.type === 'rep' ? () => setIsRepComposerOpen(true) : undefined}
         />
 
         <PublicVisitSidebar 
@@ -97,10 +112,38 @@ export default function PublicVisitPage() {
           activeMaterialId={null}
           getHref={getMaterialHref}
           isModeVisitador={viewerInfo.type === 'rep'}
+          session={sessionQuery.data.session}
           getShareUrl={getShareUrl}
           getStudyHref={getStudyHref}
         />
+
+        {viewerInfo.type === 'doctor' && (
+          <PublicOwnComments
+            comments={ownCommentsQuery.data}
+            isLoading={ownCommentsQuery.isLoading}
+            isError={ownCommentsQuery.isError}
+            organizationTimezone={sessionQuery.data.session.organization_timezone}
+          />
+        )}
       </div>
+
+      {viewerInfo.type === 'doctor' && (
+        <PublicCommentDialog
+          open={isComposerOpen}
+          onOpenChange={setIsComposerOpen}
+          token={token}
+          materials={sessionQuery.data.materials}
+        />
+      )}
+
+      {viewerInfo.type === 'rep' && (
+        <RepCommentDialog
+          open={isRepComposerOpen}
+          onOpenChange={setIsRepComposerOpen}
+          session={sessionQuery.data.session}
+          materials={sessionQuery.data.materials}
+        />
+      )}
     </div>
   )
 }

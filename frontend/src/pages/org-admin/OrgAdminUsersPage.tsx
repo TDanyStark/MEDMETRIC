@@ -20,6 +20,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 
 import { getNumberParam, getStringParam, updateSearchParams } from '@/lib/search'
 import { formatDateTime } from '@/lib/utils'
+import { useAuth } from '@/contexts/useAuth'
 import {
   createOrgUser,
   getRepSubscriptions,
@@ -50,6 +51,7 @@ const emptyUserForm: UserFormState = {
 }
 
 export function OrgAdminUsersPage() {
+  const { user } = useAuth()
   const queryClient = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
   const [editingUser, setEditingUser] = useState<AdminUser | null>(null)
@@ -226,7 +228,7 @@ export function OrgAdminUsersPage() {
                     <TableCell>
                       <Badge variant={item.active ? 'success' : 'outline'}>{item.active ? 'Activo' : 'Inactivo'}</Badge>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">{formatDateTime(item.last_login_at)}</TableCell>
+                    <TableCell className="text-muted-foreground">{formatDateTime(item.last_login_at, user?.organization_timezone)}</TableCell>
                     <TableCell className="text-right">
                       <Button variant="ghost" size="sm" onClick={() => setEditingUser(item)} className="opacity-70 hover:opacity-100 transition-opacity">
                         <Pencil className="h-4 w-4" />

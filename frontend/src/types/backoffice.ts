@@ -18,6 +18,7 @@ export interface Organization {
   name: string
   slug: string
   active: boolean
+  timezone: string
   created_at: string
   updated_at: string
 }
@@ -26,6 +27,7 @@ export interface AdminUser {
   id: number
   organization_id: number
   organization_name: string
+  organization_timezone: string | null
   role_id: number
   role: Role
   name: string
