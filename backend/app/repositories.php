@@ -8,12 +8,14 @@ use App\Domain\MaterialView\MaterialViewRepositoryInterface;
 use App\Domain\Organization\OrganizationRepositoryInterface;
 use App\Domain\StudyView\StudyViewRepositoryInterface;
 use App\Domain\User\UserRepository;
+use App\Domain\VisitSessionComment\VisitSessionCommentRepositoryInterface;
 use App\Infrastructure\Persistence\AdminUser\DbAdminUserRepository;
 use App\Infrastructure\Persistence\Auth\DbAuthRepository;
 use App\Infrastructure\Persistence\MaterialView\DbMaterialViewRepository;
 use App\Infrastructure\Persistence\Organization\DbOrganizationRepository;
 use App\Infrastructure\Persistence\StudyView\DbStudyViewRepository;
 use App\Infrastructure\Persistence\User\InMemoryUserRepository;
+use App\Infrastructure\Persistence\VisitSessionComment\DbVisitSessionCommentRepository;
 use App\Domain\Metrics\MetricsRepositoryInterface;
 use App\Infrastructure\Persistence\Metrics\DbMetricsRepository;
 use DI\ContainerBuilder;
@@ -40,5 +42,8 @@ return function (ContainerBuilder $containerBuilder) {
 
         // Metrics repository
         MetricsRepositoryInterface::class => \DI\autowire(DbMetricsRepository::class),
+
+        // Visit session comments repository — DB-backed (visit-comments change)
+        VisitSessionCommentRepositoryInterface::class => \DI\autowire(DbVisitSessionCommentRepository::class),
     ]);
 };
