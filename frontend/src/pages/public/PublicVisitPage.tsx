@@ -13,6 +13,8 @@ import { PublicVisitSidebar } from './components/PublicVisitSidebar'
 import { PublicCommentDialog } from './components/PublicCommentDialog'
 import { PublicOwnComments } from './components/PublicOwnComments'
 import { RepCommentDialog } from './components/RepCommentDialog'
+import { ErrorBoundary } from '@/components/error/ErrorBoundary'
+import { SectionErrorFallback } from '@/components/error/SectionErrorFallback'
 
 export default function PublicVisitPage() {
   const { token = '' } = useParams()
@@ -118,12 +120,24 @@ export default function PublicVisitPage() {
         />
 
         {viewerInfo.type === 'doctor' && (
-          <PublicOwnComments
-            comments={ownCommentsQuery.data ?? []}
-            isLoading={ownCommentsQuery.isLoading}
-            isError={ownCommentsQuery.isError}
-            organizationTimezone={sessionQuery.data.session.organization_timezone}
-          />
+          // Isolated boundary: if this section throws, the doctor must
+          // still see the materials above (the whole point of this page).
+          // A page-level boundary alone would hide the materials too.
+          <ErrorBoundary
+            fallback={reset => (
+              <SectionErrorFallback
+                message="No pudimos mostrar tus comentarios."
+                onRetry={reset}
+              />
+            )}
+          >
+            <PublicOwnComments
+              comments={ownCommentsQuery.data ?? []}
+              isLoading={ownCommentsQuery.isLoading}
+              isError={ownCommentsQuery.isError}
+              organizationTimezone={sessionQuery.data.session.organization_timezone}
+            />
+          </ErrorBoundary>
         )}
       </div>
 

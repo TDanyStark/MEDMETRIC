@@ -5,6 +5,8 @@ import { Toaster } from 'sonner'
 import { TooltipProvider } from './components/ui/tooltip'
 import { ProtectedRoute } from './components/auth/ProtectedRoute'
 import { AppLayout } from './components/layout/AppLayout'
+import { ErrorBoundary } from './components/error/ErrorBoundary'
+import { PublicErrorFallback } from './components/error/PublicErrorFallback'
 import { useAuth } from './contexts/useAuth'
 import { getRoleHome } from './lib/auth'
 import { Loader2 } from 'lucide-react'
@@ -100,8 +102,22 @@ function App() {
             <Routes>
               <Route path="/" element={<HomeRedirect />} />
               <Route path="/login" element={<LoginPage />} />
-              <Route path="/public/visit/:token" element={<PublicVisitPage />} />
-              <Route path="/public/error" element={<PublicErrorPage />} />
+              <Route
+                path="/public/visit/:token"
+                element={
+                  <ErrorBoundary fallback={reset => <PublicErrorFallback onRetry={reset} />}>
+                    <PublicVisitPage />
+                  </ErrorBoundary>
+                }
+              />
+              <Route
+                path="/public/error"
+                element={
+                  <ErrorBoundary fallback={reset => <PublicErrorFallback onRetry={reset} />}>
+                    <PublicErrorPage />
+                  </ErrorBoundary>
+                }
+              />
 
               <Route
                 path="/superadmin"

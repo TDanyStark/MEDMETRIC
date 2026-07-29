@@ -1,10 +1,13 @@
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import { Menu } from 'lucide-react'
 import { useCallback, useState } from 'react'
 import { Sidebar } from './Sidebar'
+import { ErrorBoundary } from '@/components/error/ErrorBoundary'
+import { AppErrorFallback } from '@/components/error/AppErrorFallback'
 
 export function AppLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const location = useLocation()
 
   const handleCloseSidebar = useCallback(() => {
     setIsSidebarOpen(false)
@@ -28,7 +31,18 @@ export function AppLayout() {
         </div>
 
         <div className="relative h-[calc(100vh-65px)] overflow-y-auto md:h-screen">
-          <Outlet />
+          {/*
+            `key={location.pathname}` remounts the boundary on every route
+            change. Without it, once tripped, the fallback would keep
+            showing even after the user navigates (via the sidebar) to a
+            page that isn't broken.
+          */}
+          <ErrorBoundary
+            key={location.pathname}
+            fallback={reset => <AppErrorFallback onRetry={reset} />}
+          >
+            <Outlet />
+          </ErrorBoundary>
         </div>
       </main>
     </div>
