@@ -1,9 +1,9 @@
 import { FileText, Share2 } from "lucide-react";
-import { toast } from "sonner";
+import { copyVisitShareMessage } from "@/lib/shareVisitLink";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Separator } from "@/components/ui/Separator";
-import { PublicMaterial, PublicStudy } from "@/types";
+import { PublicMaterial, PublicSession, PublicStudy } from "@/types";
 import { MaterialTypeLabel } from "@/components/ui/MaterialTypeLabel";
 import { PublicStudyListItem } from "./PublicStudyListItem";
 import {
@@ -17,6 +17,7 @@ interface PublicMaterialCardProps {
   isActive: boolean;
   href: string;
   showShare?: boolean;
+  session: PublicSession;
   shareUrl?: string;
   getStudyHref?: (study: PublicStudy) => string;
 }
@@ -35,6 +36,7 @@ export function PublicMaterialCard({
   isActive,
   href,
   showShare = false,
+  session,
   shareUrl,
   getStudyHref,
 }: PublicMaterialCardProps) {
@@ -42,11 +44,10 @@ export function PublicMaterialCard({
     e.preventDefault();
     e.stopPropagation();
 
-    if (!shareUrl) return;
-
-    navigator.clipboard.writeText(shareUrl)
-      .then(() => toast.success("Enlace para el médico copiado con éxito"))
-      .catch(() => toast.error("No se pudo copiar el enlace"));
+    void copyVisitShareMessage(session.doctor_token, session.doctor_name, {
+      repName: session.rep_name,
+      organizationName: session.organization_name,
+    }, shareUrl);
   };
 
   const studies = item.studies ?? [];
@@ -95,7 +96,7 @@ export function PublicMaterialCard({
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="left">
-                <p className="text-[10px]">Copiar link para médico</p>
+                <p className="text-[10px]">Copiar mensaje para médico</p>
               </TooltipContent>
             </Tooltip>
           </div>

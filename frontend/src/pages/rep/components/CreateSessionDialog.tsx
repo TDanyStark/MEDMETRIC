@@ -17,6 +17,9 @@ import { DoctorSelect } from "@/components/ui/DoctorSelect";
 import { CreateDoctorDialog } from "@/components/doctors/CreateDoctorDialog";
 import { createRepSession } from "@/services/rep";
 import { Doctor } from "@/types/doctor";
+import { RepSession } from "@/types/rep";
+import { buildPublicVisitUrl, PUBLIC_VISIT_PATH } from "@/lib/share";
+import { copyVisitShareMessage } from "@/lib/shareVisitLink";
 
 interface CreateSessionDialogProps {
   open: boolean;
@@ -40,9 +43,10 @@ export function CreateSessionDialog({
   const [doctorSearchInput, setDoctorSearchInput] = useState("");
   const [isCreateDoctorOpen, setIsCreateDoctorOpen] = useState(false);
   const [showDoctorError, setShowDoctorError] = useState(false);
-  const [createdSessionToken, setCreatedSessionToken] = useState<string | null>(
-    null,
-  );
+  // Se guarda la sesion completa (no solo el token) porque `selectedDoctor` se
+  // limpia en `onSuccess`, antes de que se renderice la pantalla de exito: el
+  // nombre del medico para el mensaje solo puede venir de la respuesta.
+  const [createdSession, setCreatedSession] = useState<RepSession | null>(null);
 
   const createSessionMutation = useMutation({
     mutationFn: async () => {
@@ -57,7 +61,7 @@ export function CreateSessionDialog({
     },
     onSuccess: (data) => {
       toast.success("Sesión médica creada exitosamente.");
-      setCreatedSessionToken(data.session.doctor_token);
+      setCreatedSession(data.session);
       setSessionForm({ notes: "" });
       setDoctorId(null);
       setSelectedDoctor(null);
@@ -73,7 +77,7 @@ export function CreateSessionDialog({
 
   const handleClose = () => {
     onOpenChange(false);
-    setCreatedSessionToken(null);
+    setCreatedSession(null);
     setShowDoctorError(false);
   };
 
@@ -81,15 +85,6 @@ export function CreateSessionDialog({
     setDoctorId(doctor.id);
     setSelectedDoctor(doctor);
     setShowDoctorError(false);
-  };
-
-  const copyToClipboard = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      toast.success("Enlace copiado al portapapeles");
-    } catch {
-      toast.error("No se pudo copiar el enlace");
-    }
   };
 
   return (
@@ -118,7 +113,7 @@ export function CreateSessionDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {!createdSessionToken ? (
+        {!createdSession ? (
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -201,14 +196,15 @@ export function CreateSessionDialog({
             <div className="flex w-full items-center gap-2">
               <Input
                 readOnly
-                value={`${window.location.origin}/public/visit/${createdSessionToken}`}
+                value={buildPublicVisitUrl(createdSession.doctor_token)}
                 className="w-[250px]"
               />
               <Button
                 variant="secondary"
                 onClick={() =>
-                  copyToClipboard(
-                    `${window.location.origin}/public/visit/${createdSessionToken}`,
+                  void copyVisitShareMessage(
+                    createdSession.doctor_token,
+                    createdSession.doctor_name,
                   )
                 }
               >
@@ -225,7 +221,7 @@ export function CreateSessionDialog({
               </Button>
               <Button className="flex-1" asChild>
                 <Link
-                  to={`/public/visit/${createdSessionToken}`}
+                  to={`${PUBLIC_VISIT_PATH}/${createdSession.doctor_token}`}
                   target="_blank"
                 >
                   Abrir link

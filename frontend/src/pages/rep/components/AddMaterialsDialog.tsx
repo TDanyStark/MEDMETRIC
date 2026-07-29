@@ -19,6 +19,8 @@ import {
   listRepMaterialFilters,
 } from "@/services/rep";
 import { Material, RepSession } from "@/types/rep";
+import { buildPublicVisitUrl } from "@/lib/share";
+import { copyVisitShareMessage } from "@/lib/shareVisitLink";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { MaterialTypeLabel } from "@/components/ui/MaterialTypeLabel";
@@ -122,15 +124,6 @@ export function AddMaterialsDialog({
     setBrandId(null);
   };
 
-  const copyToClipboard = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      toast.success("Enlace copiado al portapapeles");
-    } catch {
-      toast.error("No se pudo copiar el enlace");
-    }
-  };
-
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-4xl p-0 overflow-hidden flex flex-col h-[90vh] sm:h-[80vh] min-h-[400px]">
@@ -161,14 +154,15 @@ export function AddMaterialsDialog({
               <div className="flex w-full justify-center items-center gap-2 max-w-md mx-auto">
                 <Input
                   readOnly
-                  value={`${window.location.origin}/public/visit/${createdToken}`}
+                  value={buildPublicVisitUrl(createdToken)}
                   className="w-[250px]"
                 />
                 <Button
                   variant="secondary"
                   onClick={() =>
-                    copyToClipboard(
-                      `${window.location.origin}/public/visit/${createdToken}`,
+                    void copyVisitShareMessage(
+                      createdToken,
+                      session.doctor_name,
                     )
                   }
                 >
