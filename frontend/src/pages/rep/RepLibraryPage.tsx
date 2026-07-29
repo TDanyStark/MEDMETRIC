@@ -58,6 +58,10 @@ export function RepLibraryPage() {
     });
   };
 
+  const clearSelection = () => {
+    setSelectedMaterialIds([]);
+  };
+
   const [selectedMaterials, setSelectedMaterials] = useState<Material[]>([]);
 
   useEffect(() => {
@@ -178,6 +182,7 @@ export function RepLibraryPage() {
           selected={selectedMaterials}
           onNewSession={() => setIsSessionDialogOpen(true)}
           onRemove={toggleMaterial}
+          onClearAll={clearSelection}
         />
       </div>
 

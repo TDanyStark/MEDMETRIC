@@ -1,4 +1,4 @@
-import { Stethoscope, Plus, PackagePlus } from "lucide-react";
+import { Stethoscope, Plus, PackagePlus, Trash2 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from "@/components/ui/Sheet";
 import { Button } from "@/components/ui/Button";
 import { Material } from "@/types/rep";
@@ -8,10 +8,12 @@ export function SelectedMaterialsPanel({
   selected,
   onNewSession,
   onRemove,
+  onClearAll,
 }: {
   selected: Material[];
   onNewSession: () => void;
   onRemove: (id: number) => void;
+  onClearAll: () => void;
 }) {
   const count = selected.length;
   if (count === 0) return null;
@@ -28,9 +30,19 @@ export function SelectedMaterialsPanel({
             Selección Actual
           </h3>
         </div>
-        <p className="text-xs font-bold text-muted-foreground uppercase tracking-[0.15em] relative">
-          {count} material{count > 1 ? "es" : ""} listo{count > 1 ? "s" : ""}
-        </p>
+        <div className="flex items-center justify-between gap-2 relative">
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-[0.15em]">
+            {count} material{count > 1 ? "es" : ""} listo{count > 1 ? "s" : ""}
+          </p>
+          <button
+            type="button"
+            onClick={onClearAll}
+            className="flex shrink-0 items-center gap-1 rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70 transition-colors hover:bg-destructive/10 hover:text-destructive"
+          >
+            <Trash2 className="h-3 w-3" />
+            Limpiar
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 p-6 pt-4 overflow-y-auto space-y-3 custom-scrollbar min-h-0">
