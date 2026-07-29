@@ -24,4 +24,12 @@ $Config = @{
     KeepEntries = @(
         ".well-known"
     )
+
+    # --- Rollback / snapshots (opcional) ---
+    # Directorio remoto para snapshots pre-deploy (frontend.tar.gz / backend.tar.gz / db.sql).
+    # DEBE quedar FUERA del docroot web. Si se omite, deploy.ps1 usa "<RemotePath>/../medmetric_releases".
+    BackupsRemoteDir = ""
+
+    # Cuantos snapshots conservar (los mas viejos se borran automaticamente). Default: 5.
+    BackupRetention = 5
 }
