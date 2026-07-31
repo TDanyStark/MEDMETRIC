@@ -16,6 +16,7 @@ import { LoadingState } from '@/components/ui/LoadingState'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { CommentFilters } from '@/components/comments/CommentFilters'
 import { CommentsList } from '@/components/comments/CommentsList'
+import { CommentDetailDialog } from '@/components/comments/CommentDetailDialog'
 
 import { getBooleanParam, getStringParam, getNumberParam, updateSearchParams } from '@/lib/search'
 import { getUserFriendlyErrorMessage } from '@/services/api'
@@ -26,6 +27,7 @@ export function CommentsPage() {
   const queryClient = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
   const [deletingComment, setDeletingComment] = useState<Comment | null>(null)
+  const [viewingComment, setViewingComment] = useState<Comment | null>(null)
 
   const q = getStringParam(searchParams, 'q')
   const hasMaterialFlag = getBooleanParam(searchParams, 'has_material')
@@ -51,6 +53,7 @@ export function CommentsPage() {
     onSuccess: () => {
       toast.success('Comentario eliminado.')
       setDeletingComment(null)
+      setViewingComment(null)
       void queryClient.invalidateQueries({ queryKey: ['comments'] })
     },
     onError: error => {
@@ -120,6 +123,7 @@ export function CommentsPage() {
             <CommentsList
               comments={commentsQuery.data?.items ?? []}
               onDelete={setDeletingComment}
+              onView={setViewingComment}
             />
           )}
 
@@ -132,6 +136,15 @@ export function CommentsPage() {
           }
         />
       </div>
+
+      <CommentDetailDialog
+        comment={viewingComment}
+        open={!!viewingComment}
+        onOpenChange={open => {
+          if (!open) setViewingComment(null)
+        }}
+        onDeleteRequest={setDeletingComment}
+      />
 
       <Dialog
         open={!!deletingComment}
