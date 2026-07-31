@@ -26,7 +26,7 @@ export function CommentsList({ comments, onDelete, onView }: CommentsListProps) 
             <TableHead>Comentario</TableHead>
             <TableHead className="w-[12%]">Material</TableHead>
             <TableHead className="w-[11%]">Fecha</TableHead>
-            <TableHead className="w-[120px] text-right">Acciones</TableHead>
+            <TableHead className="w-30 text-right">Acciones</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
