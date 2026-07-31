@@ -9,6 +9,7 @@ import {
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Avatar, AvatarFallback } from '@/components/ui/Avatar'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { formatDateTime, getInitials } from '@/lib/utils'
 import { Comment } from '@/types/comment'
 import { useAuth } from '@/contexts/useAuth'
@@ -43,29 +44,32 @@ export function CommentDetailDialog({
         </DialogHeader>
 
         <div className="grid grid-cols-2 gap-x-6 gap-y-3 border-b border-border/50 pb-4 text-sm">
-          <div>
+          <div className="min-w-0">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               Médico
             </p>
-            <p className="mt-1 font-medium text-foreground">{comment.doctor_name ?? '—'}</p>
+            <p className="mt-1 break-words font-medium text-foreground">{comment.doctor_name ?? '—'}</p>
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               Representante
             </p>
-            <p className="mt-1 font-medium text-foreground">{comment.rep_name ?? '—'}</p>
+            <p className="mt-1 break-words font-medium text-foreground">{comment.rep_name ?? '—'}</p>
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               Autor
             </p>
-            <div className="mt-1 flex items-center gap-2">
-              <Avatar className="h-6 w-6">
+            <div className="mt-1 flex flex-col items-start gap-1.5">
+              <Avatar className="h-6 w-6 shrink-0">
                 <AvatarFallback className="text-[0.6rem]">
                   {getInitials(comment.author_name ?? authorLabel)}
                 </AvatarFallback>
               </Avatar>
-              <span className="font-medium text-foreground">
+              <span
+                className="max-w-full truncate font-medium text-foreground"
+                title={comment.author_name ?? undefined}
+              >
                 {comment.author_name ?? '—'}
               </span>
               <Badge variant={comment.author_type === 'doctor' ? 'accent' : 'outline'}>
@@ -73,19 +77,28 @@ export function CommentDetailDialog({
               </Badge>
             </div>
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               Material
             </p>
-            <div className="mt-1">
+            <div className="mt-1 min-w-0">
               {comment.material_title ? (
-                <Badge variant="default">{comment.material_title}</Badge>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge variant="default" className="max-w-full min-w-0 cursor-default">
+                      <span className="truncate">{comment.material_title}</span>
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="max-w-xs break-words">{comment.material_title}</p>
+                  </TooltipContent>
+                </Tooltip>
               ) : (
                 <Badge variant="outline">Abierto</Badge>
               )}
             </div>
           </div>
-          <div className="col-span-2">
+          <div className="col-span-2 min-w-0">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               Fecha
             </p>
@@ -96,7 +109,7 @@ export function CommentDetailDialog({
         </div>
 
         <div className="max-h-[45vh] overflow-y-auto rounded-2xl bg-muted/20 p-4">
-          <p className="select-text whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+          <p className="select-text whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground">
             {comment.body}
           </p>
         </div>
