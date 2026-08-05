@@ -11,6 +11,7 @@ import {
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { CustomSelect } from '@/components/ui/CustomSelect'
+import { RepAssignSelect } from '@/components/ui/RepAssignSelect'
 import { updateDoctor } from '@/services/doctors'
 import { Doctor, DoctorPayload } from '@/types/doctor'
 import {
@@ -20,6 +21,7 @@ import {
   getProvinciasByRegion,
 } from '@/data/chileGeo'
 import { useBrandOptions } from '@/hooks/useBrandOptions'
+import { useAuth } from '@/contexts/useAuth'
 
 type GeoOption = { label: string; value: string }
 
@@ -46,6 +48,7 @@ function toFormState(doctor: Doctor | null): DoctorPayload {
     phone: doctor?.phone ?? '',
     mobile_phone: doctor?.mobile_phone ?? '',
     address: doctor?.address ?? '',
+    assigned_rep_id: doctor?.assigned_rep_id ?? null,
   }
 }
 
@@ -53,6 +56,11 @@ export function EditDoctorDialog({ doctor, open, onOpenChange }: EditDoctorDialo
   const queryClient = useQueryClient()
   const [form, setForm] = useState<DoctorPayload>(toFormState(doctor))
   const brandOptions = useBrandOptions()
+  const { user } = useAuth()
+  // Representatives never assign/reassign doctors — the field is hidden for
+  // them entirely (backend also hardens this by stripping assigned_rep_id
+  // from a rep's payload regardless of what the client sends).
+  const canAssignRep = user?.role !== 'rep'
 
   useEffect(() => {
     if (open) {
@@ -166,6 +174,16 @@ export function EditDoctorDialog({ doctor, open, onOpenChange }: EditDoctorDialo
             <Input label="Teléfono" value={form.phone} onChange={handleChange('phone')} />
             <Input label="Celular" value={form.mobile_phone} onChange={handleChange('mobile_phone')} />
             <Input label="Dirección" value={form.address} onChange={handleChange('address')} />
+            {canAssignRep && (
+              <RepAssignSelect
+                label="Representante asignado"
+                placeholder="Buscar representante..."
+                value={form.assigned_rep_id ?? null}
+                initialLabel={doctor?.assigned_rep_name}
+                onChange={repId => setForm(current => ({ ...current, assigned_rep_id: repId }))}
+                instanceId="edit-doctor-rep-select"
+              />
+            )}
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t border-border/50">
