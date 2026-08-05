@@ -92,6 +92,18 @@ export function createAsyncSelectStyles(hasError = false) {
     // (react-select renders the menu inside this wrapper via a portal in
     // that case). Keeps the portalled menu above Radix Dialog's overlay/
     // content (z-50) regardless of DOM insertion order. No-op otherwise.
-    menuPortal: (base: any) => ({ ...base, zIndex: 9999 }),
+    //
+    // `pointerEvents: 'auto'` is required, not cosmetic: Radix Dialog
+    // (modal) sets `document.body.style.pointerEvents = 'none'` while open
+    // and restores `pointer-events: auto` only on the DialogContent DOM
+    // node itself (inherited by its descendants). This portal wrapper is
+    // mounted directly under <body> as a SIBLING of DialogContent — not a
+    // descendant — so without this override it silently inherits
+    // `pointer-events: none` from body and every click on an option falls
+    // through the (invisible-to-hit-testing) menu to whatever dialog
+    // control sits underneath it instead of registering on the option.
+    // Mirrors the same fix already applied in multiSelectStyles.ts /
+    // ManagerMultiSelect's inline styles for the same portal-in-modal case.
+    menuPortal: (base: any) => ({ ...base, zIndex: 9999, pointerEvents: 'auto' }),
   }
 }
