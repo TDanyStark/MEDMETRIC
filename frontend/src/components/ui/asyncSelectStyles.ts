@@ -88,5 +88,10 @@ export function createAsyncSelectStyles(hasError = false) {
       color: state.isFocused ? 'var(--primary)' : 'var(--muted-foreground)',
       '&:hover': { color: 'var(--primary)' },
     }),
+    // Only takes effect when a consumer also passes `menuPortalTarget`
+    // (react-select renders the menu inside this wrapper via a portal in
+    // that case). Keeps the portalled menu above Radix Dialog's overlay/
+    // content (z-50) regardless of DOM insertion order. No-op otherwise.
+    menuPortal: (base: any) => ({ ...base, zIndex: 9999 }),
   }
 }

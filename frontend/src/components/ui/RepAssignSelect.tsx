@@ -100,6 +100,21 @@ export function RepAssignSelect({
         placeholder={placeholder}
         className={className}
         styles={createAsyncSelectStyles()}
+        // This field sits near the bottom of the Create/Edit Doctor dialogs
+        // (DialogContent has max-h-[90vh] overflow-y-auto). A downward menu
+        // there gets appended past the dialog's visible bounds, forcing the
+        // whole modal to grow/scroll just to show the dropdown — poor UX.
+        // Force the menu upward and portal it to <body> with fixed
+        // positioning so it's laid out purely against the viewport: it
+        // never contributes to the dialog's scrollHeight (no more modal
+        // "stretching"), never gets clipped by the dialog's overflow-auto,
+        // and still tracks the trigger correctly on scroll/resize —
+        // react-select's own documented pattern for selects inside modals.
+        // Keyboard nav, focus and click-outside handling are unaffected;
+        // only the rendered DOM location and stacking of the menu changes.
+        menuPlacement="top"
+        menuPosition="fixed"
+        menuPortalTarget={document.body}
         noOptionsMessage={() => 'No se encontraron representantes'}
         loadingMessage={() => 'Buscando...'}
       />
