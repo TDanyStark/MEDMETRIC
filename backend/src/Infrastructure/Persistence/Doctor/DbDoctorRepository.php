@@ -61,10 +61,17 @@ class DbDoctorRepository implements DoctorRepositoryInterface
         return $this->findById($id, $organizationId) ?? throw new DoctorNotFoundException($id);
     }
 
-    public function update(int $id, int $organizationId, array $data): Doctor
+    public function update(int $id, int $organizationId, array $data, ?int $restrictRepId = null): Doctor
     {
         $existing = $this->findById($id, $organizationId);
         if ($existing === null) {
+            throw new DoctorNotFoundException($id);
+        }
+
+        // Reps may only update doctors they own. Treated as not-found (not 403)
+        // so a rep probing another rep's doctor id learns nothing about its
+        // existence, mirroring the org-mismatch behavior above.
+        if ($restrictRepId !== null && $existing->getAssignedRepId() !== $restrictRepId) {
             throw new DoctorNotFoundException($id);
         }
 
@@ -109,7 +116,7 @@ class DbDoctorRepository implements DoctorRepositoryInterface
         return $row ? Doctor::fromRow($row) : null;
     }
 
-    public function search(int $organizationId, string $q, int $limit = 20): array
+    public function search(int $organizationId, string $q, int $limit = 20, ?int $restrictRepId = null): array
     {
         $where  = ['organization_id = :organization_id', 'active = 1'];
         $params = [':organization_id' => $organizationId];
@@ -120,6 +127,11 @@ class DbDoctorRepository implements DoctorRepositoryInterface
             $params[':q1'] = $likeValue;
             $params[':q2'] = $likeValue;
             $params[':q3'] = $likeValue;
+        }
+
+        if ($restrictRepId !== null) {
+            $where[]                    = 'assigned_rep_id = :restrict_rep_id';
+            $params[':restrict_rep_id'] = $restrictRepId;
         }
 
         $whereSql = implode(' AND ', $where);
@@ -144,7 +156,7 @@ class DbDoctorRepository implements DoctorRepositoryInterface
         return array_map(fn(array $row) => Doctor::fromRow($row), $rows);
     }
 
-    public function findAllByOrg(int $organizationId, array $filters, int $page): array
+    public function findAllByOrg(int $organizationId, array $filters, int $page, ?int $restrictRepId = null): array
     {
         $pageSize = PaginationConfig::PAGE_SIZE;
         $offset   = ($page - 1) * $pageSize;
@@ -170,7 +182,13 @@ class DbDoctorRepository implements DoctorRepositoryInterface
             $params[':category'] = $filters['category'];
         }
 
-        if (!empty($filters['assigned_rep_id'])) {
+        // $restrictRepId (role==='rep') always wins over $filters['assigned_rep_id']:
+        // the Action layer forces it from auth_user, so a client-supplied
+        // assigned_rep_id must never widen or replace the rep's own scope.
+        if ($restrictRepId !== null) {
+            $where[]                    = 'd.assigned_rep_id = :assigned_rep_id';
+            $params[':assigned_rep_id'] = $restrictRepId;
+        } elseif (!empty($filters['assigned_rep_id'])) {
             $where[]                     = 'd.assigned_rep_id = :assigned_rep_id';
             $params[':assigned_rep_id']  = (int) $filters['assigned_rep_id'];
         }

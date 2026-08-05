@@ -11,7 +11,12 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Paginated doctor directory listing.
- * GET /v1/doctors?q=&region=&category=&assigned_rep_id=&page=
+ * GET /v1/doctors?q=&rep_id=&page=
+ *
+ * `rep_id` is the current filter param (replaces the removed Region/Category
+ * filters, per sdd/doctors-management-fixes). The legacy `assigned_rep_id`
+ * param name is still accepted for backward compatibility with any existing
+ * bookmarked/shared links.
  */
 class ListDoctorsAction extends Action
 {
@@ -41,16 +46,24 @@ class ListDoctorsAction extends Action
             $page = 1;
         }
 
+        // rep_id is the current param name; assigned_rep_id is kept as a
+        // fallback alias for backward compatibility.
+        $repIdParam = $queryParams['rep_id'] ?? $queryParams['assigned_rep_id'] ?? null;
+
         $filters = [
             'q'               => $queryParams['q'] ?? null,
             'region'          => $queryParams['region'] ?? null,
             'category'        => $queryParams['category'] ?? null,
-            'assigned_rep_id' => isset($queryParams['assigned_rep_id']) && $queryParams['assigned_rep_id'] !== ''
-                ? (int) $queryParams['assigned_rep_id']
+            'assigned_rep_id' => $repIdParam !== null && $repIdParam !== ''
+                ? (int) $repIdParam
                 : null,
         ];
 
-        $result = $this->doctorRepository->findAllByOrg($organizationId, $filters, $page);
+        // Reps are hard-scoped to their own doctors from auth_user, never from
+        // client-supplied assigned_rep_id/rep_id — this cannot be overridden.
+        $restrictRepId = ($authUser['role'] ?? null) === 'rep' ? (int) $authUser['id'] : null;
+
+        $result = $this->doctorRepository->findAllByOrg($organizationId, $filters, $page, $restrictRepId);
 
         return $this->respondWithData($result);
     }

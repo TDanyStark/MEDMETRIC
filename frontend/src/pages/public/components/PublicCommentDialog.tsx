@@ -26,16 +26,25 @@ interface PublicCommentDialogProps {
   onOpenChange: (open: boolean) => void
   token: string
   materials: PublicMaterial[]
+  /**
+   * Material id to preselect in the "¿Sobre qué quieres comentar?" picker,
+   * e.g. when the dialog was opened from a specific material card's
+   * "Comentar" button instead of the header's general composer button.
+   * `null`/`undefined` falls back to the general (no material) option.
+   */
+  initialMaterialId?: number | null
 }
 
-export function PublicCommentDialog({ open, onOpenChange, token, materials }: PublicCommentDialogProps) {
+export function PublicCommentDialog({ open, onOpenChange, token, materials, initialMaterialId }: PublicCommentDialogProps) {
   const queryClient = useQueryClient()
   const [body, setBody] = useState('')
   const [selectedOption, setSelectedOption] = useState<CommentMaterialOption | null>(null)
   const [bodyError, setBodyError] = useState<string | null>(null)
 
   const options = buildCommentMaterialOptions(materials)
-  const currentOption = selectedOption ?? options[0]
+  const defaultOption =
+    (initialMaterialId != null && options.find(option => option.value === String(initialMaterialId))) || options[0]
+  const currentOption = selectedOption ?? defaultOption
 
   const resetForm = () => {
     setBody('')

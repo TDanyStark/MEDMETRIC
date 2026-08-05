@@ -201,4 +201,119 @@ class DbRepAccessRepository implements RepAccessRepositoryInterface
             ];
         }, $rows);
     }
+
+    public function getSubscribedRepsForManager(int $managerId, ?string $search = null, int $limit = 20): array
+    {
+        $where  = ['rma.manager_id = :manager_id', 'rma.active = 1'];
+        $params = [':manager_id' => $managerId];
+
+        if ($search !== null && $search !== '') {
+            $where[]                 = '(u.name LIKE :search_name OR u.email LIKE :search_email)';
+            $params[':search_name']  = '%' . $search . '%';
+            $params[':search_email'] = '%' . $search . '%';
+        }
+
+        $whereSql = ' WHERE ' . implode(' AND ', $where);
+
+        $sql = "SELECT u.id, u.name, u.email
+                FROM rep_manager_access rma
+                JOIN users u ON u.id = rma.rep_id
+                {$whereSql}
+                ORDER BY u.name ASC
+                LIMIT :limit";
+
+        $stmt = $this->pdo->prepare($sql);
+        foreach ($params as $key => $val) {
+            $stmt->bindValue($key, $val);
+        }
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->execute();
+
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        return array_map(fn(array $row) => [
+            'id'    => (int) $row['id'],
+            'name'  => $row['name'],
+            'email' => $row['email'],
+        ], $rows);
+    }
+
+    public function findRepsByOrg(int $organizationId, ?string $search = null, int $limit = 20): array
+    {
+        $where  = ['u.organization_id = :organization_id', 'r.name = :role'];
+        $params = [
+            ':organization_id' => $organizationId,
+            ':role'            => 'rep',
+        ];
+
+        if ($search !== null && $search !== '') {
+            $where[]                 = '(u.name LIKE :search_name OR u.email LIKE :search_email)';
+            $params[':search_name']  = '%' . $search . '%';
+            $params[':search_email'] = '%' . $search . '%';
+        }
+
+        $whereSql = ' WHERE ' . implode(' AND ', $where);
+
+        $sql = "SELECT u.id, u.name, u.email
+                FROM users u
+                JOIN roles r ON u.role_id = r.id
+                {$whereSql}
+                ORDER BY u.name ASC
+                LIMIT :limit";
+
+        $stmt = $this->pdo->prepare($sql);
+        foreach ($params as $key => $val) {
+            $stmt->bindValue($key, $val);
+        }
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->execute();
+
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        return array_map(fn(array $row) => [
+            'id'    => (int) $row['id'],
+            'name'  => $row['name'],
+            'email' => $row['email'],
+        ], $rows);
+    }
+
+    public function isRepAssignable(int $repId, int $organizationId, ?int $managerId = null): bool
+    {
+        if ($managerId !== null) {
+            $stmt = $this->pdo->prepare(
+                'SELECT 1
+                 FROM   rep_manager_access rma
+                 JOIN   users u ON u.id = rma.rep_id
+                 WHERE  rma.manager_id = :manager_id
+                   AND  rma.rep_id = :rep_id
+                   AND  rma.active = 1
+                   AND  u.organization_id = :organization_id
+                 LIMIT  1'
+            );
+            $stmt->execute([
+                ':manager_id'      => $managerId,
+                ':rep_id'          => $repId,
+                ':organization_id' => $organizationId,
+            ]);
+
+            return (bool) $stmt->fetchColumn();
+        }
+
+        $stmt = $this->pdo->prepare(
+            'SELECT 1
+             FROM   users u
+             JOIN   roles r ON u.role_id = r.id
+             WHERE  u.id = :rep_id
+               AND  u.organization_id = :organization_id
+               AND  r.name = :role
+             LIMIT  1'
+        );
+        $stmt->execute([
+            ':rep_id'          => $repId,
+            ':organization_id' => $organizationId,
+            ':role'            => 'rep',
+        ]);
+
+        return (bool) $stmt->fetchColumn();
+    }
 }

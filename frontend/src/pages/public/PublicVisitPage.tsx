@@ -50,6 +50,20 @@ export default function PublicVisitPage() {
 
   const [isComposerOpen, setIsComposerOpen] = useState(false)
   const [isRepComposerOpen, setIsRepComposerOpen] = useState(false)
+  // Material id preselected in the comment composer's "¿Sobre qué quieres
+  // comentar?" picker. `null` means the general (no material) option —
+  // used when the composer is opened from the header's generic button
+  // rather than a specific material card's "Comentar" button.
+  const [commentMaterialId, setCommentMaterialId] = useState<number | null>(null)
+
+  const openComment = (materialId: number | null) => {
+    setCommentMaterialId(materialId)
+    if (viewerInfo.type === 'rep') {
+      setIsRepComposerOpen(true)
+    } else {
+      setIsComposerOpen(true)
+    }
+  }
 
   const ownCommentsQuery = useQuery({
     queryKey: ['public-comments', token],
@@ -105,8 +119,8 @@ export default function PublicVisitPage() {
           viewerType={viewerInfo.type}
           session={sessionQuery.data.session}
           materialCount={sessionQuery.data.material_count}
-          onOpenComposer={viewerInfo.type === 'doctor' ? () => setIsComposerOpen(true) : undefined}
-          onOpenRepComposer={viewerInfo.type === 'rep' ? () => setIsRepComposerOpen(true) : undefined}
+          onOpenComposer={viewerInfo.type === 'doctor' ? () => openComment(null) : undefined}
+          onOpenRepComposer={viewerInfo.type === 'rep' ? () => openComment(null) : undefined}
         />
 
         <PublicVisitSidebar 
@@ -117,6 +131,7 @@ export default function PublicVisitPage() {
           session={sessionQuery.data.session}
           getShareUrl={getShareUrl}
           getStudyHref={getStudyHref}
+          onComment={material => openComment(material.id)}
         />
 
         {viewerInfo.type === 'doctor' && (
@@ -147,6 +162,7 @@ export default function PublicVisitPage() {
           onOpenChange={setIsComposerOpen}
           token={token}
           materials={sessionQuery.data.materials}
+          initialMaterialId={commentMaterialId}
         />
       )}
 
@@ -156,6 +172,7 @@ export default function PublicVisitPage() {
           onOpenChange={setIsRepComposerOpen}
           session={sessionQuery.data.session}
           materials={sessionQuery.data.materials}
+          initialMaterialId={commentMaterialId}
         />
       )}
     </div>

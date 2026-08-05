@@ -1,34 +1,24 @@
 import { X } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
-import { CustomSelect } from '@/components/ui/CustomSelect'
+import { RepFilterSelect } from '@/components/ui/RepFilterSelect'
 import { SearchToolbar } from '@/components/backoffice/Workbench'
-import { CHILE_REGIONS } from '@/data/chileGeo'
-
-type RegionOption = { label: string; value: string }
-
-const REGION_OPTIONS: RegionOption[] = CHILE_REGIONS.map(region => ({ label: region.name, value: region.name }))
+import { useAuth } from '@/contexts/useAuth'
 
 interface DoctorFiltersProps {
   q: string
-  region: string
-  category: string
+  repId: number | null
   onSearchChange: (value: string) => void
-  onRegionChange: (value: string) => void
-  onCategoryChange: (value: string) => void
+  onRepIdChange: (repId: number | null) => void
   onClear: () => void
 }
 
-export function DoctorFilters({
-  q,
-  region,
-  category,
-  onSearchChange,
-  onRegionChange,
-  onCategoryChange,
-  onClear,
-}: DoctorFiltersProps) {
-  const isAnyFilterActive = Boolean(q || region || category)
+export function DoctorFilters({ q, repId, onSearchChange, onRepIdChange, onClear }: DoctorFiltersProps) {
+  const { user } = useAuth()
+  // Reps are already hard-scoped to their own doctors server-side — showing
+  // a representative filter to them would be meaningless (and there is no
+  // GET /v1/doctors/reps/search access for their role either).
+  const showRepFilter = user?.role !== 'rep'
+  const isAnyFilterActive = Boolean(q || repId)
 
   return (
     <SearchToolbar
@@ -49,22 +39,14 @@ export function DoctorFilters({
             </Button>
           )}
 
-          <CustomSelect<RegionOption>
-            containerClassName="w-full sm:w-48"
-            placeholder="Región"
-            value={region ? { label: region, value: region } : null}
-            onChange={option => onRegionChange(option?.value ?? '')}
-            options={REGION_OPTIONS}
-            isSearchable
-            isClearable
-          />
-
-          <Input
-            value={category}
-            onChange={event => onCategoryChange(event.target.value)}
-            placeholder="Categoría"
-            className="h-11 w-full sm:w-40"
-          />
+          {showRepFilter && (
+            <RepFilterSelect
+              className="w-full sm:w-64"
+              value={repId}
+              onChange={onRepIdChange}
+              instanceId="doctor-filters-rep-select"
+            />
+          )}
         </div>
       }
     />

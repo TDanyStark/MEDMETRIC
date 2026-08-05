@@ -8,7 +8,13 @@ interface DoctorRepositoryInterface
 {
     public function create(int $organizationId, array $data): Doctor;
 
-    public function update(int $id, int $organizationId, array $data): Doctor;
+    /**
+     * @param int|null $restrictRepId When provided (role==='rep'), the update is
+     *   scoped to doctors owned by this rep: if the doctor exists but
+     *   assigned_rep_id !== $restrictRepId, a DoctorNotFoundException is thrown
+     *   (same not-found path as org mismatch) instead of leaking existence.
+     */
+    public function update(int $id, int $organizationId, array $data, ?int $restrictRepId = null): Doctor;
 
     public function findById(int $id, int $organizationId): ?Doctor;
 
@@ -16,16 +22,21 @@ interface DoctorRepositoryInterface
      * Lightweight lookup for the search/typeahead endpoint.
      * Searches by name/document/institution using LIKE.
      *
+     * @param int|null $restrictRepId When provided (role==='rep'), results are
+     *   further restricted to doctors with assigned_rep_id = $restrictRepId.
      * @return Doctor[]
      */
-    public function search(int $organizationId, string $q, int $limit = 20): array;
+    public function search(int $organizationId, string $q, int $limit = 20, ?int $restrictRepId = null): array;
 
     /**
      * Paginated listing with optional filters.
      *
      * @param array{q?: ?string, region?: ?string, category?: ?string, assigned_rep_id?: ?int} $filters
+     * @param int|null $restrictRepId When provided (role==='rep'), forces
+     *   assigned_rep_id = $restrictRepId regardless of $filters, overriding any
+     *   client-supplied value.
      */
-    public function findAllByOrg(int $organizationId, array $filters, int $page): array;
+    public function findAllByOrg(int $organizationId, array $filters, int $page, ?int $restrictRepId = null): array;
 
     /**
      * Idempotent upsert used by the Kardex import: matches on

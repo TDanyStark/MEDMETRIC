@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
+use App\Infrastructure\Region\RegionCatalog;
 use Dotenv\Dotenv;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
@@ -575,8 +576,21 @@ foreach ($dataRows as $i => $row) {
     $institution   = cleanText(col($row, $colIndex, 'Institución'));
     $category      = cleanText(col($row, $colIndex, 'Categorías'));
     $product       = cleanText(col($row, $colIndex, 'Producto'));
-    $region        = cleanText(col($row, $colIndex, 'Región'));
+    $regionRaw     = cleanText(col($row, $colIndex, 'Región'));
     $adoptionLevel = cleanText(col($row, $colIndex, 'Nivel de adopción 2'));
+
+    // Region MUST be normalized to a canonical CHILE_REGIONS value before
+    // being stored — never the raw Kardex string. An unmappable value is
+    // FLAGGED (warning) and the row still imports with region=null, rather
+    // than blocking the entire row over one bad column, per spec
+    // §"Canonical Region Diagnostic & Normalization".
+    $region = null;
+    if ($regionRaw !== null) {
+        $region = RegionCatalog::normalizeRegion($regionRaw);
+        if ($region === null) {
+            $warnings[] = "Fila {$excelRowNumber} (ID={$externalId}): región no reconocida (se guarda como vacía, revisar manualmente): " . var_export($regionRaw, true);
+        }
+    }
     $email         = cleanOptional(col($row, $colIndex, 'Correo electrónico'));
     $phone         = cleanOptional(col($row, $colIndex, 'Teléfonos'));
     $mobilePhone   = cleanOptional(col($row, $colIndex, 'Teléfono móvil'));

@@ -38,7 +38,11 @@ class SearchDoctorsAction extends Action
 
         $q = trim((string) ($queryParams['q'] ?? ''));
 
-        $doctors = $this->doctorRepository->search($organizationId, $q, 20);
+        // Reps are hard-scoped to their own doctors from auth_user, never from
+        // any client-supplied param — this cannot be overridden.
+        $restrictRepId = ($authUser['role'] ?? null) === 'rep' ? (int) $authUser['id'] : null;
+
+        $doctors = $this->doctorRepository->search($organizationId, $q, 20, $restrictRepId);
 
         $items = array_map(fn($doctor) => $doctor->toSearchResult(), $doctors);
 

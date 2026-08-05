@@ -20,7 +20,7 @@ import { DoctorsTable } from '@/components/doctors/DoctorsTable'
 import { CreateDoctorDialog } from '@/components/doctors/CreateDoctorDialog'
 import { EditDoctorDialog } from '@/components/doctors/EditDoctorDialog'
 
-import { getNumberParam, getStringParam, updateSearchParams } from '@/lib/search'
+import { getNullableNumberParam, getNumberParam, getStringParam, updateSearchParams } from '@/lib/search'
 import { deleteDoctor, listDoctors } from '@/services/doctors'
 import { Doctor } from '@/types/doctor'
 
@@ -32,17 +32,15 @@ export function DoctorsPage() {
   const [deletingDoctor, setDeletingDoctor] = useState<Doctor | null>(null)
 
   const q = getStringParam(searchParams, 'q')
-  const region = getStringParam(searchParams, 'region')
-  const category = getStringParam(searchParams, 'category')
+  const repId = getNullableNumberParam(searchParams, 'rep_id')
   const page = getNumberParam(searchParams, 'page')
 
   const doctorsQuery = useQuery({
-    queryKey: ['doctors', q, region, category, page],
+    queryKey: ['doctors', q, repId, page],
     queryFn: () =>
       listDoctors({
         q: q || undefined,
-        region: region || undefined,
-        category: category || undefined,
+        rep_id: repId ?? undefined,
         page,
       }),
   })
@@ -79,21 +77,15 @@ export function DoctorsPage() {
       <div className="flex flex-col gap-6">
         <DoctorFilters
           q={q ?? ''}
-          region={region ?? ''}
-          category={category ?? ''}
+          repId={repId}
           onSearchChange={value =>
             setSearchParams(current => updateSearchParams(current, { q: value || null, page: 1 }))
           }
-          onRegionChange={value =>
-            setSearchParams(current => updateSearchParams(current, { region: value || null, page: 1 }))
-          }
-          onCategoryChange={value =>
-            setSearchParams(current => updateSearchParams(current, { category: value || null, page: 1 }))
+          onRepIdChange={nextRepId =>
+            setSearchParams(current => updateSearchParams(current, { rep_id: nextRepId ?? null, page: 1 }))
           }
           onClear={() =>
-            setSearchParams(current =>
-              updateSearchParams(current, { q: null, region: null, category: null, page: 1 }),
-            )
+            setSearchParams(current => updateSearchParams(current, { q: null, rep_id: null, page: 1 }))
           }
         />
 

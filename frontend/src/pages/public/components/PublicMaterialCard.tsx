@@ -1,4 +1,4 @@
-import { FileText, Share2 } from "lucide-react";
+import { FileText, MessageSquarePlus, Share2 } from "lucide-react";
 import { copyVisitShareMessage } from "@/lib/shareVisitLink";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
@@ -20,6 +20,7 @@ interface PublicMaterialCardProps {
   session: PublicSession;
   shareUrl?: string;
   getStudyHref?: (study: PublicStudy) => string;
+  onComment?: (material: PublicMaterial) => void;
 }
 
 /**
@@ -27,9 +28,11 @@ interface PublicMaterialCardProps {
  *
  * The whole thing renders as ONE continuous card (image, badges, title,
  * description and related studies all live inside the same `<Card>`
- * wrapper). Only the material TITLE opens the material — the cover image
- * is purely decorative and non-interactive, while related studies keep
- * their own independent click targets (see PublicStudyListItem).
+ * wrapper). Both the cover image AND the material TITLE open the
+ * material (same href/target), related studies keep their own
+ * independent click targets (see PublicStudyListItem), and the
+ * "Comentar" button at the bottom of the card opens the comment
+ * composer preselected to THIS material (see `onComment`).
  */
 export function PublicMaterialCard({
   item,
@@ -39,6 +42,7 @@ export function PublicMaterialCard({
   session,
   shareUrl,
   getStudyHref,
+  onComment,
 }: PublicMaterialCardProps) {
   const handleShare = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -48,6 +52,12 @@ export function PublicMaterialCard({
       repName: session.rep_name,
       organizationName: session.organization_name,
     }, shareUrl);
+  };
+
+  const handleComment = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onComment?.(item);
   };
 
   const studies = item.studies ?? [];
@@ -61,8 +71,13 @@ export function PublicMaterialCard({
           : "hover:border-primary/50 hover:shadow-md border-border/50 bg-background/50 backdrop-blur-sm"
       }`}
     >
-      {/* Cover — decorative only, not clickable */}
-      <div className="relative aspect-video shrink-0 overflow-hidden border-b border-border/10 bg-muted">
+      {/* Cover — opens the material, same target as the title link */}
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="relative block aspect-video shrink-0 overflow-hidden border-b border-border/10 bg-muted"
+      >
         {item.cover_url || item.cover_path ? (
           <img
             src={item.cover_url || `/api/v1/public/material/${item.id}/cover`}
@@ -101,7 +116,7 @@ export function PublicMaterialCard({
             </Tooltip>
           </div>
         )}
-      </div>
+      </a>
 
       <CardContent className="flex flex-1 flex-col p-3">
         <p className="mb-1 text-[9px] font-medium uppercase tracking-wider text-muted-foreground/60">
@@ -147,6 +162,22 @@ export function PublicMaterialCard({
                 />
               ))}
             </div>
+          </div>
+        )}
+
+        {onComment && (
+          <div className="mt-auto pt-3">
+            <Separator className="mb-2.5" />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="w-full justify-center gap-1.5 text-xs text-muted-foreground hover:text-primary"
+              onClick={handleComment}
+            >
+              <MessageSquarePlus className="h-3.5 w-3.5" />
+              Comentar
+            </Button>
           </div>
         )}
       </CardContent>

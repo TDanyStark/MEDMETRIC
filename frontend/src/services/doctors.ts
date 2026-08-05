@@ -1,7 +1,7 @@
 import api from '@/services/api'
 import { ApiResponse } from '@/types'
 import { PaginatedData } from '@/types/backoffice'
-import { Doctor, DoctorListParams, DoctorPayload } from '@/types/doctor'
+import { Doctor, DoctorListParams, DoctorPayload, RepOption } from '@/types/doctor'
 
 function buildQuery(params: Record<string, string | number | boolean | null | undefined>) {
   const query = new URLSearchParams()
@@ -22,6 +22,15 @@ export function listDoctors(params: DoctorListParams) {
 
 export function searchDoctors(q: string) {
   return api.get<ApiResponse<Doctor[]>>(`/doctors/search${buildQuery({ q })}`).then(unwrap)
+}
+
+/**
+ * Role-aware representative typeahead used by RepFilterSelect on the
+ * /doctors filter bar. org_admin gets all org reps, manager gets only reps
+ * actively subscribed to them; reps get 403 (they never see this filter).
+ */
+export function searchReps(q: string) {
+  return api.get<ApiResponse<RepOption[]>>(`/doctors/reps/search${buildQuery({ q })}`).then(unwrap)
 }
 
 export function createDoctor(payload: DoctorPayload) {

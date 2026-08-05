@@ -9,6 +9,7 @@ interface PublicVisitSidebarProps {
   session: PublicSession
   getShareUrl?: (material: PublicMaterial) => string
   getStudyHref?: (study: PublicStudy) => string
+  onComment?: (material: PublicMaterial) => void
 }
 
 export function PublicVisitSidebar({ 
@@ -18,7 +19,8 @@ export function PublicVisitSidebar({
   isModeVisitador,
   session,
   getShareUrl,
-  getStudyHref
+  getStudyHref,
+  onComment
 }: PublicVisitSidebarProps) {
   return (
     <div className="space-y-6">
@@ -42,6 +44,7 @@ export function PublicVisitSidebar({
               session={session}
               shareUrl={getShareUrl?.(material)}
               getStudyHref={getStudyHref}
+              onComment={onComment}
             />
           ))
         )}

@@ -32,6 +32,7 @@ use App\Application\Actions\Comment\ListCommentsAction;
 use App\Application\Actions\Doctor\CreateDoctorAction;
 use App\Application\Actions\Doctor\DeleteDoctorAction;
 use App\Application\Actions\Doctor\ListDoctorsAction;
+use App\Application\Actions\Doctor\RepSearchAction;
 use App\Application\Actions\Doctor\SearchDoctorsAction;
 use App\Application\Actions\Doctor\UpdateDoctorAction;
 use App\Application\Actions\Manager\Brand\ListBrandsAction;
@@ -384,6 +385,7 @@ return function (App $app) {
         // doctor is further restricted to DoctorAccessConfig::DELETE_ROLES.
         // -------------------------------------------------------------------------
         $group->group('/doctors', function (RouteCollectorProxy $doctors) use ($app) {
+            $doctors->get('/reps/search', RepSearchAction::class);
             $doctors->get('/search', SearchDoctorsAction::class);
             $doctors->get('',        ListDoctorsAction::class);
             $doctors->post('',       CreateDoctorAction::class);

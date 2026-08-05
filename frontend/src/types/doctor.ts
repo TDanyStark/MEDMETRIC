@@ -16,6 +16,7 @@ export interface Doctor {
   product: string | null
   adoption_level: string | null
   assigned_rep_id: number | null
+  assigned_rep_name: string | null
   email: string | null
   phone: string | null
   mobile_phone: string | null
@@ -28,10 +29,14 @@ export interface Doctor {
 
 export type DoctorListParams = {
   q?: string
-  region?: string
-  category?: string
-  assigned_rep_id?: number
+  rep_id?: number
   page?: number
+}
+
+export interface RepOption {
+  id: number
+  name: string
+  email: string
 }
 
 export interface DoctorPayload {
@@ -50,5 +55,5 @@ export interface DoctorPayload {
   phone?: string
   mobile_phone?: string
   address?: string
-  assigned_rep_id?: number
+  assigned_rep_id?: number | null
 }
