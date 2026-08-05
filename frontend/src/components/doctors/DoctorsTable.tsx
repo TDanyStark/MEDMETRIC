@@ -68,7 +68,7 @@ export function DoctorsTable({ doctors, onEdit, onDelete }: DoctorsTableProps) {
               <TableCell className="text-sm">{formatDate(doctor.last_visit_date, user?.organization_timezone)}</TableCell>
               <TableCell className="text-sm">{daysSinceLabel(doctor.days_since_last_visit)}</TableCell>
               <TableCell className="text-muted-foreground">
-                {doctor.assigned_rep_id ? `ID ${doctor.assigned_rep_id}` : 'Sin asignar'}
+                {doctor.assigned_rep_name ?? (doctor.assigned_rep_id ? `#${doctor.assigned_rep_id}` : 'Sin asignar')}
               </TableCell>
               <TableCell className="text-right">
                 <div className="flex justify-end gap-2">
