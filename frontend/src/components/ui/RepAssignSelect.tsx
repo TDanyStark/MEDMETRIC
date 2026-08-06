@@ -100,21 +100,23 @@ export function RepAssignSelect({
         placeholder={placeholder}
         className={className}
         styles={createAsyncSelectStyles()}
-        // This field sits near the bottom of the Create/Edit Doctor dialogs
-        // (DialogContent has max-h-[90vh] overflow-y-auto). A downward menu
-        // there gets appended past the dialog's visible bounds, forcing the
-        // whole modal to grow/scroll just to show the dropdown — poor UX.
-        // Force the menu upward and portal it to <body> with fixed
-        // positioning so it's laid out purely against the viewport: it
-        // never contributes to the dialog's scrollHeight (no more modal
-        // "stretching"), never gets clipped by the dialog's overflow-auto,
-        // and still tracks the trigger correctly on scroll/resize —
-        // react-select's own documented pattern for selects inside modals.
-        // Keyboard nav, focus and click-outside handling are unaffected;
-        // only the rendered DOM location and stacking of the menu changes.
-        menuPlacement="top"
-        menuPosition="fixed"
-        menuPortalTarget={document.body}
+        // Kept as a normal DOM descendant of the Dialog's content — same
+        // model as the (working) Región/Provincia/Comuna CustomSelects and
+        // RepFilterSelect. An earlier version portalled this menu to
+        // <body> with menuPosition="fixed" so it could visually escape the
+        // Dialog's overflow-y-auto clipping near the bottom of the form.
+        // That broke containment (the menu rendered detached from its
+        // trigger, floating over unrelated fields) and, since the portal
+        // sits outside Radix Dialog's `react-remove-scroll` shard, silently
+        // blocked native wheel/touch scrolling over the option list —
+        // patched at the time with a hand-rolled scroll handler
+        // (ScrollLockSafeMenuList) instead of fixing the actual placement.
+        // Letting react-select pick the placement itself — "auto" measures
+        // the real available space and opens upward here since this is the
+        // last field before the dialog's footer — keeps the menu inside the
+        // Dialog subtree (native scroll works, focus trap is unaffected)
+        // without ever growing the modal or clipping the option list.
+        menuPlacement="auto"
         noOptionsMessage={() => 'No se encontraron representantes'}
         loadingMessage={() => 'Buscando...'}
       />
