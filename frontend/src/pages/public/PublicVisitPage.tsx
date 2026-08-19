@@ -30,7 +30,7 @@ export default function PublicVisitPage() {
           return { type: 'rep' as const }
         }
       }
-    } catch(e) {
+    } catch {
       // Ignore
     }
     

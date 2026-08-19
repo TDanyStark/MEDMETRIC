@@ -41,7 +41,7 @@ export function MaterialPreviewDialog({
       try {
         const data = await getRepMaterialPreview(material.id);
         setResource(data);
-      } catch (err) {
+      } catch {
         toast.error("No se pudo cargar la previsualización");
       }
     };
@@ -53,7 +53,7 @@ export function MaterialPreviewDialog({
       const data = await getRepStudyPreview(study.id);
       setActiveStudy(study);
       setStudyResource(data);
-    } catch (err) {
+    } catch {
       toast.error("No se pudo cargar la previsualización del estudio");
     }
   };
