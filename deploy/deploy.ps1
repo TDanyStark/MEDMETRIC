@@ -191,7 +191,11 @@ function New-VerifiedZip {
         [int]$Retries = 3
     )
 
-    $expectedCount = (Get-ChildItem -Path $SourcePath -Recurse -File -ErrorAction SilentlyContinue | Measure-Object).Count
+    # PS 5.1: Get-ChildItem con wildcard final ("...\*") + -Recurse + -File
+    # devuelve 0 siempre (bug conocido). Se cuenta sobre el directorio sin
+    # el wildcard para que el conteo esperado sea correcto.
+    $countPath = $SourcePath -replace '[\\/]\*$', ''
+    $expectedCount = (Get-ChildItem -Path $countPath -Recurse -File -ErrorAction SilentlyContinue | Measure-Object).Count
 
     for ($attempt = 1; $attempt -le $Retries; $attempt++) {
         if (Test-Path $DestinationPath) { Remove-Item -Force $DestinationPath }
@@ -207,8 +211,13 @@ function New-VerifiedZip {
 
         Add-Type -AssemblyName System.IO.Compression.FileSystem -ErrorAction SilentlyContinue
         try {
+            # Compress-Archive (PS 5.1) escribe entradas sinteticas de
+            # directorios "vacios de archivos directos" (solo contienen
+            # subdirectorios) usando '\' como separador en vez del '/' que
+            # exige el spec de ZIP. Se excluyen ambos para no contar esas
+            # marcas de directorio como archivos.
             $zip = [System.IO.Compression.ZipFile]::OpenRead($DestinationPath)
-            $actualCount = ($zip.Entries | Where-Object { -not $_.FullName.EndsWith('/') }).Count
+            $actualCount = ($zip.Entries | Where-Object { -not ($_.FullName.EndsWith('/') -or $_.FullName.EndsWith('\')) }).Count
             $zip.Dispose()
         } catch {
             Write-Host "  No se pudo leer '$DestinationPath' para validar integridad (intento $attempt/$Retries): $($_.Exception.Message)" -ForegroundColor Yellow

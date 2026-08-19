@@ -78,7 +78,7 @@ export function StudyViewsTable({
               <tr>
                 <th className="px-4 py-3 font-medium">Fecha</th>
                 <th className="px-4 py-3 font-medium">Material</th>
-                <th className="px-4 py-3 font-medium">Estudio</th>
+                <th className="px-4 py-3 font-medium min-w-[320px]">Estudio</th>
                 <th className="px-4 py-3 font-medium">Visualizador</th>
                 <th className="px-4 py-3 font-medium">Representante</th>
                 <th className="px-4 py-3 font-medium">Médico</th>
@@ -137,10 +137,13 @@ export function StudyViewsTable({
                         </Tooltip>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-muted-foreground">
+                    <td className="px-4 py-3 text-muted-foreground min-w-[320px]">
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <span className="inline-block align-middle line-clamp-2 max-w-[220px] cursor-default">
+                          <span
+                            className="inline-block align-middle line-clamp-2 max-w-[320px] cursor-default"
+                            title={item.study_title}
+                          >
                             {item.study_title}
                           </span>
                         </TooltipTrigger>
