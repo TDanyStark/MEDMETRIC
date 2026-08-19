@@ -17,7 +17,7 @@ MEDMETRIC/
 
 - Basado en la plantilla oficial: `slim/slim-skeleton`
 - Archivo de entrada: `backend/public/index.php`
-- Ruta health: `GET /api/health`
+- Ruta health: `GET /api/v1/health` (todas las rutas de la API van bajo el prefijo `/api/v1`)
 - Conexion MySQL por PDO: `backend/src/Infrastructure/Database/Connection.php`
 - Variables de entorno: `backend/.env`
 
@@ -58,7 +58,7 @@ npm run dev
 3. Abrir:
 
 - `http://localhost:5173`
-- `http://localhost:8081/api/health`
+- `http://localhost:8081/api/v1/health`
 
 ## Despliegue en Hostinger (subdominio)
 
@@ -99,4 +99,4 @@ composer install --no-dev --optimize-autoloader
 5. Verificar:
 
 - `https://medmetric.market-support.com/`
-- `https://medmetric.market-support.com/api/health`
+- `https://medmetric.market-support.com/api/v1/health`

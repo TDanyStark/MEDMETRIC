@@ -182,7 +182,7 @@ Nota: Los usuarios con rol `org_admin` se asocian a una organización mediante `
 - Configurar `.env` de produccion (DB, app env, secretos)
 - Verificar rutas:
   - `/` SPA
-  - `/api/health` API
+  - `/api/v1/health` API (todas las rutas de la API van bajo el prefijo `/api/v1`)
 
 ## Buenas practicas
 

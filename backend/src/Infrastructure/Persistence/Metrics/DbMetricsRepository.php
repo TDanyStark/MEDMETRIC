@@ -9,6 +9,7 @@ use App\Infrastructure\Config\MetricsTrendConfig;
 use App\Infrastructure\Config\TimezoneConfig;
 use App\Infrastructure\Database\Connection;
 use App\Infrastructure\Support\OrgDateRange;
+use App\Infrastructure\Support\RepAttribution;
 use App\Infrastructure\Support\TrendBucketCap;
 use PDO;
 
@@ -212,9 +213,21 @@ class DbMetricsRepository implements MetricsRepositoryInterface
             $where[] = 'm.id IN ' . $this->buildInClause($materialIds, 'mat', $params);
         }
 
+        // Attribute each view to a rep via RepAttribution::condition() (rep's
+        // own viewer_id for viewer_type='rep', otherwise the owning visit
+        // session's rep_id for viewer_type='doctor') — see that class'
+        // docblock for why a plain "viewer_type = 'rep' AND viewer_id IN
+        // (...)" predicate is wrong (it drops every doctor view). No
+        // visit_sessions JOIN needed here: a correlated subquery resolves
+        // the session's rep_id inline.
         $repIds = $this->intIds($filters['rep_ids'] ?? null);
         if (!empty($repIds)) {
-            $where[] = "mv.viewer_type = 'rep' AND mv.viewer_id IN " . $this->buildInClause($repIds, 'rep', $params);
+            $where[] = RepAttribution::condition(
+                $repIds,
+                'mv.viewer_id',
+                '(SELECT rep_id FROM visit_sessions WHERE id = mv.visit_session_id)',
+                $params
+            );
         }
 
         // Bound the row fetch at the DB level — see boundTrendDateRange()
@@ -306,9 +319,19 @@ class DbMetricsRepository implements MetricsRepositoryInterface
         foreach ($this->dateRangeFragments($filters, 'mv.opened_at', $timezone, $params) as $fragment) {
             $viewsJoinCondition .= " AND {$fragment}";
         }
+        // See RepAttribution docblock: viewer_id-only matching drops doctor
+        // views. The condition stays inside the JOIN...ON (not WHERE) so
+        // materials with 0 views in the selected scope still appear —
+        // correlated subquery because visit_sessions can't be JOINed ahead
+        // of material_views in this FROM sequence.
         $repIds = $this->intIds($filters['rep_ids'] ?? null);
         if (!empty($repIds)) {
-            $viewsJoinCondition .= " AND mv.viewer_type = 'rep' AND mv.viewer_id IN " . $this->buildInClause($repIds, 'rep', $params);
+            $viewsJoinCondition .= ' AND ' . RepAttribution::condition(
+                $repIds,
+                'mv.viewer_id',
+                '(SELECT rep_id FROM visit_sessions WHERE id = mv.visit_session_id)',
+                $params
+            );
         }
 
         $whereSql = implode(' AND ', $where);
@@ -366,9 +389,19 @@ class DbMetricsRepository implements MetricsRepositoryInterface
         foreach ($this->dateRangeFragments($filters, 'mv.opened_at', $timezone, $params) as $fragment) {
             $viewsJoinCondition .= " AND {$fragment}";
         }
+        // See RepAttribution docblock: viewer_id-only matching drops doctor
+        // views. The condition stays inside the JOIN...ON (not WHERE) so
+        // materials with 0 views in the selected scope still appear —
+        // correlated subquery because visit_sessions can't be JOINed ahead
+        // of material_views in this FROM sequence.
         $repIds = $this->intIds($filters['rep_ids'] ?? null);
         if (!empty($repIds)) {
-            $viewsJoinCondition .= " AND mv.viewer_type = 'rep' AND mv.viewer_id IN " . $this->buildInClause($repIds, 'rep', $params);
+            $viewsJoinCondition .= ' AND ' . RepAttribution::condition(
+                $repIds,
+                'mv.viewer_id',
+                '(SELECT rep_id FROM visit_sessions WHERE id = mv.visit_session_id)',
+                $params
+            );
         }
 
         $whereSql = implode(' AND ', $where);
@@ -445,7 +478,9 @@ class DbMetricsRepository implements MetricsRepositoryInterface
 
         $repIds = $this->intIds($filters['rep_ids'] ?? null);
         if (!empty($repIds)) {
-            $where[] = 'COALESCE(mv.viewer_id, vs.rep_id) IN ' . $this->buildInClause($repIds, 'rep', $params);
+            // vs is already LEFT JOINed above (repJoin needs it too), so
+            // pass its column directly — see RepAttribution docblock.
+            $where[] = RepAttribution::condition($repIds, 'mv.viewer_id', 'vs.rep_id', $params);
         }
 
         $whereSql = implode(' AND ', $where);
@@ -534,6 +569,17 @@ class DbMetricsRepository implements MetricsRepositoryInterface
         // Views sub-scope, restricted to materials within the same scope and to
         // rep-type views. Date filters apply to the LEFT JOIN so reps with 0
         // views still appear.
+        //
+        // NOTE (checked against the RepAttribution class-drops-doctor-views
+        // bug — see that class' docblock): this is intentionally NOT the
+        // same predicate. "Rep adoption" measures each rep's OWN personal
+        // material engagement (did THIS rep open the material), so it must
+        // stay scoped to that rep's direct viewer_type='rep' views — mixing
+        // in doctor views generated during that rep's sessions would change
+        // what the metric means, not fix a bug. The `rep_ids` filter below
+        // (repWhere) is also unrelated to this: it restricts which USERS
+        // (rows) appear in the report, not which views get attributed to a
+        // rep — so it isn't the "filter drops doctor views" bug either.
         $viewJoin = "mv.viewer_id = u.id AND mv.viewer_type = 'rep'";
         foreach ($this->dateRangeFragments($filters, 'mv.opened_at', $timezone, $repParams) as $fragment) {
             $viewJoin .= " AND {$fragment}";
@@ -642,9 +688,16 @@ class DbMetricsRepository implements MetricsRepositoryInterface
             $where[] = 'ms.id IN ' . $this->buildInClause($studyIds, 'study', $params);
         }
 
+        // See RepAttribution docblock (shared with getMaterialViewsMetrics())
+        // for why viewer_id-only matching drops doctor views.
         $repIds = $this->intIds($filters['rep_ids'] ?? null);
         if (!empty($repIds)) {
-            $where[] = "sv.viewer_type = 'rep' AND sv.viewer_id IN " . $this->buildInClause($repIds, 'rep', $params);
+            $where[] = RepAttribution::condition(
+                $repIds,
+                'sv.viewer_id',
+                '(SELECT rep_id FROM visit_sessions WHERE id = sv.visit_session_id)',
+                $params
+            );
         }
 
         // Bound the row fetch at the DB level — see boundTrendDateRange()
@@ -714,7 +767,9 @@ class DbMetricsRepository implements MetricsRepositoryInterface
 
         $repIds = $this->intIds($filters['rep_ids'] ?? null);
         if (!empty($repIds)) {
-            $where[] = 'COALESCE(sv.viewer_id, vs.rep_id) IN ' . $this->buildInClause($repIds, 'rep', $params);
+            // vs is already LEFT JOINed above (repJoin needs it too), so
+            // pass its column directly — see RepAttribution docblock.
+            $where[] = RepAttribution::condition($repIds, 'sv.viewer_id', 'vs.rep_id', $params);
         }
 
         $whereSql = implode(' AND ', $where);
