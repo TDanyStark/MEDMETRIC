@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Tests\Infrastructure\Support;
 
 use App\Infrastructure\Support\OrgDateRange;
+use DateTimeImmutable;
+use DateTimeZone;
 use InvalidArgumentException;
 use Tests\TestCase;
 
@@ -243,5 +245,82 @@ class OrgDateRangeTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
 
         OrgDateRange::localDateBucket('2026-01-01 00:00:00', 'Not/AZone');
+    }
+
+    // -----------------------------------------------------------------
+    // capRangeToMaxDays() — trend query range cap (bug regression: this
+    // must bound the effective range by CALENDAR DAYS even when the
+    // caller supplies an explicit range, not only when both dates are
+    // empty).
+    // -----------------------------------------------------------------
+
+    public function testCapRangeToMaxDaysBothNullDefaultsToLastNDays(): void
+    {
+        // Both calls hit "now" independently; comparing them directly is
+        // safe in practice (same test execution instant) and mirrors the
+        // documented "falls back to lastNLocalDays()" contract exactly.
+        $expected = OrgDateRange::lastNLocalDays(90, self::SANTIAGO);
+
+        $result = OrgDateRange::capRangeToMaxDays(null, null, 90, self::SANTIAGO);
+
+        $this->assertSame($expected, $result);
+    }
+
+    public function testCapRangeToMaxDaysWithinLimitLeavesStartUnchanged(): void
+    {
+        // 3-day span (13, 14, 15) is within the 5-day max — nothing to truncate.
+        [$start, $end] = OrgDateRange::capRangeToMaxDays('2026-06-13', '2026-06-15', 5, self::SANTIAGO);
+
+        $this->assertSame('2026-06-13', $start);
+        $this->assertSame('2026-06-15', $end);
+    }
+
+    public function testCapRangeToMaxDaysExceedingLimitTruncatesStartKeepingEnd(): void
+    {
+        // Requested span (2026-01-01 .. 2026-06-15) is far wider than 5
+        // days: start must be pulled forward, end must stay exactly as
+        // requested (the "keep the most recent days" policy).
+        [$start, $end] = OrgDateRange::capRangeToMaxDays('2026-01-01', '2026-06-15', 5, self::SANTIAGO);
+
+        $this->assertSame('2026-06-11', $start, '5-day window ending 06-15 inclusive starts 06-11');
+        $this->assertSame('2026-06-15', $end);
+    }
+
+    public function testCapRangeToMaxDaysOnlyEndProvidedBoundsStartRelativeToEnd(): void
+    {
+        [$start, $end] = OrgDateRange::capRangeToMaxDays(null, '2026-06-15', 5, self::SANTIAGO);
+
+        $this->assertSame('2026-06-11', $start);
+        $this->assertSame('2026-06-15', $end);
+    }
+
+    public function testCapRangeToMaxDaysOnlyStartProvidedCapsRelativeToTodayAndKeepsEndNull(): void
+    {
+        $todayLocal = (new DateTimeImmutable('now', new DateTimeZone(self::SANTIAGO)))->format('Y-m-d');
+        $farPastStart = (new DateTimeImmutable($todayLocal))->modify('-500 days')->format('Y-m-d');
+        $expectedStart = (new DateTimeImmutable($todayLocal))->modify('-4 days')->format('Y-m-d');
+
+        [$start, $end] = OrgDateRange::capRangeToMaxDays($farPastStart, null, 5, self::SANTIAGO);
+
+        $this->assertSame($expectedStart, $start);
+        $this->assertNull($end, 'end_date must stay exactly as requested (null / open-ended)');
+    }
+
+    public function testCapRangeToMaxDaysOnlyStartProvidedWithinLimitLeavesStartUnchanged(): void
+    {
+        $todayLocal = (new DateTimeImmutable('now', new DateTimeZone(self::SANTIAGO)))->format('Y-m-d');
+        $recentStart = (new DateTimeImmutable($todayLocal))->modify('-2 days')->format('Y-m-d');
+
+        [$start, $end] = OrgDateRange::capRangeToMaxDays($recentStart, null, 5, self::SANTIAGO);
+
+        $this->assertSame($recentStart, $start);
+        $this->assertNull($end);
+    }
+
+    public function testCapRangeToMaxDaysThrowsOnInvalidTimezone(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        OrgDateRange::capRangeToMaxDays('2026-01-01', '2026-01-05', 90, 'Not/AZone');
     }
 }

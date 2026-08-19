@@ -125,6 +125,68 @@ final class OrgDateRange
     }
 
     /**
+     * Bound an org-local [startLocal, endLocal] calendar-date filter pair
+     * to at most $maxDays days, WITHOUT changing the caller's requested
+     * end boundary. Shared by any date-filtered query that must never
+     * fetch/return more than $maxDays org-local calendar days (currently
+     * DbMetricsRepository's trend endpoints, which feed bucketByLocalDay()
+     * / TrendBucketCap and must not pull an org's entire unbounded history
+     * into PHP just because the caller supplied a wide or missing range).
+     *
+     * Truncation is SILENT (no exception, no 4xx): when the effective span
+     * exceeds $maxDays, $startLocal is the value that gets pulled forward;
+     * $endLocal is always returned exactly as passed in (including null),
+     * matching the "keep the most recent days" semantics used elsewhere in
+     * this codebase for the same kind of cap.
+     *
+     * - Both null: falls back to lastNLocalDays($maxDays, $tz) (unchanged
+     *   default-window behavior for "no filter supplied at all").
+     * - Only $endLocal supplied: $startLocal is computed as
+     *   $endLocal - ($maxDays - 1) days.
+     * - Only $startLocal supplied (open-ended-to-now): the span is
+     *   measured against "today" in $tz, and $startLocal is pulled forward
+     *   if that implied span exceeds $maxDays; $endLocal stays null.
+     * - Both supplied and span > $maxDays: $startLocal is pulled forward
+     *   to $endLocal - ($maxDays - 1) days.
+     * - Both supplied and span <= $maxDays: returned unchanged.
+     *
+     * @param string|null $startLocal 'YYYY-MM-DD' or null
+     * @param string|null $endLocal   'YYYY-MM-DD' or null
+     * @param int         $maxDays    max number of calendar days to allow (must be >= 1)
+     * @param string      $tz         IANA timezone identifier, e.g. 'America/Santiago'
+     * @return array{0: ?string, 1: ?string} [boundedStartLocal, $endLocal] as 'YYYY-MM-DD' or null
+     *
+     * @throws InvalidArgumentException if $tz is not a known IANA identifier
+     */
+    public static function capRangeToMaxDays(?string $startLocal, ?string $endLocal, int $maxDays, string $tz): array
+    {
+        if (!self::isValid($tz)) {
+            throw new InvalidArgumentException("Unknown timezone identifier: {$tz}");
+        }
+
+        if ($startLocal === null && $endLocal === null) {
+            return self::lastNLocalDays($maxDays, $tz);
+        }
+
+        $zone = new DateTimeZone($tz);
+
+        // Effective upper bound used only to MEASURE the span: the
+        // caller's own $endLocal, or "today" org-local when only a start
+        // was supplied. $endLocal itself is returned untouched below.
+        $effectiveEndLocal = $endLocal ?? (new DateTimeImmutable('now', $zone))->format('Y-m-d');
+
+        $minStartLocal = (new DateTimeImmutable($effectiveEndLocal, $zone))
+            ->modify('-' . ($maxDays - 1) . ' days')
+            ->format('Y-m-d');
+
+        $boundedStartLocal = ($startLocal === null || $startLocal < $minStartLocal)
+            ? $minStartLocal
+            : $startLocal;
+
+        return [$boundedStartLocal, $endLocal];
+    }
+
+    /**
      * Whether $tz is a known IANA timezone identifier.
      */
     public static function isValid(string $tz): bool

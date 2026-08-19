@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Infrastructure\Persistence\Metrics;
 
 use App\Domain\Metrics\MetricsRepositoryInterface;
+use App\Infrastructure\Config\MetricsTrendConfig;
 use App\Infrastructure\Config\TimezoneConfig;
 use App\Infrastructure\Database\Connection;
 use App\Infrastructure\Support\OrgDateRange;
+use App\Infrastructure\Support\TrendBucketCap;
 use PDO;
 
 class DbMetricsRepository implements MetricsRepositoryInterface
@@ -104,8 +106,13 @@ class DbMetricsRepository implements MetricsRepositoryInterface
      * Bucket raw (opened_at, viewer_type, session_key) rows into
      * [{date, viewer_type, views, sessions}, ...] grouped by ORG-LOCAL
      * calendar day (not UTC day — see OrgDateRange::localDateBucket()),
-     * ordered by date DESC, capped at 90 day×viewer_type buckets (mirrors
-     * the previous SQL-level `GROUP BY DATE(...) ... LIMIT 90` shape).
+     * ordered by date DESC, capped at MetricsTrendConfig::MAX_TREND_DAYS
+     * most-recent DISTINCT calendar dates (see TrendBucketCap — NOT capped
+     * by raw bucket count: a single day can produce up to 2 buckets, one
+     * per viewer_type ('rep'/'doctor'), so slicing the first N buckets
+     * instead of the first N DISTINCT dates used to silently drop up to
+     * half of the intended day window whenever both series had activity
+     * on the same days).
      *
      * Distinct session counting MUST happen per-bucket in PHP (not via a
      * pre-aggregated-by-hour SQL step) because a session's views could
@@ -149,7 +156,45 @@ class DbMetricsRepository implements MetricsRepositoryInterface
 
         usort($result, static fn(array $a, array $b) => strcmp($b['date'], $a['date']));
 
-        return array_slice($result, 0, 90);
+        return TrendBucketCap::capToMostRecentDays($result, MetricsTrendConfig::MAX_TREND_DAYS);
+    }
+
+    /**
+     * Bound the effective [start_date, end_date] org-local filter window
+     * to at most MetricsTrendConfig::MAX_TREND_DAYS calendar days. Shared
+     * by getMaterialViewsMetrics() and getStudyViewsMetrics() (both feed
+     * bucketByLocalDay() and must never fetch more raw rows than a trend
+     * chart can ever display) — see OrgDateRange::capRangeToMaxDays() for
+     * the exact truncation rules.
+     *
+     * This MUST run unconditionally, not only when start_date/end_date are
+     * both empty: the frontend date-picker has no upper bound on the
+     * requested span, so an explicit wide (or one-sided) range would
+     * otherwise fetch an org's entire unbounded view history into PHP for
+     * org-local bucketing (CONVERT_TZ is unavailable on Hostinger, so this
+     * bounding can't be pushed back down into a SQL-level LIMIT either —
+     * see bucketByLocalDay() / OrgDateRange class docblocks).
+     *
+     * Truncation is SILENT (no 4xx) and always preserves the caller's
+     * requested end_date, pulling start_date forward instead. NOTE: this
+     * repository's trend methods return a flat bucket array (no metadata
+     * envelope), so there is currently nowhere to surface a
+     * "was_truncated" flag back to the caller — if/when these endpoints
+     * grow a metadata wrapper, thread that flag through from here.
+     *
+     * @param array<string, mixed> $filters
+     * @return array<string, mixed> $filters with start_date/end_date bounded
+     */
+    private function boundTrendDateRange(array $filters, string $timezone): array
+    {
+        [$filters['start_date'], $filters['end_date']] = OrgDateRange::capRangeToMaxDays(
+            !empty($filters['start_date']) ? $filters['start_date'] : null,
+            !empty($filters['end_date']) ? $filters['end_date'] : null,
+            MetricsTrendConfig::MAX_TREND_DAYS,
+            $timezone
+        );
+
+        return $filters;
     }
 
     public function getMaterialViewsMetrics(int $organizationId, ?int $managerId, array $filters = [], string $timezone = TimezoneConfig::DEFAULT_ZONE): array
@@ -172,17 +217,9 @@ class DbMetricsRepository implements MetricsRepositoryInterface
             $where[] = "mv.viewer_type = 'rep' AND mv.viewer_id IN " . $this->buildInClause($repIds, 'rep', $params);
         }
 
-        // Bound the row fetch at the DB level: when the caller did not
-        // supply an explicit start_date/end_date, default to the last 90
-        // org-local calendar days (mirrors the pre-timezone-change SQL
-        // `GROUP BY DATE(...) ... LIMIT 90` intent). Without this, raw rows
-        // are now fetched unfiltered into PHP for org-local bucketing
-        // (CONVERT_TZ is unavailable on Hostinger), which on a large org
-        // with no date filter would pull its entire view history into PHP
-        // memory before slicing to 90 buckets.
-        if (empty($filters['start_date']) && empty($filters['end_date'])) {
-            [$filters['start_date'], $filters['end_date']] = OrgDateRange::lastNLocalDays(90, $timezone);
-        }
+        // Bound the row fetch at the DB level — see boundTrendDateRange()
+        // docblock for why this must apply unconditionally.
+        $filters = $this->boundTrendDateRange($filters, $timezone);
 
         foreach ($this->dateRangeFragments($filters, 'mv.opened_at', $timezone, $params) as $fragment) {
             $where[] = $fragment;
@@ -610,14 +647,10 @@ class DbMetricsRepository implements MetricsRepositoryInterface
             $where[] = "sv.viewer_type = 'rep' AND sv.viewer_id IN " . $this->buildInClause($repIds, 'rep', $params);
         }
 
-        // Bound the row fetch at the DB level: when the caller did not
-        // supply an explicit start_date/end_date, default to the last 90
-        // org-local calendar days (mirrors the pre-timezone-change SQL
-        // `GROUP BY DATE(...) ... LIMIT 90` intent). See getMaterialViewsMetrics
-        // for the full rationale.
-        if (empty($filters['start_date']) && empty($filters['end_date'])) {
-            [$filters['start_date'], $filters['end_date']] = OrgDateRange::lastNLocalDays(90, $timezone);
-        }
+        // Bound the row fetch at the DB level — see boundTrendDateRange()
+        // docblock (shared with getMaterialViewsMetrics()) for the full
+        // rationale.
+        $filters = $this->boundTrendDateRange($filters, $timezone);
 
         foreach ($this->dateRangeFragments($filters, 'sv.opened_at', $timezone, $params) as $fragment) {
             $where[] = $fragment;
