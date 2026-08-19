@@ -1,6 +1,7 @@
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { Calendar as CalendarIcon, X } from "lucide-react";
+import type { Matcher } from "react-day-picker";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
@@ -16,6 +17,10 @@ interface DatePickerProps {
   onChange: (value: string | undefined) => void;
   placeholder?: string;
   className?: string;
+  /** ISO 'YYYY-MM-DD'. Days strictly before this are disabled in the calendar. */
+  minDate?: string;
+  /** ISO 'YYYY-MM-DD'. Days strictly after this are disabled in the calendar. */
+  maxDate?: string;
 }
 
 export function DatePicker({
@@ -23,8 +28,14 @@ export function DatePicker({
   onChange,
   placeholder = "Seleccionar fecha",
   className,
+  minDate,
+  maxDate,
 }: DatePickerProps) {
   const date = value ? parseISO(value) : undefined;
+  const disabledMatchers: Matcher[] = [
+    ...(minDate ? [{ before: parseISO(minDate) }] : []),
+    ...(maxDate ? [{ after: parseISO(maxDate) }] : []),
+  ];
 
   return (
     <div className={cn("flex items-center gap-1", className)}>
@@ -56,6 +67,7 @@ export function DatePicker({
                 onChange(undefined);
               }
             }}
+            disabled={disabledMatchers.length ? disabledMatchers : undefined}
             initialFocus
             locale={es}
           />

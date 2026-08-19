@@ -13,6 +13,8 @@ import {
 import { metricsApi } from '@/services/metrics'
 import { cn } from '@/lib/utils'
 import { getStringParam, getNumberArrayParam, updateSearchParams } from '@/lib/search'
+import { MAX_METRICS_TREND_DAYS } from '@/lib/metricsTrendConfig'
+import { capDateRangeToMaxDays, computeMaxEndDate, computeMinStartDate } from '@/lib/dateRangeCap'
 import {
   Tooltip,
   TooltipContent,
@@ -26,6 +28,7 @@ import { StudyViewsTable } from './StudyViewsTable'
 import { ViewsTrendChart } from './ViewsTrendChart'
 import { TopMaterialsChart } from './TopMaterialsChart'
 import { RepAdoptionTable } from './RepAdoptionTable'
+import { DateRangeCapNotice } from './DateRangeCapNotice'
 import { PaginationBar } from './Workbench'
 
 export function MetricsDashboard() {
@@ -33,8 +36,17 @@ export function MetricsDashboard() {
 
   const materialIds = getNumberArrayParam(searchParams, 'material_id')
   const repIds = getNumberArrayParam(searchParams, 'rep_id')
-  const startDate = getStringParam(searchParams, 'start_date')
-  const endDate = getStringParam(searchParams, 'end_date')
+  const rawStartDate = getStringParam(searchParams, 'start_date')
+  const rawEndDate = getStringParam(searchParams, 'end_date')
+
+  // Cap the effective range to MAX_METRICS_TREND_DAYS BEFORE it's used for
+  // anything (queries, pickers, URL). This covers the "shared URL with an
+  // old wide range" case: the chart/queries never see the uncapped values,
+  // even for the single render before the sanitize effect below runs.
+  const { startDate: cappedStartDate, endDate: cappedEndDate, wasCapped } =
+    capDateRangeToMaxDays(rawStartDate, rawEndDate)
+  const startDate = cappedStartDate ?? ''
+  const endDate = cappedEndDate ?? ''
 
   // Stable string keys for react-query cache invalidation.
   const materialKey = materialIds.join(',')
@@ -46,6 +58,19 @@ export function MetricsDashboard() {
   useEffect(() => {
     setDetailPage(1)
   }, [materialKey, repKey, startDate, endDate])
+
+  // If the URL's start_date got capped (e.g. an old shared link requesting
+  // a year-wide range), reflect the corrected value back into the URL so
+  // the address bar never disagrees with what the picker/chart show.
+  useEffect(() => {
+    if (wasCapped && rawStartDate !== startDate) {
+      setSearchParams(
+        (prev) => updateSearchParams(prev, { start_date: startDate, page: null }),
+        { replace: true },
+      )
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wasCapped, startDate, rawStartDate])
 
   const setIdsFilter = (key: string, ids: number[]) => {
     setSearchParams(
@@ -173,6 +198,8 @@ export function MetricsDashboard() {
               onChange={(val) => setDateFilter('start_date', val || '')}
               placeholder="Desde"
               className="w-[180px]"
+              minDate={computeMinStartDate(endDate || undefined)}
+              maxDate={endDate || undefined}
             />
           </div>
           <div className="flex flex-col gap-1.5">
@@ -182,6 +209,8 @@ export function MetricsDashboard() {
               onChange={(val) => setDateFilter('end_date', val || '')}
               placeholder="Hasta"
               className="w-[180px]"
+              minDate={startDate || undefined}
+              maxDate={computeMaxEndDate(startDate || undefined)}
             />
           </div>
           {hasFilters && (
@@ -193,6 +222,11 @@ export function MetricsDashboard() {
             </button>
           )}
         </div>
+        {wasCapped && (
+          <div className="mt-3">
+            <DateRangeCapNotice maxDays={MAX_METRICS_TREND_DAYS} />
+          </div>
+        )}
       </div>
 
       {/* Resumen Cards */}
