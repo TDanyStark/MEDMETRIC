@@ -6,6 +6,7 @@ namespace Tests\Application\Actions\User;
 
 use App\Application\Actions\ActionError;
 use App\Application\Actions\ActionPayload;
+use App\Application\Actions\User\ViewUserAction;
 use App\Application\Handlers\HttpErrorHandler;
 use App\Domain\User\User;
 use App\Domain\User\UserNotFoundException;
@@ -19,6 +20,14 @@ class ViewUserActionTest extends TestCase
     public function testAction()
     {
         $app = $this->getAppInstance();
+
+        // ViewUserAction is legacy/reference scaffolding kept in the codebase
+        // (see app/repositories.php) but intentionally not wired into
+        // app/routes.php, which only exposes the real, DB-backed user
+        // endpoints under /v1/org-admin/users. Register the route locally so
+        // this test still exercises the action in isolation, matching the
+        // pattern used in ActionTest::testActionSetsHttpCodeInRespond().
+        $app->get('/users/{id}', ViewUserAction::class);
 
         /** @var Container $container */
         $container = $app->getContainer();
@@ -46,6 +55,10 @@ class ViewUserActionTest extends TestCase
     public function testActionThrowsUserNotFoundException()
     {
         $app = $this->getAppInstance();
+
+        // See comment in testAction() above — route registered locally
+        // because ViewUserAction is not wired into app/routes.php.
+        $app->get('/users/{id}', ViewUserAction::class);
 
         $callableResolver = $app->getCallableResolver();
         $responseFactory = $app->getResponseFactory();
