@@ -116,7 +116,7 @@ Puede haber múltiples administradores por organización.
 
 ### Backend (SlimPHP)
 
-- API REST versionable (`/api/v1` sugerido en siguiente etapa)
+- API REST versionable (`/api/v1` ya implementado, todas las rutas van bajo ese prefijo)
 - Autenticacion para usuarios internos (admin/gerente/visitador)
 - Tokens de acceso publico para medico con expiracion y firma
 - Validacion robusta de input

@@ -83,13 +83,70 @@ function Get-Text {
 }
 
 function Invoke-Ssh {
-    param([string]$Command, [string]$WorkDir = $RemotePath)
+    <#
+        Ejecuta un comando remoto via plink y decide exito/fallo en base a
+        $LASTEXITCODE explicito, NO en base a la propagacion automatica de
+        PowerShell sobre stderr. Bajo $ErrorActionPreference = "Stop", un
+        native command con 2>&1 convierte CUALQUIER linea de stderr (incluso
+        un warning benigno, ej. 'unzip -o' devolviendo exit 1 por rutas con
+        backslash) en excepcion terminante y tumba el script entero a mitad
+        de un deploy — eso es lo que causo el outage del 2026-08-19.
+
+        Por defecto, cualquier exit code != 0 sigue abortando el deploy
+        (comportamiento estricto, sin cambios) — solo se tolera lo que el
+        caller declare explicitamente via -ToleratedExitCodes (usado hoy
+        unicamente por 'unzip -o', donde exit 1 = warning, no error).
+
+        El comando se manda via 'plink -m <archivo temporal>' en vez de como
+        argumento de linea de comandos: los scripts multi-linea (heredocs de
+        Show-Releases / Invoke-PruneReleases) contienen comillas embebidas
+        que el escaping de argumentos nativos de Windows/PowerShell puede
+        desalinear al pasarlos como un solo string a plink.exe (esto es lo
+        que causaba 'bash: line 7: 1.6M: command not found': el bash remoto
+        perdia las comillas alrededor de "$name | $size | $contents" y
+        trataba el '|' como pipe real). El archivo temporal se escribe en
+        UTF8 sin BOM y con LF puro (bash no soporta CRLF en scripts).
+    #>
+    param(
+        [string]$Command,
+        [string]$WorkDir = $RemotePath,
+        [int[]]$ToleratedExitCodes = @()
+    )
     $FullCommand = "cd '$WorkDir' && $Command"
+    # Normaliza CRLF/CR sueltos a LF (los here-strings heredan el line-ending
+    # del .ps1 en disco).
+    $FullCommand = $FullCommand -replace "`r`n", "`n" -replace "`r", "`n"
+
     if ($DryRun) {
         Write-Host "  [DRYRUN] ssh> $FullCommand" -ForegroundColor DarkGray
         return ""
     }
-    plink @CommonArgs $SshTarget "$FullCommand" 2>&1
+
+    $CmdFile = [System.IO.Path]::GetTempFileName()
+    $prevEAP = $ErrorActionPreference
+    try {
+        [System.IO.File]::WriteAllText($CmdFile, $FullCommand, (New-Object System.Text.UTF8Encoding($false)))
+        $ErrorActionPreference = "Continue"
+        try {
+            $Output = plink @CommonArgs -m $CmdFile $SshTarget 2>&1
+        } finally {
+            $ErrorActionPreference = $prevEAP
+        }
+    } finally {
+        Remove-Item -Force $CmdFile -ErrorAction SilentlyContinue
+    }
+    $ExitCode = $LASTEXITCODE
+    $Output = $Output | ForEach-Object { $_.ToString() }
+
+    if ($ExitCode -ne 0 -and ($ToleratedExitCodes -notcontains $ExitCode)) {
+        Write-Error "Comando remoto fallo (exit $ExitCode): $Command`n$($Output -join "`n")"
+        exit 1
+    }
+    if ($ExitCode -ne 0) {
+        Write-Host "  (aviso tolerado, exit $ExitCode): $Command" -ForegroundColor DarkYellow
+    }
+
+    return $Output
 }
 
 function Send-SecureFile {
@@ -116,6 +173,63 @@ function Send-SecureFile {
 
 function Get-UtcTimestamp {
     return (Get-Date).ToUniversalTime().ToString("yyyyMMdd-HHmmss")
+}
+
+function New-VerifiedZip {
+    <#
+        Envuelve Compress-Archive con reintentos (para locks transitorios de
+        antivirus/indexador/editor sobre archivos del repo, ej. el error
+        "Stream was not readable" visto empaquetando el backend) y valida la
+        integridad del zip resultante comparando la cantidad de archivos
+        comprimidos contra la cantidad de archivos esperados en el origen.
+        Aborta el deploy si no coinciden — esto es lo que evita subir a
+        produccion un zip de backend incompleto/corrupto.
+    #>
+    param(
+        [string]$SourcePath,
+        [string]$DestinationPath,
+        [int]$Retries = 3
+    )
+
+    $expectedCount = (Get-ChildItem -Path $SourcePath -Recurse -File -ErrorAction SilentlyContinue | Measure-Object).Count
+
+    for ($attempt = 1; $attempt -le $Retries; $attempt++) {
+        if (Test-Path $DestinationPath) { Remove-Item -Force $DestinationPath }
+
+        try {
+            Compress-Archive -Path $SourcePath -DestinationPath $DestinationPath -ErrorAction Stop
+        } catch {
+            Write-Host "  Compress-Archive fallo (intento $attempt/$Retries): $($_.Exception.Message)" -ForegroundColor Yellow
+            if ($attempt -eq $Retries) { Write-Error "No se pudo generar '$DestinationPath' tras $Retries intentos."; exit 1 }
+            Start-Sleep -Seconds 2
+            continue
+        }
+
+        Add-Type -AssemblyName System.IO.Compression.FileSystem -ErrorAction SilentlyContinue
+        try {
+            $zip = [System.IO.Compression.ZipFile]::OpenRead($DestinationPath)
+            $actualCount = ($zip.Entries | Where-Object { -not $_.FullName.EndsWith('/') }).Count
+            $zip.Dispose()
+        } catch {
+            Write-Host "  No se pudo leer '$DestinationPath' para validar integridad (intento $attempt/$Retries): $($_.Exception.Message)" -ForegroundColor Yellow
+            if ($attempt -eq $Retries) { Write-Error "El zip '$DestinationPath' quedo corrupto/ilegible tras $Retries intentos."; exit 1 }
+            Start-Sleep -Seconds 2
+            continue
+        }
+
+        if ($actualCount -ne $expectedCount) {
+            Write-Host "  Integridad del zip no coincide (esperado: $expectedCount, en zip: $actualCount) - intento $attempt/$Retries" -ForegroundColor Yellow
+            if ($attempt -eq $Retries) {
+                Write-Error "El zip '$DestinationPath' quedo incompleto tras $Retries intentos (esperado $expectedCount archivos, se comprimieron $actualCount). ABORTANDO antes de subir a produccion."
+                exit 1
+            }
+            Start-Sleep -Seconds 2
+            continue
+        }
+
+        Write-Host "  '$DestinationPath' OK ($actualCount/$expectedCount archivos verificados)." -ForegroundColor Gray
+        return
+    }
 }
 
 # ---------------------------------------------------------------------------
@@ -414,8 +528,7 @@ if ($DoFrontend) {
         }
 
         $FrontendZip = "$TempPath\frontend.zip"
-        Compress-Archive -Path "$FrontendDir\dist\*" -DestinationPath $FrontendZip
-        Write-Host "  frontend.zip listo." -ForegroundColor Gray
+        New-VerifiedZip -SourcePath "$FrontendDir\dist\*" -DestinationPath $FrontendZip
     }
 }
 
@@ -452,8 +565,7 @@ if ($DoBackend) {
         Get-ChildItem -Path "$ApiTemp\api" -Filter ".env" -Recurse -Force -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
 
         $ApiZip = "$TempPath\api.zip"
-        Compress-Archive -Path "$ApiTemp\*" -DestinationPath $ApiZip
-        Write-Host "  api.zip listo." -ForegroundColor Gray
+        New-VerifiedZip -SourcePath "$ApiTemp\*" -DestinationPath $ApiZip
     }
 }
 
@@ -482,16 +594,25 @@ if ($DoFrontend -and $FrontendZip) {
 
     New-FrontendSnapshot -SnapshotDir $SnapshotDir
 
-    # Limpiar raiz manteniendo api/ y excepciones, luego descomprimir
+    # Limpiar raiz manteniendo api/ y excepciones
     Invoke-Ssh "find . -maxdepth 1 $ExcludeString ! -name '.' ! -name '..' -exec rm -rf {} +"
 
-    Send-SecureFile $FrontendZip "frontend.zip"
-    Invoke-Ssh "unzip -o frontend.zip && rm frontend.zip"
-
+    # CRITICO: el wipe de arriba borra el .htaccess raiz (no esta en
+    # KeepEntries). Lo re-subimos INMEDIATAMENTE despues del wipe, ANTES de
+    # subir/descomprimir el zip del frontend, para que en NINGUN punto
+    # intermedio de la ejecucion el sitio quede sin fallback de SPA (esto es
+    # lo que causo el outage de 404 en rutas profundas del 2026-08-19: el
+    # script crasheaba entre el wipe y este paso, que antes corria al final).
+    # El build de vite no genera su propio .htaccess en dist/, asi que el
+    # unzip -o de mas abajo no pisa este archivo.
     if (Test-Path "$HtaccessDir\root.htaccess") {
-        Write-Host "Subiendo .htaccess raiz (SPA)..." -ForegroundColor Cyan
+        Write-Host "Subiendo .htaccess raiz (SPA) - antes del zip, por seguridad..." -ForegroundColor Cyan
         Send-SecureFile "$HtaccessDir\root.htaccess" ".htaccess"
     }
+
+    Send-SecureFile $FrontendZip "frontend.zip"
+    Invoke-Ssh "unzip -o frontend.zip" -ToleratedExitCodes 1
+    Invoke-Ssh "rm -f frontend.zip"
 }
 
 if ($DoBackend -and $ApiZip) {
@@ -500,7 +621,8 @@ if ($DoBackend -and $ApiZip) {
     New-BackendSnapshot -SnapshotDir $SnapshotDir
 
     Send-SecureFile $ApiZip "api.zip"
-    Invoke-Ssh "unzip -o api.zip && rm api.zip"
+    Invoke-Ssh "unzip -o api.zip" -ToleratedExitCodes 1
+    Invoke-Ssh "rm -f api.zip"
 
     # El api.htaccess (routing a index.php) va DENTRO de api/public/.
     # El api/.htaccess (redireccion raiz -> public/) ya viene en el zip desde backend/.htaccess.
