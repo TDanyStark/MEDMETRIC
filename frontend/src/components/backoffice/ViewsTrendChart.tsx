@@ -104,6 +104,7 @@ export function ViewsTrendChart({ data, isLoading }: ViewsTrendChartProps) {
                 tickLine={false}
                 axisLine={false}
                 allowDecimals={false}
+                domain={[0, 'dataMax']}
                 width={40}
               />
               <Tooltip
@@ -114,26 +115,40 @@ export function ViewsTrendChart({ data, isLoading }: ViewsTrendChartProps) {
                   fontSize: '0.8125rem',
                 }}
                 labelStyle={{ color: 'var(--foreground)', fontWeight: 600 }}
+                itemSorter={(item) => (item.dataKey === 'rep' ? 0 : 1)}
                 formatter={(value, name) => [
                   value ?? 0,
                   name === 'rep' ? 'Visitadores' : 'Médicos',
                 ]}
               />
-              <Area
-                type="monotone"
-                dataKey="doctor"
-                stackId="1"
-                stroke="#14b8a6"
-                fill="url(#fillDoctor)"
-                strokeWidth={2}
-              />
+              {/*
+                Each series is rendered as an INDEPENDENT area (no stackId).
+                Stacking these two areas made the "rep" (Visitadores) line get
+                drawn at the cumulative height (doctor + rep) instead of its
+                own value, which is what caused it to visually overshoot and
+                overlap the "doctor" line even when rep === 0. Rendered
+                un-stacked, every line/dot sits exactly at its real value.
+              */}
               <Area
                 type="monotone"
                 dataKey="rep"
-                stackId="1"
+                name="rep"
                 stroke="#8b5cf6"
-                fill="url(#fillRep)"
                 strokeWidth={2}
+                strokeDasharray="6 3"
+                fill="url(#fillRep)"
+                dot={{ r: 3, strokeWidth: 0, fill: '#8b5cf6' }}
+                activeDot={{ r: 5, strokeWidth: 2, stroke: 'var(--background)' }}
+              />
+              <Area
+                type="monotone"
+                dataKey="doctor"
+                name="doctor"
+                stroke="#14b8a6"
+                strokeWidth={2}
+                fill="url(#fillDoctor)"
+                dot={{ r: 3, strokeWidth: 0, fill: '#14b8a6' }}
+                activeDot={{ r: 5, strokeWidth: 2, stroke: 'var(--background)' }}
               />
             </AreaChart>
           </ResponsiveContainer>
