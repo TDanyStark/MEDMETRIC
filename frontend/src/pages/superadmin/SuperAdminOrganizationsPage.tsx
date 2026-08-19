@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Pencil, Plus } from 'lucide-react'
 import { toast } from 'sonner'
@@ -19,6 +19,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 
 import { getNumberParam, getStringParam, updateSearchParams } from '@/lib/search'
 import { formatDateTime } from '@/lib/utils'
+import { useDidDepsChange } from '@/hooks/useDidDepsChange'
 import {
   createOrganization,
   listOrganizations,
@@ -56,19 +57,21 @@ export function SuperAdminOrganizationsPage() {
     queryFn: () => listOrganizations({ q, page }),
   })
 
-  useEffect(() => {
+  // Populate the form and open the dialog when a row's edit action sets
+  // `editingOrganization`. Adjusted during render, not in an effect.
+  if (useDidDepsChange([editingOrganization])) {
     if (!editingOrganization) {
       setForm(emptyOrganizationForm)
-      return
+    } else {
+      setForm({
+        name: editingOrganization.name,
+        slug: editingOrganization.slug,
+        active: editingOrganization.active,
+        timezone: editingOrganization.timezone,
+      })
+      setIsDialogOpen(true)
     }
-    setForm({
-      name: editingOrganization.name,
-      slug: editingOrganization.slug,
-      active: editingOrganization.active,
-      timezone: editingOrganization.timezone,
-    })
-    setIsDialogOpen(true)
-  }, [editingOrganization])
+  }
 
   const saveMutation = useMutation({
     mutationFn: async () => {

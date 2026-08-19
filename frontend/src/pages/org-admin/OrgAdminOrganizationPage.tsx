@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
 import { TimezoneSelect } from '@/components/backoffice/TimezoneSelect'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/Card'
+import { useDidDepsChange } from '@/hooks/useDidDepsChange'
 import { useAuth } from '@/contexts/useAuth'
 import { getUserFriendlyErrorMessage } from '@/services/api'
 import { getMyOrganization, updateMyOrganizationTimezone } from '@/services/backoffice'
@@ -28,11 +29,11 @@ export function OrgAdminOrganizationPage() {
     queryFn: getMyOrganization,
   })
 
-  useEffect(() => {
-    if (organizationQuery.data) {
-      setTimezone(organizationQuery.data.timezone)
-    }
-  }, [organizationQuery.data])
+  // Sync the editable timezone field once the organization query resolves.
+  // Adjusted during render, not in an effect.
+  if (useDidDepsChange([organizationQuery.data]) && organizationQuery.data) {
+    setTimezone(organizationQuery.data.timezone)
+  }
 
   const saveMutation = useMutation({
     mutationFn: async () => {

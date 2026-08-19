@@ -55,7 +55,7 @@ export function MaterialFilters({
           <CustomSelect
             instanceId="type-filter"
             value={{ label: type === 'all' ? 'Tipos' : type.toUpperCase(), value: type }}
-            onChange={(option: any) => onTypeChange(option.value)}
+            onChange={(option) => onTypeChange(option?.value ?? 'all')}
             options={[
               { label: 'Tipos', value: 'all' },
               { label: 'PDF', value: 'pdf' },
@@ -69,7 +69,10 @@ export function MaterialFilters({
           <CustomSelect
             instanceId="manager-filter"
             value={filtersOptions?.managers.find(m => m.manager_id === managerId) ? { label: filtersOptions?.managers.find(m => m.manager_id === managerId)?.manager_name ?? 'Gerentes', value: managerId } : { label: 'Gerentes', value: '' }}
-            onChange={(option: any) => onManagerChange(option.value ? Number(option.value) : null)}
+            onChange={(option) => {
+              const value = option?.value
+              onManagerChange(value ? Number(value) : null)
+            }}
             options={[
               { label: 'Gerentes', value: '' },
               ...(filtersOptions?.managers.map((m) => ({ label: m.manager_name, value: m.manager_id })) || [])
@@ -81,7 +84,10 @@ export function MaterialFilters({
           <CustomSelect
             instanceId="brand-filter"
             value={brandId ? { label: filtersOptions?.brands.find(b => b.id === brandId)?.name ?? 'Marcas', value: brandId } : { label: 'Marcas', value: '' }}
-            onChange={(option: any) => onBrandChange(option.value ? Number(option.value) : null)}
+            onChange={(option) => {
+              const value = option?.value
+              onBrandChange(value ? Number(value) : null)
+            }}
             options={[
               { label: 'Marcas', value: '' },
               ...(filtersOptions?.brands

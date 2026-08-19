@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Plus, Pencil } from 'lucide-react'
 import { toast } from 'sonner'
@@ -19,6 +19,7 @@ import { ManagerMultiSelect } from '@/components/ui/ManagerMultiSelect'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table'
 
 import { getNumberParam, getStringParam, updateSearchParams } from '@/lib/search'
+import { useDidDepsChange } from '@/hooks/useDidDepsChange'
 import {
   assignBrandsToManager,
   createOrgBrand,
@@ -60,19 +61,21 @@ export function OrgAdminBrandsPage() {
     queryFn: () => listOrgBrands({ q, page }),
   })
 
-  useEffect(() => {
+  // Populate the form and open the dialog when a row's edit action sets
+  // `editingBrand`. Adjusted during render, not in an effect.
+  if (useDidDepsChange([editingBrand])) {
     if (!editingBrand) {
       setForm(emptyBrandForm)
-      return
+    } else {
+      setForm({
+        name: editingBrand.name,
+        description: editingBrand.description ?? '',
+        active: editingBrand.active,
+        managers: editingBrand.managers ?? [],
+      })
+      setIsDialogOpen(true)
     }
-    setForm({
-      name: editingBrand.name,
-      description: editingBrand.description ?? '',
-      active: editingBrand.active,
-      managers: editingBrand.managers ?? [],
-    })
-    setIsDialogOpen(true)
-  }, [editingBrand])
+  }
 
   const saveMutation = useMutation({
     mutationFn: async () => {

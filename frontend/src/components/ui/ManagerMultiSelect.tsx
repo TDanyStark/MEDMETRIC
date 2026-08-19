@@ -1,4 +1,5 @@
 import AsyncSelect from 'react-select/async'
+import type { FormatOptionLabelMeta, StylesConfig } from 'react-select'
 
 import { listOrgUsers } from '@/services/backoffice'
 import { ManagerOption } from '@/types/backoffice'
@@ -44,8 +45,8 @@ export function ManagerMultiSelect({
 
   const selectedOptions: SelectOption[] = value.map(toOption)
 
-  const customStyles = {
-    control: (base: any, state: any) => ({
+  const customStyles: StylesConfig<SelectOption, true> = {
+    control: (base, state) => ({
       ...base,
       backgroundColor: 'var(--background)',
       borderColor: state.isFocused ? 'var(--primary)' : 'var(--border)',
@@ -56,32 +57,32 @@ export function ManagerMultiSelect({
       '&:hover': { borderColor: 'var(--primary)' },
       transition: 'all 0.2s ease',
     }),
-    valueContainer: (base: any) => ({
+    valueContainer: (base) => ({
       ...base,
       padding: '4px 6px',
       gap: '6px',
     }),
-    placeholder: (base: any) => ({
+    placeholder: (base) => ({
       ...base,
       color: 'var(--muted-foreground)',
       fontSize: '0.875rem',
     }),
-    input: (base: any) => ({ ...base, color: 'var(--foreground)' }),
-    multiValue: (base: any) => ({
+    input: (base) => ({ ...base, color: 'var(--foreground)' }),
+    multiValue: (base) => ({
       ...base,
       backgroundColor: 'var(--primary)',
       borderRadius: '9999px',
       padding: '1px 2px 1px 4px',
       margin: 0,
     }),
-    multiValueLabel: (base: any) => ({
+    multiValueLabel: (base) => ({
       ...base,
       color: 'var(--primary-foreground)',
       fontSize: '0.78rem',
       fontWeight: '600',
       padding: '2px 4px',
     }),
-    multiValueRemove: (base: any) => ({
+    multiValueRemove: (base) => ({
       ...base,
       color: 'var(--primary-foreground)',
       borderRadius: '9999px',
@@ -92,7 +93,7 @@ export function ManagerMultiSelect({
         opacity: 1,
       },
     }),
-    menu: (base: any) => ({
+    menu: (base) => ({
       ...base,
       backgroundColor: 'var(--popover)',
       borderRadius: '16px',
@@ -103,14 +104,14 @@ export function ManagerMultiSelect({
       overflow: 'hidden',
       zIndex: 50,
     }),
-    menuPortal: (base: any) => ({ ...base, zIndex: 60, pointerEvents: 'auto' }),
-    menuList: (base: any) => ({
+    menuPortal: (base) => ({ ...base, zIndex: 60, pointerEvents: 'auto' }),
+    menuList: (base) => ({
       ...base,
       padding: '4px',
       maxHeight: '220px',
       overflowY: 'auto',
     }),
-    option: (base: any, state: any) => ({
+    option: (base, state) => ({
       ...base,
       backgroundColor: state.isFocused ? 'var(--accent)' : 'transparent',
       color: 'var(--foreground)',
@@ -122,7 +123,7 @@ export function ManagerMultiSelect({
       '&:active': { backgroundColor: 'var(--accent)' },
     }),
     indicatorSeparator: () => ({ display: 'none' }),
-    dropdownIndicator: (base: any, state: any) => ({
+    dropdownIndicator: (base, state) => ({
       ...base,
       color: state.isFocused ? 'var(--primary)' : 'var(--muted-foreground)',
       '&:hover': { color: 'var(--primary)' },
@@ -130,7 +131,7 @@ export function ManagerMultiSelect({
   }
 
   return (
-    <AsyncSelect
+    <AsyncSelect<SelectOption, true>
       isMulti
       instanceId={instanceId}
       classNamePrefix="manager-select"
@@ -139,8 +140,8 @@ export function ManagerMultiSelect({
       isDisabled={isDisabled}
       loadOptions={loadOptions}
       value={selectedOptions}
-      onChange={(options: any) => {
-        const next = (options ?? []) as SelectOption[]
+      onChange={(options) => {
+        const next = options ?? []
         onChange(next.map(option => ({ id: option.value, name: option.label })))
       }}
       placeholder={placeholder}
@@ -150,7 +151,7 @@ export function ManagerMultiSelect({
       menuPlacement="auto"
       menuShouldScrollIntoView={false}
       maxMenuHeight={220}
-      formatOptionLabel={(option: SelectOption, meta: any) =>
+      formatOptionLabel={(option: SelectOption, meta: FormatOptionLabelMeta<SelectOption>) =>
         meta.context === 'menu' ? (
           <div className="flex flex-col">
             <span className="font-medium">{option.label}</span>

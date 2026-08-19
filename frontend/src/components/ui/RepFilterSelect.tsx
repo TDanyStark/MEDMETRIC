@@ -67,7 +67,7 @@ export function RepFilterSelect({
     }
   }
 
-  const customStyles = createAsyncSelectStyles()
+  const customStyles = createAsyncSelectStyles<Option>()
 
   const selectedValue = value
     ? initialOption?.value === String(value)
@@ -82,7 +82,7 @@ export function RepFilterSelect({
       defaultOptions
       loadOptions={loadOptions}
       value={selectedValue}
-      onChange={(option: any) => {
+      onChange={(option) => {
         setInitialOption(option)
         const nextValue = option?.value ? Number(option.value) : null
         onChange(nextValue)

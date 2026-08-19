@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
@@ -21,6 +21,7 @@ import {
   getProvinciasByRegion,
 } from '@/data/chileGeo'
 import { useBrandOptions } from '@/hooks/useBrandOptions'
+import { useDidDepsChange } from '@/hooks/useDidDepsChange'
 import { useAuth } from '@/contexts/useAuth'
 
 type GeoOption = { label: string; value: string }
@@ -62,11 +63,11 @@ export function EditDoctorDialog({ doctor, open, onOpenChange }: EditDoctorDialo
   // from a rep's payload regardless of what the client sends).
   const canAssignRep = user?.role !== 'rep'
 
-  useEffect(() => {
-    if (open) {
-      setForm(toFormState(doctor))
-    }
-  }, [open, doctor])
+  // Reset the form whenever the dialog opens. Adjusted during render, not in
+  // an effect — this component stays mounted across open/close.
+  if (useDidDepsChange([open, doctor]) && open) {
+    setForm(toFormState(doctor))
+  }
 
   const updateMutation = useMutation({
     mutationFn: () => {

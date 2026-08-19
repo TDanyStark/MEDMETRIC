@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Users, Eye, Layers, Filter } from 'lucide-react'
 import { metricsApi } from '@/services/metrics'
 import { cn, formatDateTime, getInitials } from '@/lib/utils'
 import { PaginationBar } from '@/components/backoffice/Workbench'
 import { useAuth } from '@/contexts/useAuth'
+import { useDidDepsChange } from '@/hooks/useDidDepsChange'
 
 interface RepAdoptionTableProps {
   repIds: number[]
@@ -30,10 +31,11 @@ export function RepAdoptionTable({
   const repKey = repIds.join(',')
   const [page, setPage] = useState(1)
 
-  // Reset to first page whenever any global filter changes.
-  useEffect(() => {
+  // Reset to first page whenever any global filter changes. Adjusted during
+  // render (not in an effect) — see useDidDepsChange for rationale.
+  if (useDidDepsChange([repKey, startDate, endDate])) {
     setPage(1)
-  }, [repKey, startDate, endDate])
+  }
 
   const { data, isLoading } = useQuery({
     queryKey: ['metrics', 'rep-adoption', repKey, startDate, endDate, page],

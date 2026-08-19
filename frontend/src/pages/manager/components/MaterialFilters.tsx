@@ -46,7 +46,7 @@ export function MaterialFilters({
           <CustomSelect
             instanceId="status-filter"
             value={{ label: status === 'all' ? 'Estados' : status === 'draft' ? 'Borrador' : 'Aprobado', value: status }}
-            onChange={(option) => onStatusChange((option as any).value)}
+            onChange={(option) => onStatusChange(option?.value ?? 'all')}
             options={[
               { label: 'Estados', value: 'all' },
               { label: 'Borrador', value: 'draft' },
@@ -59,7 +59,7 @@ export function MaterialFilters({
           <CustomSelect
             instanceId="type-filter"
             value={{ label: type === 'all' ? 'Tipos' : type.toUpperCase(), value: type }}
-            onChange={(option) => onTypeChange((option as any).value)}
+            onChange={(option) => onTypeChange(option?.value ?? 'all')}
             options={[
               { label: 'Tipos', value: 'all' },
               { label: 'PDF', value: 'pdf' },

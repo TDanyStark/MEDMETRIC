@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Plus, Pencil } from 'lucide-react'
 import { toast } from 'sonner'
@@ -20,6 +20,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 
 import { getNumberParam, getStringParam, updateSearchParams } from '@/lib/search'
 import { formatDateTime } from '@/lib/utils'
+import { useDidDepsChange } from '@/hooks/useDidDepsChange'
 import { useAuth } from '@/contexts/useAuth'
 import {
   createOrgUser,
@@ -86,34 +87,39 @@ export function OrgAdminUsersPage() {
     enabled: !!editingUser && editingUser.role === 'rep',
   })
 
-  useEffect(() => {
-    if (!editingUser) {
-      setForm({ ...emptyUserForm, role_id: managerRoleId })
-      setSubscriptionManagerIds([])
-      return
-    }
-    setForm({
-      name: editingUser.name,
-      email: editingUser.email,
-      password: '',
-      role_id: editingUser.role_id,
-      active: editingUser.active,
-    })
-    setIsDialogOpen(true)
-    if (editingUser.role !== 'rep') {
-      setSubscriptionManagerIds([])
-    }
-  }, [editingUser])
-
-  useEffect(() => {
-    if (subscriptionsQuery.data) {
-      setSubscriptionManagerIds(subscriptionsQuery.data.filter(item => item.active).map(item => item.manager_id))
-    }
-  }, [subscriptionsQuery.data])
-
   const managerRoleId = rolesQuery.data?.find(item => item.name === 'manager')?.id ?? 3
   const repRoleId = rolesQuery.data?.find(item => item.name === 'rep')?.id ?? 4
   const isRepForm = form.role_id === repRoleId
+
+  // Populate the form and open the dialog when a row's edit action sets
+  // `editingUser` (or reset it back to defaults when it clears). Adjusted
+  // during render, not in an effect. `managerRoleId` is included per
+  // exhaustive-deps since it starts as a fallback (3) until rolesQuery
+  // resolves.
+  if (useDidDepsChange([editingUser, managerRoleId])) {
+    if (!editingUser) {
+      setForm({ ...emptyUserForm, role_id: managerRoleId })
+      setSubscriptionManagerIds([])
+    } else {
+      setForm({
+        name: editingUser.name,
+        email: editingUser.email,
+        password: '',
+        role_id: editingUser.role_id,
+        active: editingUser.active,
+      })
+      setIsDialogOpen(true)
+      if (editingUser.role !== 'rep') {
+        setSubscriptionManagerIds([])
+      }
+    }
+  }
+
+  // Sync selected subscriptions once the query for the user being edited
+  // resolves. Adjusted during render, not in an effect.
+  if (useDidDepsChange([subscriptionsQuery.data]) && subscriptionsQuery.data) {
+    setSubscriptionManagerIds(subscriptionsQuery.data.filter(item => item.active).map(item => item.manager_id))
+  }
 
   const saveMutation = useMutation({
     mutationFn: async () => {

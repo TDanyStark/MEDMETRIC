@@ -15,6 +15,7 @@ import {
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { useAuth } from '@/contexts/useAuth'
+import { getUserFriendlyErrorMessage } from '@/services/api'
 
 const changePasswordSchema = z
   .object({
@@ -59,8 +60,8 @@ export function ChangePasswordDialog({ open, onOpenChange }: ChangePasswordDialo
       toast.success('Contraseña actualizada correctamente')
       reset()
       onOpenChange(false)
-    } catch (error: any) {
-      toast.error(error.message || 'Error al actualizar la contraseña')
+    } catch (error) {
+      toast.error(getUserFriendlyErrorMessage(error, 'Error al actualizar la contraseña'))
     } finally {
       setIsLoading(false)
     }

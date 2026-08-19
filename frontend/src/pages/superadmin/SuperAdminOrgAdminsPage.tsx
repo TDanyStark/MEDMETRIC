@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useMutation, useQueries, useQueryClient } from '@tanstack/react-query'
 import { Pencil, Plus } from 'lucide-react'
 import { toast } from 'sonner'
@@ -19,6 +19,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 
 import { getNullableNumberParam, getNumberParam, getStringParam, updateSearchParams } from '@/lib/search'
 import { formatDateTime } from '@/lib/utils'
+import { useDidDepsChange } from '@/hooks/useDidDepsChange'
 import {
   createOrgAdmin,
   listOrgAdmins,
@@ -68,20 +69,22 @@ export function SuperAdminOrgAdminsPage() {
     ],
   })
 
-  useEffect(() => {
+  // Populate the form and open the dialog when a row's edit action sets
+  // `editingAdmin`. Adjusted during render, not in an effect.
+  if (useDidDepsChange([editingAdmin])) {
     if (!editingAdmin) {
       setForm(emptyOrgAdminForm)
-      return
+    } else {
+      setForm({
+        name: editingAdmin.name,
+        email: editingAdmin.email,
+        password: '',
+        organization_id: editingAdmin.organization_id,
+        active: editingAdmin.active,
+      })
+      setIsDialogOpen(true)
     }
-    setForm({
-      name: editingAdmin.name,
-      email: editingAdmin.email,
-      password: '',
-      organization_id: editingAdmin.organization_id,
-      active: editingAdmin.active,
-    })
-    setIsDialogOpen(true)
-  }, [editingAdmin])
+  }
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -149,7 +152,7 @@ export function SuperAdminOrgAdminsPage() {
           <CustomSelect
             instanceId="org-filter"
             value={organizationId ? { label: organizationsQuery.data?.items.find(o => o.id === organizationId)?.name ?? 'Todas las Orgs', value: organizationId } : { label: 'Todas las Orgs', value: 'all' }}
-            onChange={(option: any) => setSearchParams(current => updateSearchParams(current, { organization_id: option.value === 'all' ? null : Number(option.value), page: 1 }))}
+            onChange={(option) => setSearchParams(current => updateSearchParams(current, { organization_id: !option || option.value === 'all' ? null : Number(option.value), page: 1 }))}
             options={[
               { label: 'Todas las Orgs', value: 'all' },
               ...(organizationsQuery.data?.items ?? []).map(item => ({ label: item.name, value: item.id })),
@@ -244,7 +247,7 @@ export function SuperAdminOrgAdminsPage() {
               instanceId="org-assignment"
               placeholder="Selecciona una organización"
               value={form.organization_id ? { label: organizationsQuery.data?.items.find(o => o.id === form.organization_id)?.name ?? '', value: form.organization_id } : null}
-              onChange={(option: any) => setForm(current => ({ ...current, organization_id: option ? Number(option.value) : null }))}
+              onChange={(option) => setForm(current => ({ ...current, organization_id: option ? Number(option.value) : null }))}
               options={organizationsQuery.data?.items.map(item => ({ label: item.name, value: item.id })) || []}
               isLoading={organizationsQuery.isLoading}
               required

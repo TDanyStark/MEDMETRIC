@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import AsyncSelect from 'react-select/async'
 import { metricsApi } from '@/services/metrics'
-import { multiSelectStyles } from './multiSelectStyles'
+import { createMultiSelectStyles } from './multiSelectStyles'
 
 interface Option {
   label: string
@@ -77,7 +77,7 @@ export function MultiMaterialSelect({
   }))
 
   return (
-    <AsyncSelect
+    <AsyncSelect<Option, true>
       isMulti
       instanceId={instanceId}
       classNamePrefix="multi-material-select"
@@ -85,13 +85,13 @@ export function MultiMaterialSelect({
       defaultOptions
       loadOptions={loadOptions}
       value={selectedOptions}
-      onChange={(options: any) => {
-        const next = (options ?? []) as Option[]
+      onChange={(options) => {
+        const next = options ?? []
         onChange(next.map((o) => o.value))
       }}
       placeholder={placeholder}
       className={className}
-      styles={multiSelectStyles}
+      styles={createMultiSelectStyles<Option>()}
       menuPortalTarget={typeof document !== 'undefined' ? document.body : undefined}
       menuPosition="fixed"
       menuPlacement="auto"

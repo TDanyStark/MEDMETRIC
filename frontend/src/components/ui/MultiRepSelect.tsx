@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import AsyncSelect from 'react-select/async'
+import type { FormatOptionLabelMeta } from 'react-select'
 import { metricsApi, type RepLastLoginMetric } from '@/services/metrics'
-import { multiSelectStyles } from './multiSelectStyles'
+import { createMultiSelectStyles } from './multiSelectStyles'
 
 interface Option {
   label: string
@@ -58,7 +59,7 @@ export function MultiRepSelect({
   })
 
   return (
-    <AsyncSelect
+    <AsyncSelect<Option, true>
       isMulti
       instanceId={instanceId}
       classNamePrefix="multi-rep-select"
@@ -66,20 +67,20 @@ export function MultiRepSelect({
       defaultOptions={reps.map((r) => ({ label: r.name, value: r.id, email: r.email }))}
       loadOptions={loadOptions}
       value={selectedOptions}
-      onChange={(options: any) => {
-        const next = (options ?? []) as Option[]
+      onChange={(options) => {
+        const next = options ?? []
         onChange(next.map((o) => o.value))
       }}
       placeholder={placeholder}
       className={className}
-      styles={multiSelectStyles}
+      styles={createMultiSelectStyles<Option>()}
       menuPortalTarget={typeof document !== 'undefined' ? document.body : undefined}
       menuPosition="fixed"
       menuPlacement="auto"
       menuShouldScrollIntoView={false}
       maxMenuHeight={240}
       closeMenuOnSelect={false}
-      formatOptionLabel={(option: Option, meta: any) =>
+      formatOptionLabel={(option: Option, meta: FormatOptionLabelMeta<Option>) =>
         meta.context === 'menu' ? (
           <div className="flex flex-col">
             <span className="font-medium">{option.label}</span>

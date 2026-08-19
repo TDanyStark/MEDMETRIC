@@ -91,7 +91,7 @@ export function RepAssignSelect({
         defaultOptions
         loadOptions={loadOptions}
         value={selectedOption}
-        onChange={(option: any) => {
+        onChange={(option) => {
           setSelectedOption(option)
           onChange(option?.value ? Number(option.value) : null)
         }}
@@ -99,7 +99,7 @@ export function RepAssignSelect({
         isDisabled={isDisabled}
         placeholder={placeholder}
         className={className}
-        styles={createAsyncSelectStyles()}
+        styles={createAsyncSelectStyles<Option>()}
         // Kept as a normal DOM descendant of the Dialog's content — same
         // model as the (working) Región/Provincia/Comuna CustomSelects and
         // RepFilterSelect. An earlier version portalled this menu to

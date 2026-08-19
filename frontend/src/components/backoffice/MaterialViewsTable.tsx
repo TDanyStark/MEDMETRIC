@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { FileIcon, Eye } from "lucide-react";
 import {
@@ -10,6 +10,7 @@ import { PaginationBar } from "@/components/backoffice/Workbench";
 import { metricsApi } from "@/services/metrics";
 import { cn, formatDateTime } from "@/lib/utils";
 import { useAuth } from "@/contexts/useAuth";
+import { useDidDepsChange } from "@/hooks/useDidDepsChange";
 
 interface MaterialViewsTableProps {
   materialIds: number[];
@@ -30,10 +31,11 @@ export function MaterialViewsTable({
   const materialKey = materialIds.join(",");
   const repKey = repIds.join(",");
 
-  // Reset to first page whenever any global filter changes.
-  useEffect(() => {
+  // Reset to first page whenever any global filter changes. Adjusted during
+  // render (not in an effect) — see useDidDepsChange for rationale.
+  if (useDidDepsChange([materialKey, repKey, startDate, endDate])) {
     setPage(1);
-  }, [materialKey, repKey, startDate, endDate]);
+  }
 
   const { data: viewsResponse, isLoading } = useQuery({
     queryKey: [

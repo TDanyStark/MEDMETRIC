@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import AsyncSelect from 'react-select/async'
+import type { StylesConfig } from 'react-select'
 import { useDebouncedCallback } from 'use-debounce'
 import { searchDoctors } from '@/services/doctors'
 import { Doctor } from '@/types/doctor'
@@ -72,8 +73,8 @@ export function DoctorSelect({
     SEARCH_DEBOUNCE_MS
   )
 
-  const customStyles = {
-    control: (base: any, state: any) => ({
+  const customStyles: StylesConfig<Option, false> = {
+    control: (base, state) => ({
       ...base,
       backgroundColor: 'var(--background)',
       borderColor: state.isFocused ? 'var(--primary)' : 'var(--border)',
@@ -86,25 +87,25 @@ export function DoctorSelect({
       },
       transition: 'all 0.2s ease',
     }),
-    valueContainer: (base: any) => ({
+    valueContainer: (base) => ({
       ...base,
       paddingLeft: '4px',
     }),
-    singleValue: (base: any) => ({
+    singleValue: (base) => ({
       ...base,
       color: 'var(--foreground)',
       fontWeight: '500',
     }),
-    placeholder: (base: any) => ({
+    placeholder: (base) => ({
       ...base,
       color: 'var(--muted-foreground)',
       fontSize: '0.875rem',
     }),
-    input: (base: any) => ({
+    input: (base) => ({
       ...base,
       color: 'var(--foreground)',
     }),
-    menu: (base: any) => ({
+    menu: (base) => ({
       ...base,
       backgroundColor: 'var(--popover)',
       borderRadius: '16px',
@@ -115,13 +116,13 @@ export function DoctorSelect({
       zIndex: 50,
       animation: 'in 0.2s ease-out',
     }),
-    menuList: (base: any) => ({
+    menuList: (base) => ({
       ...base,
       padding: '4px',
       maxHeight: '260px',
       overflowY: 'auto',
     }),
-    option: (base: any, state: any) => ({
+    option: (base, state) => ({
       ...base,
       backgroundColor: state.isSelected
         ? 'var(--primary)'
@@ -142,7 +143,7 @@ export function DoctorSelect({
       },
     }),
     indicatorSeparator: () => ({ display: 'none' }),
-    dropdownIndicator: (base: any, state: any) => ({
+    dropdownIndicator: (base, state) => ({
       ...base,
       color: state.isFocused ? 'var(--primary)' : 'var(--muted-foreground)',
       '&:hover': { color: 'var(--primary)' },
@@ -157,7 +158,7 @@ export function DoctorSelect({
       defaultOptions
       loadOptions={loadOptions}
       value={selectedOption}
-      onChange={(option: any) => {
+      onChange={(option) => {
         setSelectedOption(option ?? null)
         onChange(option?.value ?? null, option?.doctor ?? null)
       }}

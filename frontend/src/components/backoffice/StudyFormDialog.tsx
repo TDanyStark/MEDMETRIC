@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import { Button } from '@/components/ui/Button'
 import {
@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/Dialog'
 import { Input } from '@/components/ui/Input'
 import { SegmentedControl } from '@/components/backoffice/Workbench'
+import { useDidDepsChange } from '@/hooks/useDidDepsChange'
 import { MaterialStudy, MaterialStudyType } from '@/types/backoffice'
 
 interface StudyFormState {
@@ -43,21 +44,22 @@ export function StudyFormDialog({
 }: StudyFormDialogProps) {
   const [form, setForm] = useState<StudyFormState>(emptyForm)
 
-  useEffect(() => {
-    if (!isOpen) return
-
-    if (!editingStudy) {
-      setForm(emptyForm)
-      return
-    }
-
-    setForm({
-      title: editingStudy.title,
-      type: editingStudy.type,
-      external_url: editingStudy.external_url ?? '',
-      file: null,
-    })
-  }, [isOpen, editingStudy])
+  // Reset the form whenever the dialog opens (or the study being edited
+  // changes while open). Adjusted during render, not in an effect — the
+  // component stays mounted across open/close so a `useEffect` reset would
+  // fire an extra post-mount render.
+  if (useDidDepsChange([isOpen, editingStudy]) && isOpen) {
+    setForm(
+      editingStudy
+        ? {
+            title: editingStudy.title,
+            type: editingStudy.type,
+            external_url: editingStudy.external_url ?? '',
+            file: null,
+          }
+        : emptyForm,
+    )
+  }
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault()

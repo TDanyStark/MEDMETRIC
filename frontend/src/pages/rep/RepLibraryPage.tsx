@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 
@@ -10,6 +10,7 @@ import {
   getNullableNumberParam,
 } from "@/lib/search";
 import { listRepMaterials, listRepMaterialFilters } from "@/services/rep";
+import { useDidDepsChange } from "@/hooks/useDidDepsChange";
 import { Material } from "@/types/rep";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ErrorState } from "@/components/ui/ErrorState";
@@ -64,9 +65,12 @@ export function RepLibraryPage() {
 
   const [selectedMaterials, setSelectedMaterials] = useState<Material[]>([]);
 
-  useEffect(() => {
-    if (materialsQuery.data?.items) {
-      const currentItems = materialsQuery.data.items;
+  // Keep full Material objects for every selected id, picking up newly
+  // visible items from the current page while preserving ones selected on
+  // previous pages. Adjusted during render, not in an effect.
+  if (useDidDepsChange([selectedMaterialIds, materialsQuery.data?.items])) {
+    const currentItems = materialsQuery.data?.items;
+    if (currentItems) {
       setSelectedMaterials((prev) => {
         const newItems = [...prev];
         selectedMaterialIds.forEach((id) => {
@@ -78,7 +82,7 @@ export function RepLibraryPage() {
         return newItems.filter((m) => selectedMaterialIds.includes(m.id));
       });
     }
-  }, [selectedMaterialIds, materialsQuery.data?.items]);
+  }
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8 animate-in fade-in duration-500 pb-24 lg:pb-8">

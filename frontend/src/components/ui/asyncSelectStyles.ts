@@ -1,3 +1,5 @@
+import type { GroupBase, StylesConfig } from 'react-select'
+
 /**
  * Shared react-select/async style tokens for single-select AJAX controls
  * (RepFilterSelect, RepAssignSelect). Mirrors CustomSelect's synchronous
@@ -7,10 +9,17 @@
  *
  * `hasError` swaps the control border/ring to the destructive token, same
  * convention as CustomSelect's `error` prop.
+ *
+ * Generic like CustomSelect's inline styles, so each consumer binds it to
+ * its own `Option` shape via `createAsyncSelectStyles<Option>()`.
  */
-export function createAsyncSelectStyles(hasError = false) {
+export function createAsyncSelectStyles<
+  Option,
+  IsMulti extends boolean = false,
+  Group extends GroupBase<Option> = GroupBase<Option>,
+>(hasError = false): StylesConfig<Option, IsMulti, Group> {
   return {
-    control: (base: any, state: any) => ({
+    control: (base, state) => ({
       ...base,
       backgroundColor: 'var(--background)',
       borderColor: hasError
@@ -29,25 +38,25 @@ export function createAsyncSelectStyles(hasError = false) {
       },
       transition: 'all 0.2s ease',
     }),
-    valueContainer: (base: any) => ({
+    valueContainer: (base) => ({
       ...base,
       paddingLeft: '4px',
     }),
-    singleValue: (base: any) => ({
+    singleValue: (base) => ({
       ...base,
       color: 'var(--foreground)',
       fontWeight: '500',
     }),
-    placeholder: (base: any) => ({
+    placeholder: (base) => ({
       ...base,
       color: 'var(--muted-foreground)',
       fontSize: '0.875rem',
     }),
-    input: (base: any) => ({
+    input: (base) => ({
       ...base,
       color: 'var(--foreground)',
     }),
-    menu: (base: any) => ({
+    menu: (base) => ({
       ...base,
       backgroundColor: 'var(--popover)',
       borderRadius: '16px',
@@ -58,13 +67,13 @@ export function createAsyncSelectStyles(hasError = false) {
       zIndex: 50,
       animation: 'in 0.2s ease-out',
     }),
-    menuList: (base: any) => ({
+    menuList: (base) => ({
       ...base,
       padding: '4px',
       maxHeight: '260px',
       overflowY: 'auto',
     }),
-    option: (base: any, state: any) => ({
+    option: (base, state) => ({
       ...base,
       backgroundColor: state.isSelected
         ? 'var(--primary)'
@@ -83,7 +92,7 @@ export function createAsyncSelectStyles(hasError = false) {
       },
     }),
     indicatorSeparator: () => ({ display: 'none' }),
-    dropdownIndicator: (base: any, state: any) => ({
+    dropdownIndicator: (base, state) => ({
       ...base,
       color: state.isFocused ? 'var(--primary)' : 'var(--muted-foreground)',
       '&:hover': { color: 'var(--primary)' },
@@ -104,6 +113,6 @@ export function createAsyncSelectStyles(hasError = false) {
     // control sits underneath it instead of registering on the option.
     // Mirrors the same fix already applied in multiSelectStyles.ts /
     // ManagerMultiSelect's inline styles for the same portal-in-modal case.
-    menuPortal: (base: any) => ({ ...base, zIndex: 9999, pointerEvents: 'auto' }),
+    menuPortal: (base) => ({ ...base, zIndex: 9999, pointerEvents: 'auto' }),
   }
 }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, Info, Lock } from 'lucide-react'
 import { toast } from 'sonner'
@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/Textarea'
 import { SegmentedControl } from '@/components/backoffice/Workbench'
 import { StudiesSection } from '@/components/backoffice/StudiesSection'
 import { CustomSelect } from '@/components/ui/CustomSelect'
+import { useDidDepsChange } from '@/hooks/useDidDepsChange'
 import { buildPendingStudyFormData } from '@/lib/pendingStudies'
 import {
   Brand,
@@ -158,33 +159,43 @@ export function MaterialFormPage({ scope }: MaterialFormPageProps) {
     enabled: isEditing,
   })
 
-  const brands = brandsQuery.data?.items ?? []
+  // Wrapped in useMemo per exhaustive-deps: without it, `?? []` mints a new
+  // array reference every render, which would make useDidDepsChange below
+  // (and any effect depending on `brands`) fire on every render.
+  const brands = useMemo(() => brandsQuery.data?.items ?? [], [brandsQuery.data])
   const material = materialQuery.data
 
   const isLocked = cfg.lockApprovedEdit && isEditing && material?.status === 'approved'
 
-  // Hydrate form
-  useEffect(() => {
+  // Hydrate form: in edit mode from the fetched material, in create mode
+  // with a default brand once the brand list loads (only if the user
+  // hasn't picked one yet). Adjusted during render, not in an effect — this
+  // page stays mounted while these queries resolve.
+  if (useDidDepsChange([isEditing, material, brands])) {
     if (isEditing) {
-      if (!material) return
-      setForm({
-        title: material.title,
-        description: material.description ?? '',
-        brand_id: material.brand_id,
-        manager_id: material.manager_id,
-        type: material.type,
-        external_url: material.external_url ?? '',
-        file: null,
-        cover_file: null,
-      })
+      if (material) {
+        setForm({
+          title: material.title,
+          description: material.description ?? '',
+          brand_id: material.brand_id,
+          manager_id: material.manager_id,
+          type: material.type,
+          external_url: material.external_url ?? '',
+          file: null,
+          cover_file: null,
+        })
+      }
     } else {
       setForm((current) => ({ ...current, brand_id: current.brand_id ?? brands[0]?.id ?? null }))
     }
-  }, [isEditing, material, brands])
+  }
 
+  // Genuine effect: creates a browser object URL (external resource) that
+  // must be revoked on cleanup — not derivable during render.
   useEffect(() => {
     if (form.cover_file) {
       const url = URL.createObjectURL(form.cover_file)
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- pairs an external resource (createObjectURL) with its cleanup (revokeObjectURL); the setState here is not extractable to render.
       setPreviewUrl(url)
       return () => URL.revokeObjectURL(url)
     }
@@ -206,12 +217,11 @@ export function MaterialFormPage({ scope }: MaterialFormPageProps) {
     ? brandManagers?.org_managers ?? []
     : brandManagers?.brand_managers ?? []
 
-  // Reset manager when brand changes (create flow, org-admin only)
-  useEffect(() => {
-    if (cfg.showManagerField && !isEditing) {
-      setForm((current) => ({ ...current, manager_id: null }))
-    }
-  }, [form.brand_id, isEditing, cfg.showManagerField])
+  // Reset manager when brand changes (create flow, org-admin only).
+  // Adjusted during render, not in an effect.
+  if (useDidDepsChange([form.brand_id, isEditing, cfg.showManagerField]) && cfg.showManagerField && !isEditing) {
+    setForm((current) => ({ ...current, manager_id: null }))
+  }
 
   const saveMutation = useMutation({
     mutationFn: async () => {

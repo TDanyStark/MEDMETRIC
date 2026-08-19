@@ -12,6 +12,7 @@ import { Material } from "@/types/rep";
 import { MaterialResource } from "@/types";
 import { MaterialStudy } from "@/types/backoffice";
 import { getRepMaterialPreview, getRepStudyPreview } from "@/services/rep";
+import { useDidDepsChange } from "@/hooks/useDidDepsChange";
 import { RepStudyListItem } from "./RepStudyListItem";
 
 interface MaterialPreviewDialogProps {
@@ -29,14 +30,20 @@ export function MaterialPreviewDialog({
     null,
   );
 
-  useEffect(() => {
+  // Reset the study drill-down whenever the previewed material changes.
+  // Adjusted during render, not in an effect.
+  if (useDidDepsChange([material])) {
     setActiveStudy(null);
     setStudyResource(null);
-
     if (!material) {
       setResource(null);
-      return;
     }
+  }
+
+  // Genuine async effect: fetches the material's preview resource. Stays
+  // an effect since a network call can't be run during render.
+  useEffect(() => {
+    if (!material) return;
     const fetchResource = async () => {
       try {
         const data = await getRepMaterialPreview(material.id);

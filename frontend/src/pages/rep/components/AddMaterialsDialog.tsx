@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FileText, Copy, Plus, CheckCircle2, X } from "lucide-react";
 import { toast } from "sonner";
@@ -19,6 +19,7 @@ import {
   listRepMaterialFilters,
 } from "@/services/rep";
 import { Material, RepSession } from "@/types/rep";
+import { useDidDepsChange } from "@/hooks/useDidDepsChange";
 import { buildPublicVisitUrl } from "@/lib/share";
 import { copyVisitShareMessage } from "@/lib/shareVisitLink";
 import { LoadingState } from "@/components/ui/LoadingState";
@@ -53,12 +54,11 @@ export function AddMaterialsDialog({
   const [done, setDone] = useState(false);
   const [createdToken] = useState(session.doctor_token);
 
-  // Sync state when session target changes or opens
-  useEffect(() => {
-    if (open) {
-      setSelected(session.material_ids ?? []);
-    }
-  }, [open, session.material_ids]);
+  // Sync state when session target changes or opens. Adjusted during
+  // render, not in an effect.
+  if (useDidDepsChange([open, session.material_ids]) && open) {
+    setSelected(session.material_ids ?? []);
+  }
 
   const materialsQuery = useQuery({
     queryKey: ["rep", "materials-picker", q, type, managerId, brandId],
@@ -201,7 +201,7 @@ export function AddMaterialsDialog({
                           label: type === "all" ? "Tipos" : type.toUpperCase(),
                           value: type,
                         }}
-                        onChange={(option: any) => setType(option.value)}
+                        onChange={(option) => setType(option?.value ?? "all")}
                         options={[
                           { label: "Tipos", value: "all" },
                           { label: "PDF", value: "pdf" },
@@ -227,9 +227,9 @@ export function AddMaterialsDialog({
                               }
                             : { label: "Gerentes", value: "" }
                         }
-                        onChange={(option: any) => {
+                        onChange={(option) => {
                           setManagerId(
-                            option.value ? Number(option.value) : null,
+                            option?.value ? Number(option.value) : null,
                           );
                           setBrandId(null);
                         }}
@@ -257,8 +257,8 @@ export function AddMaterialsDialog({
                               }
                             : { label: "Marcas", value: "" }
                         }
-                        onChange={(option: any) =>
-                          setBrandId(option.value ? Number(option.value) : null)
+                        onChange={(option) =>
+                          setBrandId(option?.value ? Number(option.value) : null)
                         }
                         options={[
                           { label: "Marcas", value: "" },

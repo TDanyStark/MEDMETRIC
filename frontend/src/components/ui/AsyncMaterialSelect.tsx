@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import AsyncSelect from 'react-select/async'
+import type { StylesConfig } from 'react-select'
 import { metricsApi } from '@/services/metrics'
+import { useDidDepsChange } from '@/hooks/useDidDepsChange'
 
 interface Option {
   label: string
@@ -24,7 +26,17 @@ export function AsyncMaterialSelect({
 }: AsyncMaterialSelectProps) {
   const [initialOption, setInitialOption] = useState<Option | null>(null)
 
-  // Fetch initial option if value is present
+  // Clear the cached option synchronously when the value is cleared, so a
+  // later re-selection can't skip the fetch below (which only fires when
+  // !initialOption). Adjusted during render, not in an effect.
+  if (useDidDepsChange([value]) && !value) {
+    setInitialOption(null)
+  }
+
+  // Fetch initial option if value is present. Genuine async side effect
+  // (network call) — stays a real effect. `initialOption` is included in
+  // deps per exhaustive-deps: the effect re-checks after the fetch below
+  // resolves and is a no-op then since `!initialOption` becomes false.
   useEffect(() => {
     if (value && !initialOption) {
       metricsApi.getTopMaterials(1, { material_id: Number(value) }).then(res => {
@@ -32,10 +44,8 @@ export function AsyncMaterialSelect({
           setInitialOption({ label: res.data[0].title, value: String(res.data[0].id) })
         }
       })
-    } else if (!value) {
-      setInitialOption(null)
     }
-  }, [value])
+  }, [value, initialOption])
 
   const loadOptions = async (inputValue: string) => {
     try {
@@ -51,8 +61,8 @@ export function AsyncMaterialSelect({
     }
   }
 
-  const customStyles = {
-    control: (base: any, state: any) => ({
+  const customStyles: StylesConfig<Option, false> = {
+    control: (base, state) => ({
       ...base,
       backgroundColor: 'var(--background)',
       borderColor: state.isFocused ? 'var(--primary)' : 'var(--border)',
@@ -65,25 +75,25 @@ export function AsyncMaterialSelect({
       },
       transition: 'all 0.2s ease',
     }),
-    valueContainer: (base: any) => ({
+    valueContainer: (base) => ({
       ...base,
       paddingLeft: '4px',
     }),
-    singleValue: (base: any) => ({
+    singleValue: (base) => ({
       ...base,
       color: 'var(--foreground)',
       fontWeight: '500',
     }),
-    placeholder: (base: any) => ({
+    placeholder: (base) => ({
       ...base,
       color: 'var(--muted-foreground)',
       fontSize: '0.875rem',
     }),
-    input: (base: any) => ({
+    input: (base) => ({
       ...base,
       color: 'var(--foreground)'
     }),
-    menu: (base: any) => ({
+    menu: (base) => ({
       ...base,
       backgroundColor: 'var(--popover)',
       borderRadius: '16px',
@@ -94,11 +104,11 @@ export function AsyncMaterialSelect({
       zIndex: 50,
       animation: 'in 0.2s ease-out',
     }),
-    menuList: (base: any) => ({
+    menuList: (base) => ({
       ...base,
       padding: '4px',
     }),
-    option: (base: any, state: any) => ({
+    option: (base, state) => ({
       ...base,
       backgroundColor: state.isSelected 
         ? 'var(--primary)' 
@@ -119,7 +129,7 @@ export function AsyncMaterialSelect({
       },
     }),
     indicatorSeparator: () => ({ display: 'none' }),
-    dropdownIndicator: (base: any, state: any) => ({
+    dropdownIndicator: (base, state) => ({
       ...base,
       color: state.isFocused ? 'var(--primary)' : 'var(--muted-foreground)',
       '&:hover': { color: 'var(--primary)' }
@@ -135,7 +145,7 @@ export function AsyncMaterialSelect({
       defaultOptions
       loadOptions={loadOptions}
       value={selectedValue}
-      onChange={(option: any) => {
+      onChange={(option) => {
         setInitialOption(option)
         onChange(option?.value || '')
       }}
