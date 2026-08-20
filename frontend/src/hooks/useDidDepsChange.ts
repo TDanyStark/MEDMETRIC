@@ -30,12 +30,24 @@ import { useState } from 'react'
  *
  * Deps are compared with `Object.is` (===), exactly like a `useEffect`
  * dependency array — pass primitives or stable references.
+ *
+ * Fires on the FIRST render too, exactly like `useEffect(fn, deps)` does on
+ * mount. This matters whenever the deps can already hold their final value
+ * at mount time — e.g. a TanStack Query that resolves from cache, so the
+ * component mounts with `data` already present and no later transition ever
+ * happens. Seeding `prevDeps` with the first-render deps (the previous
+ * behaviour) silently skipped the sync in exactly that case: the state was
+ * hydrated on a cold visit but left at its initial value on every warm one.
  */
 export function useDidDepsChange(deps: readonly unknown[]): boolean {
-  const [prevDeps, setPrevDeps] = useState(deps)
+  // `null` is the "never compared yet" sentinel; a deps array is never null,
+  // so this can't collide with a legitimate previous value.
+  const [prevDeps, setPrevDeps] = useState<readonly unknown[] | null>(null)
 
   const changed =
-    deps.length !== prevDeps.length || deps.some((dep, index) => !Object.is(dep, prevDeps[index]))
+    prevDeps === null ||
+    deps.length !== prevDeps.length ||
+    deps.some((dep, index) => !Object.is(dep, prevDeps[index]))
 
   if (changed) {
     setPrevDeps(deps)

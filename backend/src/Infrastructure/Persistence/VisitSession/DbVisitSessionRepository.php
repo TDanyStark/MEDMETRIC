@@ -54,13 +54,25 @@ class DbVisitSessionRepository implements VisitSessionRepositoryInterface
         $countStmt->execute($params);
         $total = (int) $countStmt->fetchColumn();
 
-        // Get sessions with material count and IDs
+        // Get sessions with material count and IDs, plus a single batched
+        // LEFT JOIN aggregate for the "viewed by doctor" history badge
+        // (sdd/rep-metrics-module Phase 3): open_count / last_open_at come
+        // from ONE pre-grouped subquery join — zero N+1, mirrors
+        // DbRepMetricsRepository::sessions()'s `dv` join pattern exactly.
         $sql = "SELECT vs.id, vs.organization_id, vs.rep_id, vs.doctor_token, vs.doctor_id,
                        vs.doctor_name, vs.notes, vs.active, vs.created_at, vs.updated_at,
                        COUNT(vsm.id) as material_count,
-                       GROUP_CONCAT(vsm.material_id) as material_ids
+                       GROUP_CONCAT(vsm.material_id) as material_ids,
+                       MAX(dv.opens) as open_count,
+                       MAX(dv.last_open) as last_open_at
                 FROM visit_sessions vs
                 LEFT JOIN visit_session_materials vsm ON vs.id = vsm.visit_session_id
+                LEFT JOIN (
+                    SELECT visit_session_id, COUNT(*) AS opens, MAX(opened_at) AS last_open
+                    FROM material_views
+                    WHERE viewer_type = 'doctor'
+                    GROUP BY visit_session_id
+                ) dv ON dv.visit_session_id = vs.id
                 WHERE $whereClause
                 GROUP BY vs.id, vs.organization_id, vs.rep_id, vs.doctor_token, vs.doctor_id,
                          vs.doctor_name, vs.notes, vs.active, vs.created_at, vs.updated_at
@@ -89,6 +101,12 @@ class DbVisitSessionRepository implements VisitSessionRepositoryInterface
             $data['material_ids'] = $row['material_ids'] 
                 ? array_map('intval', explode(',', $row['material_ids'])) 
                 : [];
+            // History "viewed by doctor" badge fields (sdd/rep-metrics-module
+            // Phase 3) — derived from the batched `dv` LEFT JOIN above.
+            $openCount = (int) ($row['open_count'] ?? 0);
+            $data['viewed'] = $openCount > 0;
+            $data['open_count'] = $openCount;
+            $data['last_open_at'] = $row['last_open_at'] ?? null;
             return $data;
         }, $rows);
 

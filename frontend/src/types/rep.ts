@@ -9,6 +9,12 @@ export interface RepSession {
   notes: string | null
   created_at: string
   material_ids?: number[]
+  /** Whether a doctor has opened >=1 material in this session (sdd/rep-metrics-module). */
+  viewed: boolean
+  /** Total doctor opens across the session (may exceed material_count on re-visits). */
+  open_count: number
+  /** Most recent doctor open, or null when never opened. */
+  last_open_at: string | null
 }
 
 export interface RepSessionPayload {

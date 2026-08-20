@@ -29,6 +29,7 @@ const ManagerMetricsPage = lazy(() => import('./pages/manager/ManagerMetricsPage
 // Rep pages
 const RepLibraryPage = lazy(() => import('./pages/rep/RepLibraryPage').then(m => ({ default: m.RepLibraryPage })))
 const RepHistoryPage = lazy(() => import('./pages/rep/RepHistoryPage').then(m => ({ default: m.RepHistoryPage })))
+const RepMetricsPage = lazy(() => import('./pages/rep/RepMetricsPage').then(m => ({ default: m.RepMetricsPage })))
 
 // Org Admin pages
 const OrgAdminBrandsPage = lazy(() => import('./pages/org-admin/OrgAdminBrandsPage').then(m => ({ default: m.OrgAdminBrandsPage })))
@@ -185,6 +186,7 @@ function App() {
                 <Route path="history" element={<RepHistoryPage />} />
                 <Route path="doctors" element={<DoctorsPage />} />
                 <Route path="comments" element={<CommentsPage />} />
+                <Route path="metrics" element={<RepMetricsPage />} />
               </Route>
 
               <Route path="*" element={<NotFoundPage />} />

@@ -19,12 +19,14 @@ use App\Domain\Doctor\DoctorRepositoryInterface;
 use App\Domain\Material\MaterialRepositoryInterface;
 use App\Domain\MaterialStudy\MaterialStudyRepositoryInterface;
 use App\Domain\RepAccess\RepAccessRepositoryInterface;
+use App\Domain\RepMetrics\RepMetricsRepositoryInterface;
 use App\Domain\VisitSession\VisitSessionRepositoryInterface;
 use App\Infrastructure\Persistence\Brand\DbBrandRepository;
 use App\Infrastructure\Persistence\Doctor\DbDoctorRepository;
 use App\Infrastructure\Persistence\Material\DbMaterialRepository;
 use App\Infrastructure\Persistence\MaterialStudy\DbMaterialStudyRepository;
 use App\Infrastructure\Persistence\RepAccess\DbRepAccessRepository;
+use App\Infrastructure\Persistence\RepMetrics\DbRepMetricsRepository;
 use App\Infrastructure\Persistence\VisitSession\DbVisitSessionRepository;
 use DI\ContainerBuilder;
 use Monolog\Handler\StreamHandler;
@@ -92,5 +94,8 @@ return function (ContainerBuilder $containerBuilder) {
         MaterialStudyRepositoryInterface::class => \DI\autowire(DbMaterialStudyRepository::class),
         RepAccessRepositoryInterface::class => \DI\autowire(DbRepAccessRepository::class),
         VisitSessionRepositoryInterface::class => \DI\autowire(DbVisitSessionRepository::class),
+
+        // Rep-scoped metrics repository (sdd/rep-metrics-module)
+        RepMetricsRepositoryInterface::class => \DI\autowire(DbRepMetricsRepository::class),
     ]);
 };

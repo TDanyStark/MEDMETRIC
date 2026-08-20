@@ -12,6 +12,12 @@ interface VisitSessionRepositoryInterface
      * $timezone is the caller's organization IANA identifier, used to
      * convert the org-local $date filter into a UTC range (see
      * App\Infrastructure\Support\OrgDateRange).
+     *
+     * Each returned item also carries the "viewed by doctor" history badge
+     * fields (sdd/rep-metrics-module Phase 3), derived from a single
+     * batched LEFT JOIN aggregate (zero N+1): `viewed` (bool), `open_count`
+     * (int, doctor opens across the session), `last_open_at` (?string,
+     * most recent doctor open, null when never opened).
      */
     public function findAllByRep(int $repId, int $page = 1, ?string $q = null, ?string $date = null, string $timezone = TimezoneConfig::DEFAULT_ZONE): array;
     public function findByIdAndRep(int $id, int $repId): VisitSession;

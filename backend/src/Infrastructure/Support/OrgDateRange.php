@@ -229,6 +229,33 @@ final class OrgDateRange
     }
 
     /**
+     * Return the org-local calendar HOUR (0-23) that a UTC datetime string
+     * falls into. Sibling of localDateBucket() for the same reason
+     * (CONVERT_TZ unavailable on Hostinger — see localDateBucket()
+     * docblock): a view opened at 23:30 America/Santiago must bucket into
+     * hour 23 local, not whatever hour its UTC timestamp happens to carry.
+     * Used by the rep-scoped metrics hour-of-day histogram
+     * (sdd/rep-metrics-module) — the only current consumer of hour-level
+     * (as opposed to day-level) org-local bucketing in this codebase.
+     *
+     * @param string $utcDatetime 'Y-m-d H:i:s' (or any format
+     *   `DateTimeImmutable` accepts), interpreted as UTC.
+     * @param string $tz IANA timezone identifier, e.g. 'America/Santiago'
+     *
+     * @throws InvalidArgumentException if $tz is not a known IANA identifier
+     */
+    public static function localHourBucket(string $utcDatetime, string $tz): int
+    {
+        if (!self::isValid($tz)) {
+            throw new InvalidArgumentException("Unknown timezone identifier: {$tz}");
+        }
+
+        return (int) (new DateTimeImmutable($utcDatetime, new DateTimeZone('UTC')))
+            ->setTimezone(new DateTimeZone($tz))
+            ->format('G');
+    }
+
+    /**
      * Pure calendar-date arithmetic ('YYYY-MM-DD' -> next 'YYYY-MM-DD'),
      * computed in UTC so it is completely independent of any DST rule —
      * a UTC day is always exactly 24h, so "+1 day" is unambiguous here.

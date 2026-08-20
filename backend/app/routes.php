@@ -71,6 +71,13 @@ use App\Application\Actions\Public\Material\OpenMaterialAction;
 use App\Application\Actions\Public\Session\GetPublicSessionAction;
 use App\Application\Actions\Public\Study\GetStudyResourceAction;
 use App\Application\Actions\Rep\Material\ListMaterialsAction as RepListMaterialsAction;
+use App\Application\Actions\Rep\Metrics\DeviceSplitAction as RepMetricsDeviceSplitAction;
+use App\Application\Actions\Rep\Metrics\HourHistogramAction as RepMetricsHourHistogramAction;
+use App\Application\Actions\Rep\Metrics\OpenTrendAction as RepMetricsOpenTrendAction;
+use App\Application\Actions\Rep\Metrics\SessionsAction as RepMetricsSessionsAction;
+use App\Application\Actions\Rep\Metrics\SummaryAction as RepMetricsSummaryAction;
+use App\Application\Actions\Rep\Metrics\TopMaterialsAction as RepMetricsTopMaterialsAction;
+use App\Application\Actions\Rep\Metrics\UnopenedMaterialsAction as RepMetricsUnopenedMaterialsAction;
 use App\Application\Actions\Rep\VisitSession\AddMaterialsToSessionAction;
 use App\Application\Actions\Rep\VisitSession\CreateVisitSessionAction;
 use App\Application\Actions\Rep\VisitSession\ListVisitSessionsAction;
@@ -372,6 +379,21 @@ return function (App $app) {
                 $sessions->get('',  ListVisitSessionsAction::class);
                 $sessions->post('', CreateVisitSessionAction::class);
                 $sessions->patch('/{id}/materials', AddMaterialsToSessionAction::class);
+            });
+
+            // Rep-scoped metrics (sdd/rep-metrics-module). repId is ALWAYS
+            // resolved from the JWT (RepMetricsAction::resolveRepId()) —
+            // never from a query param. Inherits this group's JWT +
+            // RoleMiddleware(['rep']) below; no separate middleware wiring
+            // needed since a rep can only ever see their own data here.
+            $rep->group('/metrics', function (RouteCollectorProxy $metrics) {
+                $metrics->get('/summary', RepMetricsSummaryAction::class);
+                $metrics->get('/open-trend', RepMetricsOpenTrendAction::class);
+                $metrics->get('/hour-histogram', RepMetricsHourHistogramAction::class);
+                $metrics->get('/device-split', RepMetricsDeviceSplitAction::class);
+                $metrics->get('/top-materials', RepMetricsTopMaterialsAction::class);
+                $metrics->get('/sessions', RepMetricsSessionsAction::class);
+                $metrics->get('/unopened-materials', RepMetricsUnopenedMaterialsAction::class);
             });
 
         })->add(function ($request, $handler) use ($app) {

@@ -33,6 +33,7 @@ import { RepSession } from "@/types/rep";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { AddMaterialsDialog } from "./components/AddMaterialsDialog";
+import { SessionViewBadge } from "./components/SessionViewBadge";
 
 export function RepHistoryPage() {
   const { user } = useAuth();
@@ -116,9 +117,10 @@ export function RepHistoryPage() {
               <Table>
                 <TableHeader className="bg-muted/30">
                   <TableRow>
-                    <TableHead className="w-[30%]">Médico / Etiqueta</TableHead>
+                    <TableHead className="w-[26%]">Médico / Etiqueta</TableHead>
                     <TableHead>Notas</TableHead>
                     <TableHead>Fecha Creación</TableHead>
+                    <TableHead>Estado</TableHead>
                     <TableHead className="text-right">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -145,6 +147,14 @@ export function RepHistoryPage() {
                       </TableCell>
                       <TableCell className="text-sm">
                         {formatDateTime(item.created_at, user?.organization_timezone)}
+                      </TableCell>
+                      <TableCell>
+                        <SessionViewBadge
+                          viewed={item.viewed}
+                          openCount={item.open_count}
+                          lastOpenAt={item.last_open_at}
+                          timezone={user?.organization_timezone}
+                        />
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">

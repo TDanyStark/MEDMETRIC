@@ -98,6 +98,7 @@ export const ROLE_BLUEPRINTS: Record<Role, RoleBlueprint> = {
       { to: '/rep/library', label: 'Biblioteca', description: 'Materiales aprobados de los gerentes suscritos.', icon: FolderKanban },
       { to: '/rep/doctors', label: 'Medicos', description: 'Directorio de medicos con historial de visitas y contexto comercial.', icon: Stethoscope },
       { to: '/rep/comments', label: 'Comentarios', description: 'Comentarios de medicos sobre tus visitas.', icon: MessageSquare },
+      { to: '/rep/metrics', label: 'Métricas', description: 'Seguimiento de aperturas y consumo de tus sesiones enviadas.', icon: Activity },
       { to: '/rep/history', label: 'Historial', description: 'Seguimiento de sesiones ya creadas y consumos asociados.', icon: Link2 },
     ],
   },

@@ -167,27 +167,29 @@ export function MaterialFormPage({ scope }: MaterialFormPageProps) {
 
   const isLocked = cfg.lockApprovedEdit && isEditing && material?.status === 'approved'
 
-  // Hydrate form: in edit mode from the fetched material, in create mode
-  // with a default brand once the brand list loads (only if the user
-  // hasn't picked one yet). Adjusted during render, not in an effect — this
-  // page stays mounted while these queries resolve.
-  if (useDidDepsChange([isEditing, material, brands])) {
-    if (isEditing) {
-      if (material) {
-        setForm({
-          title: material.title,
-          description: material.description ?? '',
-          brand_id: material.brand_id,
-          manager_id: material.manager_id,
-          type: material.type,
-          external_url: material.external_url ?? '',
-          file: null,
-          cover_file: null,
-        })
-      }
-    } else {
-      setForm((current) => ({ ...current, brand_id: current.brand_id ?? brands[0]?.id ?? null }))
-    }
+  // Edit mode: hydrate the form from the fetched material. Adjusted during
+  // render, not in an effect — this page stays mounted while the query
+  // resolves, and it must also hydrate on the very first render when the
+  // material comes straight out of the TanStack cache (warm revisit).
+  // Keyed on `material` alone on purpose: `brands` resolving in parallel
+  // must NOT re-run this, or it would wipe whatever the user already typed.
+  if (useDidDepsChange([material]) && isEditing && material) {
+    setForm({
+      title: material.title,
+      description: material.description ?? '',
+      brand_id: material.brand_id,
+      manager_id: material.manager_id,
+      type: material.type,
+      external_url: material.external_url ?? '',
+      file: null,
+      cover_file: null,
+    })
+  }
+
+  // Create mode: preselect a default brand once the brand list loads, only
+  // if the user hasn't picked one yet.
+  if (useDidDepsChange([brands]) && !isEditing) {
+    setForm((current) => ({ ...current, brand_id: current.brand_id ?? brands[0]?.id ?? null }))
   }
 
   // Genuine effect: creates a browser object URL (external resource) that

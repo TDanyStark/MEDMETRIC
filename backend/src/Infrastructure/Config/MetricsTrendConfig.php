@@ -22,4 +22,30 @@ class MetricsTrendConfig
      * array_slice() directly on bucket rows.
      */
     public const MAX_TREND_DAYS = 90;
+
+    /**
+     * Default org-local window (in DAYS) applied by
+     * `DbRepMetricsRepository` to EVERY `/v1/rep/metrics/*` endpoint when
+     * the caller supplies neither `start_date` nor `end_date` (sdd/
+     * rep-metrics-module, "unificación del rango por defecto a 3 meses").
+     *
+     * DELIBERATELY an alias for MAX_TREND_DAYS, not a separate literal:
+     * the product decision ("last 3 months") is expressed as the SAME 90
+     * days already used as `openTrend()`'s hard cap, so this repository
+     * can NEVER end up with two different numbers to keep in sync by
+     * hand. This also means the default IS the ceiling here — by design,
+     * not an accident: prior to this change, 5 of 6 rep-metrics endpoints
+     * had NO date restriction at all while `openTrend()` alone silently
+     * capped at 90 days, so the same screen could show two different
+     * "effective" windows with no visual indication. Decoupling "default"
+     * from "max" again (e.g. letting the other 5 endpoints be widened
+     * past 90 days while the trend chart keeps silently re-capping to 90)
+     * would reintroduce exactly that class of bug. Keeping default ===
+     * max here guarantees all 7 endpoints ALWAYS agree on the exact same
+     * window, with zero risk of silent divergence. See
+     * `OrgDateRange::capRangeToMaxDays()` / `lastNLocalDays()` for the
+     * shared implementation and `frontend/src/lib/metricsTrendConfig.ts`
+     * for the mirrored frontend constant.
+     */
+    public const DEFAULT_RANGE_DAYS = self::MAX_TREND_DAYS;
 }

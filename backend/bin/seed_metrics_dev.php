@@ -6,10 +6,15 @@ declare(strict_types=1);
  * MEDMETRIC - Synthetic Metrics Seeder (DEVELOPMENT ONLY)
  *
  * Generates realistic-looking visit_sessions / visit_session_materials /
- * material_views (and, only where an organization has none, a brand +
- * materials to hang them off) so the /metrics dashboard has enough volume
- * over the last 90 days to be visually evaluable locally — instead of the
- * 0..8 range you get with the handful of manually-created rows.
+ * material_views / visit_session_comments (and, only where an organization
+ * has none, a brand + materials to hang them off) so both the org-level
+ * /metrics dashboard AND the rep-scoped /rep/metrics module
+ * (sdd/rep-metrics-module) have enough volume over the last N days to be
+ * visually evaluable locally — instead of the 0..8 range you get with the
+ * handful of manually-created rows. Reused as-is for rep-metrics rather
+ * than duplicated into a parallel seed script: rep metrics are derived
+ * from these exact same tables, scoped by `rep_id` (see
+ * App\Infrastructure\Persistence\RepMetrics\DbRepMetricsRepository).
  *
  * HARD GUARD: refuses to run when APP_ENV=production. This script is not
  * safe to run against a real tenant's data (it invents visits/doctors/views).
@@ -21,6 +26,7 @@ declare(strict_types=1);
  *   Materials created by this script  -> title   starts with SEED_PREFIX
  *   Brands created by this script     -> name    starts with SEED_PREFIX
  *   Visit sessions created by this script -> doctor_name starts with SEED_PREFIX
+ *   Comments created by this script   -> body    starts with SEED_PREFIX
  *   Material views created by this script -> ip_address starts with SEED_IP_PREFIX
  *     (kept OUT of the tag-by-text convention on purpose: user_agent stays a
  *     realistic, varied string so the "Registro de visualizaciones" table
@@ -87,6 +93,20 @@ const FAKE_DOCTOR_NAMES = [
 ];
 
 const FAKE_VIDEO_IDS = ['nP3W-1L8d5s', 'r7Qovpa_dPY', 'k4Q9j3sD2mE', 'x8Bv2wZ1nRt', 'q9Lm4Kd0PxA'];
+
+/** Realistic short doctor comments (es-CL), left on a subset of doctor-viewed sessions. */
+const DOCTOR_COMMENT_TEMPLATES = [
+    'Muy util el material, gracias por compartirlo.',
+    'Me gustaria recibir mas informacion sobre la dosis pediatrica.',
+    'Excelente presentacion, la voy a recomendar a mis colegas.',
+    'Falta informacion sobre interacciones con otros farmacos.',
+    'Buen resumen, lo revise con el equipo de enfermeria.',
+    'Podrian enviarme la version en PDF para imprimir?',
+    'Justo lo que necesitaba para la consulta de hoy.',
+    'Interesante, aunque esperaba mas datos clinicos.',
+    'Gracias por la visita, quedo atento a nuevos estudios.',
+    'El video quedo un poco largo, pero el contenido es bueno.',
+];
 
 /** @return list<int> */
 function columnList(PDO $pdo, string $sql, array $params = []): array
@@ -188,6 +208,7 @@ function seedCounts(PDO $pdo): array
 {
     return [
         'material_views (ip LIKE seed range)' => scalar($pdo, "SELECT COUNT(*) AS c FROM material_views WHERE ip_address LIKE :p", [':p' => SEED_IP_PREFIX . '%']),
+        'visit_session_comments (seed)' => scalar($pdo, "SELECT COUNT(*) AS c FROM visit_session_comments WHERE body LIKE :p", [':p' => SEED_PREFIX . '%']),
         'visit_session_materials (of seed sessions)' => scalar($pdo, "SELECT COUNT(*) AS c FROM visit_session_materials vsm JOIN visit_sessions vs ON vs.id = vsm.visit_session_id WHERE vs.doctor_name LIKE :p", [':p' => SEED_PREFIX . '%']),
         'visit_sessions (seed)' => scalar($pdo, "SELECT COUNT(*) AS c FROM visit_sessions WHERE doctor_name LIKE :p", [':p' => SEED_PREFIX . '%']),
         'materials (seed)' => scalar($pdo, "SELECT COUNT(*) AS c FROM materials WHERE title LIKE :p", [':p' => SEED_PREFIX . '%']),
@@ -212,6 +233,13 @@ function cleanupSeed(PDO $pdo): array
     $deleted['material_views'] = $pdo->prepare("DELETE FROM material_views WHERE ip_address LIKE :p");
     $deleted['material_views']->execute([':p' => SEED_IP_PREFIX . '%']);
     $deleted['material_views'] = $deleted['material_views']->rowCount();
+
+    // Explicit delete (rather than relying solely on visit_sessions'
+    // ON DELETE CASCADE for fk_vsc_session) so the row count below is
+    // accurate and this function stays idempotent/self-contained on its own.
+    $stmt = $pdo->prepare("DELETE FROM visit_session_comments WHERE body LIKE :p");
+    $stmt->execute([':p' => SEED_PREFIX . '%']);
+    $deleted['visit_session_comments'] = $stmt->rowCount();
 
     $stmt = $pdo->prepare("DELETE vsm FROM visit_session_materials vsm JOIN visit_sessions vs ON vs.id = vsm.visit_session_id WHERE vs.doctor_name LIKE :p");
     $stmt->execute([':p' => SEED_PREFIX . '%']);
@@ -253,6 +281,7 @@ if (!$confirm) {
         echo "  Per org/day (weekend): ~2-6 sessions, lighter extras" . PHP_EOL;
         echo "  ~8% of days get a 1.6x-2.2x spike multiplier" . PHP_EOL;
         echo "  Estimated total material_views: ~" . (count($orgs) * $days * 65) . " (order of magnitude)" . PHP_EOL;
+        echo "  ~25% of doctor-viewed sessions per org get 1 doctor comment (visit_session_comments)" . PHP_EOL;
     }
 
     echo PHP_EOL . "DRY RUN - nothing was written. Re-run with --confirm to execute." . PHP_EOL;
@@ -421,11 +450,15 @@ try {
         "INSERT INTO visit_sessions (organization_id, rep_id, doctor_token, doctor_id, doctor_name, notes, active, created_at, updated_at)
          VALUES (:org, :rep, :token, NULL, :dname, NULL, 1, :ts1, :ts2)"
     );
+    $materialForSessionStmt = $pdo->prepare(
+        "SELECT material_id FROM visit_session_materials WHERE visit_session_id = :sid ORDER BY RAND() LIMIT 1"
+    );
 
     $totalSessions = 0;
     $totalVsm = 0;
     $totalViewsRep = 0;
     $totalViewsDoctor = 0;
+    $totalComments = 0;
 
     foreach ($orgs as $orgId) {
         $reps = $orgReps[$orgId];
@@ -578,6 +611,70 @@ try {
         batchInsert($pdo, 'material_views', ['material_id', 'visit_session_id', 'viewer_type', 'viewer_id', 'opened_at', 'closed_at', 'duration_seconds', 'user_agent', 'ip_address'], $viewBuffer);
 
         echo "  org {$orgId}: done (" . count($sessionIdsSoFar) . " session(s) generated)." . PHP_EOL;
+
+        // ---------------------------------------------------------------
+        // Doctor comments (sdd/rep-metrics-module Phase 5): ~25% of this
+        // org's doctor-viewed seed sessions get one realistic comment,
+        // timed shortly after the session's last doctor open. Exercises
+        // DbRepMetricsRepository::sessions()'s comment_count aggregate
+        // with real, non-zero data instead of always 0.
+        // ---------------------------------------------------------------
+        if ($sessionIdsSoFar !== []) {
+            $placeholders = implode(',', array_fill(0, count($sessionIdsSoFar), '?'));
+            $viewedStmt = $pdo->prepare(
+                "SELECT visit_session_id, MAX(opened_at) AS last_open
+                 FROM material_views
+                 WHERE viewer_type = 'doctor' AND visit_session_id IN ({$placeholders})
+                 GROUP BY visit_session_id"
+            );
+            $viewedStmt->execute($sessionIdsSoFar);
+
+            $commentRows = [];
+            foreach ($viewedStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                if (random_int(1, 100) > 25) {
+                    continue; // ~25% of doctor-viewed sessions get a comment.
+                }
+
+                $sessionId = (int) $row['visit_session_id'];
+
+                // ~40% of comments target one specific material of the
+                // session; the rest are general/open comments (material_id NULL).
+                $materialId = null;
+                if (random_int(1, 100) <= 40) {
+                    $materialForSessionStmt->execute([':sid' => $sessionId]);
+                    $picked = $materialForSessionStmt->fetchColumn();
+                    $materialId = $picked !== false ? (int) $picked : null;
+                }
+
+                $createdAt = (new DateTimeImmutable((string) $row['last_open'], new DateTimeZone('UTC')))
+                    ->modify('+' . random_int(5, 240) . ' minutes')
+                    ->format('Y-m-d H:i:s');
+
+                $commentRows[] = [
+                    'visit_session_id' => $sessionId,
+                    'material_id' => $materialId,
+                    'organization_id' => $orgId,
+                    'parent_id' => null,
+                    'author_type' => 'doctor',
+                    'author_user_id' => null,
+                    'doctor_id' => null,
+                    'body' => SEED_PREFIX . DOCTOR_COMMENT_TEMPLATES[array_rand(DOCTOR_COMMENT_TEMPLATES)],
+                    'user_agent' => DOCTOR_USER_AGENTS[array_rand(DOCTOR_USER_AGENTS)],
+                    'ip_address' => SEED_IP_PREFIX . random_int(2, 254),
+                    'active' => 1,
+                    'created_at' => $createdAt,
+                    'updated_at' => null,
+                ];
+            }
+
+            $totalComments += batchInsert(
+                $pdo,
+                'visit_session_comments',
+                ['visit_session_id', 'material_id', 'organization_id', 'parent_id', 'author_type', 'author_user_id', 'doctor_id', 'body', 'user_agent', 'ip_address', 'active', 'created_at', 'updated_at'],
+                $commentRows
+            );
+            echo "  org {$orgId}: " . count($commentRows) . " doctor comment(s) generated." . PHP_EOL;
+        }
     }
 
     $pdo->commit();
@@ -588,6 +685,7 @@ try {
     printf("  material_views created (rep):      %d%s", $totalViewsRep, PHP_EOL);
     printf("  material_views created (doctor):   %d%s", $totalViewsDoctor, PHP_EOL);
     printf("  material_views created (total):    %d%s", $totalViewsRep + $totalViewsDoctor, PHP_EOL);
+    printf("  visit_session_comments created:    %d%s", $totalComments, PHP_EOL);
 } catch (Throwable $e) {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
