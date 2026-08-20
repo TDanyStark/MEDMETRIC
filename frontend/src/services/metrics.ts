@@ -43,6 +43,18 @@ export interface RepAdoptionMetric {
   adoption_percent: number
 }
 
+/**
+ * Why (or whether) a row has a doctor to show:
+ * - 'linked'   -> resolved via visit_sessions.doctor_id against the doctors
+ *                 catalog (canonical, current name).
+ * - 'legacy'   -> the visit predates the doctor_id column; doctor_name is a
+ *                 historical text snapshot, not linked to a doctor record.
+ * - 'no_visit' -> the view has no associated visit session at all (e.g. a
+ *                 rep opened the material outside of any visit) — there is
+ *                 no doctor to show, not a missing value.
+ */
+export type DoctorLinkStatus = 'linked' | 'legacy' | 'no_visit'
+
 export interface MaterialViewListMetric {
   id: number
   material_id: number
@@ -51,7 +63,9 @@ export interface MaterialViewListMetric {
   cover_path: string | null
   viewer_type: 'rep' | 'doctor'
   opened_at: string
+  doctor_id: number | null
   doctor_name: string | null
+  doctor_link_status: DoctorLinkStatus
   rep_name: string | null
 }
 

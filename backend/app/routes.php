@@ -67,7 +67,6 @@ use App\Application\Actions\Manager\Rep\RemoveRepAction;
 use App\Application\Actions\Public\Comment\CreatePublicCommentAction;
 use App\Application\Actions\Public\Comment\ListPublicCommentsAction;
 use App\Application\Actions\Public\Material\GetMaterialResourceAction;
-use App\Application\Actions\Public\Material\OpenMaterialAction;
 use App\Application\Actions\Public\Session\GetPublicSessionAction;
 use App\Application\Actions\Public\Study\GetStudyResourceAction;
 use App\Application\Actions\Rep\Material\ListMaterialsAction as RepListMaterialsAction;
@@ -469,7 +468,6 @@ return function (App $app) {
             
             // Material tracking endpoints
             $public->group('/material/{id}', function (RouteCollectorProxy $material) {
-                $material->post('/open', OpenMaterialAction::class);
                 $material->get('/resource', GetMaterialResourceAction::class);
                 $material->get('/cover', \App\Application\Actions\Public\Material\GetMaterialCoverAction::class);
             });

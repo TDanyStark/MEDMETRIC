@@ -5,7 +5,7 @@ import {
   TrendingUp,
   Presentation,
   FileText,
-  LogIn,
+  CheckCircle2,
   Eye,
   Stethoscope,
   X,
@@ -255,15 +255,15 @@ export function MetricsDashboard() {
         </div>
 
         <div className="rounded-3xl border border-border/50 bg-background/50 p-5 shadow-sm flex flex-col items-start">
-          <div className="h-10 w-10 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center mb-3">
-            <LogIn className="h-5 w-5" />
+          <div className="h-10 w-10 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center mb-3">
+            <CheckCircle2 className="h-5 w-5" />
           </div>
-          <h3 className="text-sm font-medium text-muted-foreground">Acceso del equipo</h3>
+          <h3 className="text-sm font-medium text-muted-foreground">Adopción de Equipo</h3>
           <p className="mt-1 text-4xl font-display font-medium text-foreground">
             {isLoadingLogins ? '-' : `${activePercent}%`}
           </p>
           <p className="mt-3 text-xs text-muted-foreground">
-            {activeReps} de {totalReps} visitadores activos iniciaron sesión alguna vez
+            {activeReps} de {totalReps} visitadores con acceso registrado
           </p>
         </div>
 

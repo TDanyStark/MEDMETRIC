@@ -28,6 +28,14 @@ interface MetricsRepositoryInterface
     public function getTopMaterialsMetrics(int $organizationId, ?int $managerId, array $filters = [], int $limit = 10, string $timezone = TimezoneConfig::DEFAULT_ZONE): array;
 
     /**
+     * Each row resolves the visit's doctor by `doctor_id` (canonical, joined
+     * against the `doctors` catalog) rather than the `doctor_name` text
+     * snapshot on `visit_sessions` — organization catalogs can have duplicate
+     * doctor names, so text alone is ambiguous. Each row also carries
+     * `doctor_link_status` ('linked' | 'legacy' | 'no_visit') so the caller
+     * can render an explicit reason instead of an ambiguous blank cell when
+     * there is no doctor to show.
+     *
      * @return array
      */
     public function getMaterialViewsList(int $organizationId, ?int $managerId, array $filters = [], int $page = 1, string $timezone = TimezoneConfig::DEFAULT_ZONE): array;

@@ -9,10 +9,10 @@ namespace App\Infrastructure\Support;
  * to a representative, correctly for BOTH `viewer_type` values:
  *   - viewer_type='rep'    -> the row's own viewer_id column IS the rep's id.
  *   - viewer_type='doctor' -> viewer_id is NULL (a doctor has no `users`
- *     row/login — see GetMaterialResourceAction::recordResourceView() and
- *     OpenMaterialAction, neither ever populates viewer_id for a doctor
- *     view), so the rep can only be resolved via the visit_sessions row
- *     that owns that view ($sessionRepIdExpr, i.e. visit_sessions.rep_id).
+ *     row/login — see GetMaterialResourceAction::recordResourceView(),
+ *     which never populates viewer_id for a doctor view), so the rep can
+ *     only be resolved via the visit_sessions row that owns that view
+ *     ($sessionRepIdExpr, i.e. visit_sessions.rep_id).
  *
  * This exists because a naive `viewer_type = 'rep' AND viewer_id IN (...)`
  * predicate silently drops EVERY doctor-type view whenever a rep filter is

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Users, Eye, Layers, Filter, AlertTriangle } from 'lucide-react'
+import { Users, Eye, Layers, Filter } from 'lucide-react'
 import { metricsApi } from '@/services/metrics'
 import { cn, formatDateTime, getInitials } from '@/lib/utils'
 import { PaginationBar } from '@/components/backoffice/Workbench'
@@ -55,16 +55,12 @@ export function RepAdoptionTable({
 
   return (
     <div className="rounded-3xl border border-border/50 bg-background/50 p-6 shadow-sm">
-      <div className="flex items-center gap-2 mb-1">
+      <div className="flex items-center gap-2 mb-6">
         <Users className="h-5 w-5 text-muted-foreground" />
         <h3 className="text-xl font-display font-medium">
           Adopción por representante
         </h3>
       </div>
-      <p className="mb-6 text-xs text-muted-foreground">
-        Solo representantes activos · % del catálogo de materiales aprobados abierto en
-        el rango de fechas seleccionado.
-      </p>
 
       <div className="overflow-x-auto rounded-xl border border-border/50">
         <table className="w-full text-sm text-left">
@@ -83,19 +79,18 @@ export function RepAdoptionTable({
               </th>
               <th className="px-4 py-3 font-medium min-w-[180px]">Adopción</th>
               <th className="px-4 py-3 font-medium text-right">Última actividad</th>
-              <th className="px-4 py-3 font-medium text-right">Último acceso</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border/50">
             {isLoading ? (
               <tr>
-                <td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">
+                <td colSpan={5} className="px-4 py-12 text-center text-muted-foreground">
                   Cargando datos...
                 </td>
               </tr>
             ) : reps.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">
+                <td colSpan={5} className="px-4 py-12 text-center text-muted-foreground">
                   No hay representantes en este alcance
                 </td>
               </tr>
@@ -158,17 +153,6 @@ export function RepAdoptionTable({
                       ) : (
                         <span className="text-xs italic text-muted-foreground/50">
                           Sin actividad
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-right whitespace-nowrap">
-                      {rep.last_login_at ? (
-                        <span className="text-muted-foreground">
-                          {formatDateTime(rep.last_login_at, user?.organization_timezone)}
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-red-500/10 px-2 py-0.5 text-xs font-medium text-red-600">
-                          <AlertTriangle className="h-3 w-3" /> Nunca ingresó
                         </span>
                       )}
                     </td>

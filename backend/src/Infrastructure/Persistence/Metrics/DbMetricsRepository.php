@@ -262,18 +262,9 @@ class DbMetricsRepository implements MetricsRepositoryInterface
         return $this->bucketByLocalDay($rows, $timezone);
     }
 
-    /**
-     * Rep scope is intentionally `u.active = 1`, matching getRepAdoptionMetrics'
-     * rep scope exactly (see sdd/admin-adoption-metric). Before this fix the two
-     * "Adopción" widgets counted different rep populations (this one included
-     * deactivated reps, the adoption table did not), which made their numbers
-     * incomparable even when both were otherwise correct. Deactivated reps are
-     * excluded here for the same reason the adoption table excludes them: an
-     * inactive rep's historical login state is not actionable for the admin.
-     */
     public function getRepLastLoginMetrics(int $organizationId, ?int $managerId, array $filters = []): array
     {
-        $where = ['u.organization_id = :org_id', 'u.active = 1'];
+        $where = ['u.organization_id = :org_id'];
         $params = [':org_id' => $organizationId];
 
         $joinSql = "JOIN roles r ON r.id = u.role_id AND r.name = 'rep'";
@@ -507,6 +498,17 @@ class DbMetricsRepository implements MetricsRepositoryInterface
         $pageSize = \App\Infrastructure\Config\MetricsPaginationConfig::PAGE_SIZE;
         $offset = ($page - 1) * $pageSize;
 
+        // Doctor identity is resolved by doctor_id (canonical, current name in
+        // the `doctors` catalog), NOT by the vs.doctor_name text snapshot —
+        // several organizations have duplicate doctor names, so text alone is
+        // ambiguous. doctor_link_status tells the frontend exactly why a row
+        // might not show a doctor, instead of an ambiguous blank cell:
+        //   'linked'   -> vs.doctor_id resolved via doctors table (normal case)
+        //   'legacy'   -> session predates the doctor_id column (has only the
+        //                 text snapshot) — fall back to vs.doctor_name
+        //   'no_visit' -> the view has no visit_session_id at all (e.g. a rep
+        //                 opened the material outside of any visit session) —
+        //                 there is no doctor to show, not a missing value.
         $sql = "SELECT 
                     mv.id,
                     m.id as material_id,
@@ -515,11 +517,18 @@ class DbMetricsRepository implements MetricsRepositoryInterface
                     m.cover_path,
                     mv.viewer_type,
                     mv.opened_at,
-                    vs.doctor_name,
+                    vs.doctor_id,
+                    COALESCE(d.name, vs.doctor_name) as doctor_name,
+                    CASE
+                        WHEN vs.id IS NULL THEN 'no_visit'
+                        WHEN vs.doctor_id IS NOT NULL THEN 'linked'
+                        ELSE 'legacy'
+                    END as doctor_link_status,
                     rep.name as rep_name
                 FROM material_views mv
                 JOIN materials m ON m.id = mv.material_id
                 LEFT JOIN visit_sessions vs ON vs.id = mv.visit_session_id
+                LEFT JOIN doctors d ON d.id = vs.doctor_id
                 {$repJoin}
                 WHERE {$whereSql}
                 ORDER BY mv.opened_at DESC
