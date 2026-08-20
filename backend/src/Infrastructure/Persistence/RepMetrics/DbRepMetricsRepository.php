@@ -27,13 +27,22 @@ use PDO;
  * Every metric is filtered to `viewer_type = 'doctor'` rows only (spec
  * "Metrics Catalog Semantics") — rep's own preview opens never count.
  *
- * When $filters carries neither `start_date` nor `end_date`, every method
- * defaults to the last MetricsTrendConfig::DEFAULT_RANGE_DAYS org-local
- * calendar days (see dateRangeFragments()) — this is the server-side half
- * of the "unificación del rango por defecto a 3 meses" fix: a direct API
- * call with no date params must NEVER return an org's entire unbounded
- * history, even though the frontend always sends explicit dates in
- * practice.
+     * When $filters carries neither `start_date` nor `end_date`, every method
+     * defaults to the last MetricsTrendConfig::DEFAULT_RANGE_DAYS org-local
+     * calendar days (see dateRangeFragments()) — this is the server-side half
+     * of the "unificación del rango por defecto a 3 meses" fix: a direct API
+     * call with no date params must NEVER return an org's entire unbounded
+     * history, even though the frontend always sends explicit dates in
+     * practice.
+     *
+     * When $filters DOES carry an explicit start_date/end_date, it is still
+     * bounded to at most MetricsTrendConfig::MAX_RANGE_DAYS org-local
+     * calendar days (see dateRangeFragments()) — a hand-crafted or stale
+     * query string can never pull an unbounded history either. This is a
+     * DIFFERENT, larger ceiling than DEFAULT_RANGE_DAYS on purpose: the
+     * default view is intentionally short (3 months), but a user must be
+     * able to explicitly widen the range well past that (sdd/
+     * rep-metrics-module, "separar rango por defecto del tope máximo").
  *
  * Day/hour bucketing always happens in PHP via
  * App\Infrastructure\Support\OrgDateRange (never SQL DATE()/HOUR()/
@@ -628,16 +637,21 @@ class DbRepMetricsRepository implements RepMetricsRepositoryInterface
      * unopenedMaterials), so the default is applied identically
      * everywhere with zero per-widget duplication. openTrend() is the one
      * exception: it pre-bounds its OWN filters via
-     * OrgDateRange::capRangeToMaxDays() before ever calling this method
-     * (so it never hits the null branch below), but because that cap uses
-     * the SAME DEFAULT_RANGE_DAYS constant, its default is identical to
-     * every other endpoint's — see MetricsTrendConfig::DEFAULT_RANGE_DAYS
-     * docblock for why default === cap is intentional here.
+     * OrgDateRange::capRangeToMaxDays() with the smaller MAX_TREND_DAYS
+     * (a rendering concern, see that method) before ever calling this
+     * method, so it never hits either branch below with unbounded input.
      *
-     * Explicit filters are passed through UNCHANGED (no cap applied) — a
-     * caller-supplied range, however wide, is honored as-is by every
-     * method except openTrend(), which always re-bounds itself
-     * regardless of what is passed in.
+     * When the caller DOES supply an explicit start_date/end_date, the
+     * range is bounded to at most MetricsTrendConfig::MAX_RANGE_DAYS
+     * (365) via OrgDateRange::capRangeToMaxDays() — DELIBERATELY a
+     * DIFFERENT, larger ceiling than DEFAULT_RANGE_DAYS (90): the default
+     * unfiltered view stays short, but an explicit filter may widen well
+     * past it (sdd/rep-metrics-module, "separar rango por defecto del
+     * tope máximo" — previously DEFAULT_RANGE_DAYS was hard-aliased to
+     * MAX_TREND_DAYS specifically so "default === max", which meant a
+     * user could never look further back than the default window at
+     * all). Prior to this, explicit filters were passed through
+     * completely UNCAPPED here — this closes that gap.
      *
      * @return string[] 0, 1 or 2 SQL fragments
      */
@@ -648,6 +662,13 @@ class DbRepMetricsRepository implements RepMetricsRepositoryInterface
 
         if ($fromLocal === null && $toLocal === null) {
             [$fromLocal, $toLocal] = OrgDateRange::lastNLocalDays(MetricsTrendConfig::DEFAULT_RANGE_DAYS, $timezone);
+        } else {
+            [$fromLocal, $toLocal] = OrgDateRange::capRangeToMaxDays(
+                $fromLocal,
+                $toLocal,
+                MetricsTrendConfig::MAX_RANGE_DAYS,
+                $timezone
+            );
         }
 
         [$fromUtc, $toUtcExclusive] = OrgDateRange::boundsForLocalDates($fromLocal, $toLocal, $timezone);

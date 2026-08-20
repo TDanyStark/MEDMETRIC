@@ -262,9 +262,18 @@ class DbMetricsRepository implements MetricsRepositoryInterface
         return $this->bucketByLocalDay($rows, $timezone);
     }
 
+    /**
+     * Rep scope is intentionally `u.active = 1`, matching getRepAdoptionMetrics'
+     * rep scope exactly (see sdd/admin-adoption-metric). Before this fix the two
+     * "Adopción" widgets counted different rep populations (this one included
+     * deactivated reps, the adoption table did not), which made their numbers
+     * incomparable even when both were otherwise correct. Deactivated reps are
+     * excluded here for the same reason the adoption table excludes them: an
+     * inactive rep's historical login state is not actionable for the admin.
+     */
     public function getRepLastLoginMetrics(int $organizationId, ?int $managerId, array $filters = []): array
     {
-        $where = ['u.organization_id = :org_id'];
+        $where = ['u.organization_id = :org_id', 'u.active = 1'];
         $params = [':org_id' => $organizationId];
 
         $joinSql = "JOIN roles r ON r.id = u.role_id AND r.name = 'rep'";

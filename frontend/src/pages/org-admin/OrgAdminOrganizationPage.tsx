@@ -17,7 +17,7 @@ import { ErrorState } from './components/ErrorState'
  * only editable field today is the organization's timezone (used to
  * localize date filters and displayed dates across the platform). Name,
  * slug and active status remain superadmin-only, managed from
- * /superadmin/organizations.
+ * `/organizations` (superadmin role).
  */
 export function OrgAdminOrganizationPage() {
   const queryClient = useQueryClient()

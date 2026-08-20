@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { differenceInCalendarDays, parseISO } from "date-fns";
 import {
   CartesianGrid,
   Line,
@@ -16,6 +17,23 @@ import { parseUTCDate } from "@/lib/utils";
 interface OpenTrendChartProps {
   data: RepOpenTrendPoint[] | undefined;
   isLoading: boolean;
+  /** Effective [startDate, endDate] of the page's own filter (which may
+   * be wider than what this chart actually renders — see `maxTrendDays`
+   * below). Only used to decide whether the render-cap caption applies;
+   * never sent to the API from here (the backend re-bounds `openTrend()`
+   * independently). */
+  startDate?: string;
+  endDate?: string;
+  /** `MetricsTrendConfig::MAX_TREND_DAYS` mirrored client-side — the
+   * chart's OWN rendering ceiling, always <= the page's general
+   * `maxRangeDays` (see `EffectiveRangeNotice`). When the selected
+   * [startDate, endDate] span exceeds this, the backend silently
+   * re-bounds `openTrend()` to only the most recent `maxTrendDays` days
+   * of that range — this component surfaces that on screen so it's never
+   * a silent divergence from what `EffectiveRangeNotice` above claims
+   * (sdd/rep-metrics-module, "separar rango por defecto del tope
+   * máximo" — no repeating the previously-fixed silent-asymmetry bug). */
+  maxTrendDays?: number;
 }
 
 interface ChartPoint extends RepOpenTrendPoint {
@@ -33,7 +51,13 @@ interface ChartPoint extends RepOpenTrendPoint {
  * made one line visually overshoot its real value — replicate that fix
  * exactly, never regress it (spec "Chart Data Correctness").
  */
-export function OpenTrendChart({ data, isLoading }: OpenTrendChartProps) {
+export function OpenTrendChart({
+  data,
+  isLoading,
+  startDate,
+  endDate,
+  maxTrendDays,
+}: OpenTrendChartProps) {
   const points = useMemo<ChartPoint[]>(() => {
     if (!data) return [];
     return data.map((point) => ({
@@ -49,14 +73,27 @@ export function OpenTrendChart({ data, isLoading }: OpenTrendChartProps) {
     (p) => p.sessions_created > 0 || p.sessions_viewed > 0,
   );
 
+  // True only when the page's selected range is wider than what this
+  // chart will actually render — see `maxTrendDays` prop docblock.
+  const isRenderCapped =
+    Boolean(startDate && endDate && maxTrendDays) &&
+    differenceInCalendarDays(parseISO(endDate as string), parseISO(startDate as string)) + 1 >
+      (maxTrendDays as number);
+
   return (
     <div className="rounded-3xl border border-border/50 bg-background/50 p-6 shadow-sm">
-      <div className="mb-6 flex items-center gap-2">
+      <div className={isRenderCapped ? "mb-1 flex items-center gap-2" : "mb-6 flex items-center gap-2"}>
         <TrendingUp className="h-5 w-5 text-muted-foreground" />
         <h3 className="font-display text-xl font-medium">
           Enviadas vs. abiertas
         </h3>
       </div>
+
+      {isRenderCapped && (
+        <p className="mb-5 text-xs text-muted-foreground">
+          El gráfico muestra los últimos {maxTrendDays} días del rango seleccionado.
+        </p>
+      )}
 
       {isLoading ? (
         <div className="flex h-64 items-center justify-center text-muted-foreground">

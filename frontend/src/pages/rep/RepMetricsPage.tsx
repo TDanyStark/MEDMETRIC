@@ -13,7 +13,11 @@ import {
   computeMaxEndDate,
   computeMinStartDate,
 } from "@/lib/dateRangeCap";
-import { MAX_METRICS_TREND_DAYS } from "@/lib/metricsTrendConfig";
+import {
+  DEFAULT_METRICS_RANGE_DAYS,
+  MAX_METRICS_RANGE_DAYS,
+  MAX_METRICS_TREND_DAYS,
+} from "@/lib/metricsTrendConfig";
 import { useAuth } from "@/contexts/useAuth";
 import {
   getRepDeviceSplit,
@@ -34,7 +38,7 @@ import { UnopenedMaterialsList } from "./components/UnopenedMaterialsList";
 import { EffectiveRangeNotice } from "./components/EffectiveRangeNotice";
 
 /**
- * Orchestrator for `/rep/metrics` (sdd/rep-metrics-module Phase 4).
+ * Orchestrator for `/metrics` (rep role; sdd/rep-metrics-module Phase 4).
  * Every filter lives in the URL (persisted, shareable, reload-safe — per
  * AGENTS.md). Widget order follows the design's page hierarchy: the "does
  * the doctor open it?" hero leads, the actionable never-opened follow-up
@@ -56,11 +60,18 @@ export function RepMetricsPage() {
   // display/query-only and never written back into the URL.
   const hasFilters = Boolean(rawStartDate || rawEndDate);
 
-  // Same cap as the backoffice dashboard (MetricsTrendConfig::MAX_TREND_DAYS,
-  // mirrored client-side) so a shared/old URL never silently requests a
-  // wider trend window than the backend will actually return.
+  // General range cap for this page — MAX_METRICS_RANGE_DAYS (365),
+  // mirroring MetricsTrendConfig::MAX_RANGE_DAYS server-side — so a
+  // shared/old URL never silently requests a wider window than the
+  // backend will actually honor. DELIBERATELY passed explicitly here
+  // (not the shared helpers' default, MAX_METRICS_TREND_DAYS/90): the
+  // admin dashboard calls these same helpers without this argument and
+  // must keep its own, smaller default untouched — see
+  // MAX_METRICS_RANGE_DAYS' docblock. This is NOT the trend chart's own
+  // (smaller) render cap — see OpenTrendChart's own `maxTrendDays` prop
+  // for that, applied only to the chart itself.
   const { startDate: cappedStartDate, endDate: cappedEndDate, wasCapped } =
-    capDateRangeToMaxDays(rawStartDate, rawEndDate);
+    capDateRangeToMaxDays(rawStartDate, rawEndDate, MAX_METRICS_RANGE_DAYS);
 
   // No explicit filter -> default to the last DEFAULT_METRICS_RANGE_DAYS
   // (3 months), pre-filled into the pickers and sent to every endpoint,
@@ -205,7 +216,7 @@ export function RepMetricsPage() {
               onChange={(val) => setDateFilter("start_date", val || "")}
               placeholder="Desde"
               className="w-[300px]"
-              minDate={computeMinStartDate(endDate || undefined)}
+              minDate={computeMinStartDate(endDate || undefined, MAX_METRICS_RANGE_DAYS)}
               maxDate={endDate || undefined}
             />
           </div>
@@ -217,7 +228,7 @@ export function RepMetricsPage() {
               placeholder="Hasta"
               className="w-[300px]"
               minDate={startDate || undefined}
-              maxDate={computeMaxEndDate(startDate || undefined)}
+              maxDate={computeMaxEndDate(startDate || undefined, MAX_METRICS_RANGE_DAYS)}
             />
           </div>
           {hasFilters && (
@@ -231,12 +242,13 @@ export function RepMetricsPage() {
         </div>
       </div>
 
-      {wasCapped && <DateRangeCapNotice maxDays={MAX_METRICS_TREND_DAYS} />}
+      {wasCapped && <DateRangeCapNotice maxDays={MAX_METRICS_RANGE_DAYS} />}
       <EffectiveRangeNotice
         isDefaultRange={isDefaultRange}
         startDate={startDate}
         endDate={endDate}
-        maxTrendDays={MAX_METRICS_TREND_DAYS}
+        defaultRangeDays={DEFAULT_METRICS_RANGE_DAYS}
+        maxRangeDays={MAX_METRICS_RANGE_DAYS}
       />
 
       {summaryQuery.isError && (
@@ -260,7 +272,13 @@ export function RepMetricsPage() {
             timezone={user?.organization_timezone}
           />
 
-          <OpenTrendChart data={openTrendQuery.data} isLoading={openTrendQuery.isLoading} />
+          <OpenTrendChart
+            data={openTrendQuery.data}
+            isLoading={openTrendQuery.isLoading}
+            startDate={startDate}
+            endDate={endDate}
+            maxTrendDays={MAX_METRICS_TREND_DAYS}
+          />
 
           <div className="grid gap-8 lg:grid-cols-2">
             <HourHistogramChart

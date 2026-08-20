@@ -11,6 +11,7 @@ import {
 import { Button } from '@/components/ui/Button'
 
 import { getNumberParam, getStringParam, updateSearchParams } from '@/lib/search'
+import { routePath } from '@/lib/routes'
 import {
   approveManagerMaterial,
   listManagerBrands,
@@ -81,7 +82,7 @@ export function ManagerMaterialsPage() {
   })
 
   const handleEdit = (material: Material) => {
-    navigate(`/manager/materials/${material.id}/edit`)
+    navigate(routePath('/materials/:id/edit', { id: material.id }))
   }
 
   const handlePreview = (material: Material) => {
@@ -96,7 +97,7 @@ export function ManagerMaterialsPage() {
           <h1 className="text-3xl font-display font-semibold tracking-tight text-foreground">Materiales</h1>
           <p className="mt-2 text-sm text-muted-foreground">Gestiona los materiales que los visitadores presentarán.</p>
         </div>
-        <Button onClick={() => navigate('/manager/materials/new')}>
+        <Button onClick={() => navigate(routePath('/materials/new'))}>
           <Plus className="mr-2 h-4 w-4" /> Nuevo Material
         </Button>
       </div>

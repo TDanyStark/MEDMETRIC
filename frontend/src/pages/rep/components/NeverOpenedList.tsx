@@ -12,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/Table";
+import { routePath } from "@/lib/routes";
 import { formatDate } from "@/lib/utils";
 import type { PaginatedData } from "@/types/backoffice";
 import type { RepMetricSession } from "@/types/repMetrics";
@@ -110,8 +111,8 @@ export function NeverOpenedList({
                     <Link
                       to={
                         session.doctor_name
-                          ? `/rep/history?q=${encodeURIComponent(session.doctor_name)}`
-                          : "/rep/history"
+                          ? `${routePath("/history")}?q=${encodeURIComponent(session.doctor_name)}`
+                          : routePath("/history")
                       }
                       className="group inline-flex items-center gap-1 text-sm font-medium text-primary transition-colors hover:text-primary/80"
                     >

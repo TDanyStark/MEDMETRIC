@@ -10,6 +10,7 @@ import {
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { formatDate } from '@/lib/utils'
+import { canDeleteDoctor } from '@/lib/permissions'
 import { Doctor } from '@/types/doctor'
 import { useAuth } from '@/contexts/useAuth'
 
@@ -27,6 +28,7 @@ function daysSinceLabel(days: number | null): string {
 
 export function DoctorsTable({ doctors, onEdit, onDelete }: DoctorsTableProps) {
   const { user } = useAuth()
+  const canDelete = canDeleteDoctor(user?.role)
   return (
     <div className="rounded-3xl border border-border/50 bg-background/50 shadow-sm overflow-hidden">
       <Table>
@@ -80,14 +82,16 @@ export function DoctorsTable({ doctors, onEdit, onDelete }: DoctorsTableProps) {
                   >
                     <Pencil className="h-4 w-4" />
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onDelete(doctor)}
-                    className="opacity-70 hover:opacity-100 transition-opacity p-2 text-destructive hover:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  {canDelete && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onDelete(doctor)}
+                      className="opacity-70 hover:opacity-100 transition-opacity p-2 text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </TableCell>
             </TableRow>

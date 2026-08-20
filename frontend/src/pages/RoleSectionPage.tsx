@@ -3,15 +3,23 @@ import { Link } from 'react-router-dom'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent } from '@/components/ui/Card'
+import { useAuth } from '@/contexts/useAuth'
 import { ROLE_BLUEPRINTS, getRoleHome } from '@/lib/auth'
-import { Role } from '@/types'
 
 interface RoleSectionPageProps {
-  role: Role
   path: string
 }
 
-export default function RoleSectionPage({ role, path }: RoleSectionPageProps) {
+export default function RoleSectionPage({ path }: RoleSectionPageProps) {
+  const { user } = useAuth()
+
+  // Igual que RoleHomePage: guard defensivo, esta pagina siempre se monta
+  // dentro de una ruta protegida con sesion valida.
+  if (!user) {
+    return null
+  }
+
+  const role = user.role
   const blueprint = ROLE_BLUEPRINTS[role]
   const section = blueprint.navigation.find(item => item.to === path) ?? blueprint.navigation[0]
   const Icon = section.icon

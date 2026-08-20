@@ -330,10 +330,26 @@ try {
     $orgMaterials = []; // org_id => [material_id, ...] (approved, any type, real + synthetic)
     $orgTimezone = [];
 
+    // is_visible=1 is hardcoded here (not bound as a param) to mirror
+    // App\Infrastructure\Persistence\Material\DbMaterialRepository::approve(),
+    // the ONLY code path in the real app that ever sets status='approved'
+    // — it ALWAYS sets is_visible=1 in the SAME statement. `is_visible`
+    // defaults to 0 (migration 015_add_is_visible_to_materials.sql), so a
+    // raw INSERT that hardcodes status='approved' but omits this column
+    // silently produces "approved but invisible" materials — a state the
+    // real app's approve flow can never produce (approval and visibility
+    // are atomic there). That mismatch caused a real diagnosis
+    // (sdd/rep-library-visibility/explore): reps never saw these
+    // materials while org_admin did, because the admin list query does
+    // NOT filter by is_visible but the rep list query does (by design —
+    // is_visible is the "published" toggle a manager/admin can flip
+    // independently of approval). Keep this in sync with
+    // Material::approve()'s invariant if that method's SET clause ever
+    // changes.
     $insMaterial = $pdo->prepare(
         "INSERT INTO materials
-            (organization_id, brand_id, manager_id, title, description, type, status, storage_driver, storage_path, external_url, approved_at, approved_by, created_at, updated_at)
-         VALUES (:org, :brand, :manager, :title, :description, :type, 'approved', :driver, :path, :url, :approved_at, :approved_by, :created_at, :updated_at)"
+            (organization_id, brand_id, manager_id, title, description, type, status, is_visible, storage_driver, storage_path, external_url, approved_at, approved_by, created_at, updated_at)
+         VALUES (:org, :brand, :manager, :title, :description, :type, 'approved', 1, :driver, :path, :url, :approved_at, :approved_by, :created_at, :updated_at)"
     );
     $insBrand = $pdo->prepare(
         "INSERT INTO brands (organization_id, name, description, active, created_at, updated_at) VALUES (:org, :name, :description, 1, NOW(), NOW())"
@@ -460,6 +476,16 @@ try {
     $totalViewsDoctor = 0;
     $totalComments = 0;
 
+    // rep_id => latest 'Y-m-d H:i:s' (UTC) among that rep's OWN
+    // (viewer_type='rep') generated views. Used below to set a coherent
+    // users.last_login_at — see LoginAction::action(), the only real code
+    // path that sets this column. Without this, the seeder can produce an
+    // impossible production state: a rep with recorded material_views who
+    // has never logged in (last_login_at NULL), because raw INSERTs bypass
+    // login entirely. Only rep-attributed views count (doctor views have
+    // viewer_id=null and don't imply the rep logged in).
+    $repActivityMax = [];
+
     foreach ($orgs as $orgId) {
         $reps = $orgReps[$orgId];
         $materials = $orgMaterials[$orgId];
@@ -522,18 +548,22 @@ try {
                     ];
 
                     $repOpened = (clone $localTs)->modify('+' . random_int(0, 10) . ' minutes');
+                    $repOpenedUtc = $repOpened->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s');
                     $viewBuffer[] = [
                         'material_id' => $materialId,
                         'visit_session_id' => $sessionId,
                         'viewer_type' => 'rep',
                         'viewer_id' => $repId,
-                        'opened_at' => $repOpened->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s'),
+                        'opened_at' => $repOpenedUtc,
                         'closed_at' => null,
                         'duration_seconds' => null,
                         'user_agent' => REP_USER_AGENTS[array_rand(REP_USER_AGENTS)],
                         'ip_address' => SEED_IP_PREFIX . random_int(2, 254),
                     ];
                     $totalViewsRep++;
+                    if (!isset($repActivityMax[$repId]) || $repOpenedUtc > $repActivityMax[$repId]) {
+                        $repActivityMax[$repId] = $repOpenedUtc;
+                    }
 
                     if (random_int(1, 100) <= 80) {
                         $docOpened = (clone $repOpened)->modify('+' . random_int(1, 15) . ' minutes');
@@ -559,18 +589,22 @@ try {
                 $materialId = $materials[array_rand($materials)];
                 $hour = random_int(8, 19);
                 $localTs = $localDay->setTime($hour, random_int(0, 59), random_int(0, 59));
+                $extraRepUtc = $localTs->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s');
                 $viewBuffer[] = [
                     'material_id' => $materialId,
                     'visit_session_id' => null,
                     'viewer_type' => 'rep',
                     'viewer_id' => $repId,
-                    'opened_at' => $localTs->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s'),
+                    'opened_at' => $extraRepUtc,
                     'closed_at' => null,
                     'duration_seconds' => null,
                     'user_agent' => REP_USER_AGENTS[array_rand(REP_USER_AGENTS)],
                     'ip_address' => SEED_IP_PREFIX . random_int(2, 254),
                 ];
                 $totalViewsRep++;
+                if (!isset($repActivityMax[$repId]) || $extraRepUtc > $repActivityMax[$repId]) {
+                    $repActivityMax[$repId] = $extraRepUtc;
+                }
             }
 
             // Extra doctor "return visits" - re-opening a link from a real (seed) session,
@@ -677,6 +711,26 @@ try {
         }
     }
 
+    // -------------------------------------------------------------------
+    // Keep users.last_login_at coherent with generated activity (see
+    // $repActivityMax docblock above). Only ever moves last_login_at
+    // FORWARD to the rep's latest seeded activity — never overwrites a
+    // more recent real login the rep already has.
+    // -------------------------------------------------------------------
+
+    $reposUpdated = 0;
+    if ($repActivityMax !== []) {
+        heading('SYNCING users.last_login_at WITH SEEDED ACTIVITY');
+        $updLogin = $pdo->prepare(
+            "UPDATE users SET last_login_at = :ts WHERE id = :id AND (last_login_at IS NULL OR last_login_at < :ts2)"
+        );
+        foreach ($repActivityMax as $repId => $ts) {
+            $updLogin->execute([':ts' => $ts, ':id' => $repId, ':ts2' => $ts]);
+            $reposUpdated += $updLogin->rowCount();
+        }
+        echo "  {$reposUpdated} rep(s) had last_login_at set/advanced to match their latest seeded view." . PHP_EOL;
+    }
+
     $pdo->commit();
 
     heading('SUMMARY');
@@ -686,6 +740,7 @@ try {
     printf("  material_views created (doctor):   %d%s", $totalViewsDoctor, PHP_EOL);
     printf("  material_views created (total):    %d%s", $totalViewsRep + $totalViewsDoctor, PHP_EOL);
     printf("  visit_session_comments created:    %d%s", $totalComments, PHP_EOL);
+    printf("  users.last_login_at synced:        %d%s", $reposUpdated, PHP_EOL);
 } catch (Throwable $e) {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();

@@ -4,15 +4,18 @@ import { useAuth } from '@/contexts/useAuth'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
 import { ROLE_BLUEPRINTS } from '@/lib/auth'
-import { Role } from '@/types'
 
-interface RoleHomePageProps {
-  role: Role
-}
-
-export default function RoleHomePage({ role }: RoleHomePageProps) {
+export default function RoleHomePage() {
   const { user } = useAuth()
-  const blueprint = ROLE_BLUEPRINTS[role]
+
+  // `/` esta protegido por ProtectedRoute (roles=ALL_ROLES): cuando este
+  // componente renderiza, siempre hay una sesion valida. Este guard es
+  // defensivo (evita un crash mientras el store de auth se actualiza).
+  if (!user) {
+    return null
+  }
+
+  const blueprint = ROLE_BLUEPRINTS[user.role]
   
   // Omit the first navigation item if it is just a link back to this overview
   const navigationItems = blueprint.navigation.filter(item => item.to !== blueprint.navigation[0].to)

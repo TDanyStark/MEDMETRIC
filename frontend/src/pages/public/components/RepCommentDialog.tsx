@@ -40,7 +40,7 @@ import { PublicMaterial, PublicSession } from '@/types'
  * - No rate-limit (429) handling — the public endpoint is rate-limited,
  *   the authenticated rep endpoint is not.
  * - No "own comments" read-back — the rep already has a dedicated
- *   "Comentarios" module (`/rep/comments`) to browse everything they and
+ *   "Comentarios" module (`/comments`) to browse everything they and
  *   doctors have written, so this composer only needs to CREATE.
  */
 

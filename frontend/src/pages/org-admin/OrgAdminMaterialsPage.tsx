@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/Dialog'
 
 import { getNumberParam, getStringParam, updateSearchParams } from '@/lib/search'
+import { routePath } from '@/lib/routes'
 import { getUserFriendlyErrorMessage } from '@/services/api'
 import {
   approveOrgMaterial,
@@ -122,11 +123,11 @@ export function OrgAdminMaterialsPage() {
   })
 
   const handleOpenNewDialog = () => {
-    navigate('/org-admin/materials/new')
+    navigate(routePath('/materials/new'))
   }
 
   const handleEdit = (material: Material) => {
-    navigate(`/org-admin/materials/${material.id}/edit`)
+    navigate(routePath('/materials/:id/edit', { id: material.id }))
   }
 
   const handlePreview = (material: Material) => {

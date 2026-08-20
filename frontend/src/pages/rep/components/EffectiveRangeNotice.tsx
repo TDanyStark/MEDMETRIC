@@ -9,7 +9,15 @@ interface EffectiveRangeNoticeProps {
   isDefaultRange: boolean;
   startDate: string;
   endDate: string;
-  maxTrendDays: number;
+  /** `DEFAULT_METRICS_RANGE_DAYS` — the rolling window pre-filled when no
+   * explicit filter is set. Independent of `maxRangeDays` (see that
+   * prop's docblock) — this is intentionally the SMALLER of the two. */
+  defaultRangeDays: number;
+  /** `MAX_METRICS_RANGE_DAYS` — the widest span the date pickers/URL will
+   * accept before the backend silently truncates it. Independent of
+   * `defaultRangeDays`: a user CAN select a range up to this size, even
+   * though the page opens with the smaller default. */
+  maxRangeDays: number;
 }
 
 /**
@@ -38,24 +46,32 @@ function formatCalendarDate(dateStr: string, fallback: string): string {
  * only renders when `wasCapped===true`).
  *
  * Originally closed a gap where 5 of the 6 widgets applied NO date filter
- * by default (full history) while `OpenTrendChart` always capped at
- * `maxTrendDays` even with no filter set — two silently different windows
- * on the same screen (sdd/rep-metrics-module/number-semantics, Ronda 2,
- * P3). That asymmetry no longer exists: ALL 7 endpoints (including the
- * trend chart) now share the exact same default of `maxTrendDays` days
- * when no filter is set (`MetricsTrendConfig::DEFAULT_RANGE_DAYS` ===
- * `MAX_TREND_DAYS`, see that constant's docblock), so `startDate`/
- * `endDate` here are ALWAYS a concrete, populated range — never an empty
- * "todo el historial" state. This notice now exists to make that
- * always-on range legible, and to distinguish "this is the rolling
- * default" from "you picked this range yourself".
+ * by default (full history) while `OpenTrendChart` always capped at 90
+ * days even with no filter set — two silently different windows on the
+ * same screen (sdd/rep-metrics-module/number-semantics, Ronda 2, P3).
+ * ALL widgets (including the trend chart's underlying query) now share
+ * the exact same `defaultRangeDays`-day default when no filter is set,
+ * so `startDate`/`endDate` here are ALWAYS a concrete, populated range —
+ * never an empty "todo el historial" state.
+ *
+ * `defaultRangeDays` and `maxRangeDays` are DELIBERATELY two different
+ * numbers (sdd/rep-metrics-module, "separar rango por defecto del tope
+ * máximo") — this notice's whole job is to make that distinction legible:
+ * the page opens with a short default, but the user CAN widen the range
+ * (via the date pickers) all the way up to `maxRangeDays` without ever
+ * being told the two are the same when they're not. The trend chart has
+ * its OWN, smaller rendering cap independent of both these numbers — see
+ * `OpenTrendChart`'s own inline caption for that.
  */
 export function EffectiveRangeNotice({
   isDefaultRange,
   startDate,
   endDate,
-  maxTrendDays,
+  defaultRangeDays,
+  maxRangeDays,
 }: EffectiveRangeNoticeProps) {
+  const defaultRangeMonths = Math.round(defaultRangeDays / 30);
+
   return (
     <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
       <Badge variant="accent" className="normal-case tracking-normal font-medium">
@@ -64,8 +80,8 @@ export function EffectiveRangeNotice({
       </Badge>
       <span>
         {isDefaultRange
-          ? `Rango por defecto: últimos ${maxTrendDays} días (3 meses). Podés ajustarlo con los selectores de fecha — el máximo permitido es de ${maxTrendDays} días.`
-          : `Rango que elegiste. Tarjetas, listas y el gráfico de evolución usan este mismo rango — el máximo permitido es de ${maxTrendDays} días.`}
+          ? `Rango por defecto: últimos ${defaultRangeDays} días (~${defaultRangeMonths} meses). Podés ampliarlo hasta ${maxRangeDays} días con los selectores de fecha.`
+          : `Rango que elegiste. Tarjetas y listas usan este mismo rango — el máximo permitido es de ${maxRangeDays} días.`}
       </span>
     </div>
   );

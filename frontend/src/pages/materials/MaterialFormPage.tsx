@@ -10,8 +10,11 @@ import { Textarea } from '@/components/ui/Textarea'
 import { SegmentedControl } from '@/components/backoffice/Workbench'
 import { StudiesSection } from '@/components/backoffice/StudiesSection'
 import { CustomSelect } from '@/components/ui/CustomSelect'
+import { useAuth } from '@/contexts/useAuth'
 import { useDidDepsChange } from '@/hooks/useDidDepsChange'
 import { buildPendingStudyFormData } from '@/lib/pendingStudies'
+import { routePath } from '@/lib/routes'
+import type { Role } from '@/types'
 import {
   Brand,
   ManagerOption,
@@ -46,8 +49,20 @@ import { ErrorState } from '../org-admin/components/ErrorState'
 
 export type MaterialFormScope = 'org-admin' | 'manager'
 
-interface MaterialFormPageProps {
-  scope: MaterialFormScope
+/**
+ * `/materials/new` and `/materials/:id/edit` are a single mount point for
+ * both `org_admin` and `manager` (route-role-prefix-removal, Fase 4) — no
+ * more `scope="org-admin"` / `scope="manager"` prop fixed per route.
+ * `ProtectedRoute` already restricts this route to `['org_admin','manager']`
+ * before this component ever mounts, so `role` here is always one of those
+ * two in practice. `null` is still handled explicitly (never silently
+ * defaults to a scope the user isn't) for the same "no ambient authority"
+ * reason as the `/metrics`, `/brands`, `/materials` dispatchers.
+ */
+function scopeFromRole(role: Role | undefined): MaterialFormScope | null {
+  if (role === 'org_admin') return 'org-admin'
+  if (role === 'manager') return 'manager'
+  return null
 }
 
 interface MaterialFormState {
@@ -89,9 +104,12 @@ interface ScopeConfig {
   brandSearchable: boolean
   /** manager only: material.status === 'approved' locks the form (backend already 422s this — UX nicety). */
   lockApprovedEdit: boolean
-  backListPath: string
-  editPathPrefix: string
 }
+
+// `/materials` and `/materials/:id/edit` are the SAME neutral path for both
+// scopes now (route-role-prefix-removal, Fase 4) — no more per-scope
+// `backListPath`/`editPathPrefix` literals; navigation uses `routePath()`
+// directly (see `handleBackToList`/`saveMutation.onSuccess` below).
 
 // Role differences are resolved here, ONCE, instead of scattered
 // `if (scope === ...)` branches throughout the JSX/handlers below.
@@ -109,8 +127,6 @@ const SCOPE_CONFIG: Record<MaterialFormScope, ScopeConfig> = {
     appendsManagerId: true,
     brandSearchable: true,
     lockApprovedEdit: false,
-    backListPath: '/org-admin/materials',
-    editPathPrefix: '/org-admin/materials',
   },
   manager: {
     getMaterial: getManagerMaterial,
@@ -125,13 +141,20 @@ const SCOPE_CONFIG: Record<MaterialFormScope, ScopeConfig> = {
     appendsManagerId: false,
     brandSearchable: false,
     lockApprovedEdit: true,
-    backListPath: '/manager/materials',
-    editPathPrefix: '/manager/materials',
   },
 }
 
-export function MaterialFormPage({ scope }: MaterialFormPageProps) {
-  const cfg = SCOPE_CONFIG[scope]
+export function MaterialFormPage() {
+  const { user } = useAuth()
+  const scope = scopeFromRole(user?.role)
+  // Fallback to 'manager' (the more restrictive scope) ONLY to keep the
+  // Hooks call order stable when `scope` is null — every hook below still
+  // runs (React requires it), but the queries are `enabled: scope !== null`
+  // so nothing actually fetches. The real guard is the `if (!scope) return
+  // null` further down, after all hooks. In practice `scope` is never null
+  // here: `ProtectedRoute` already restricts this route to
+  // `['org_admin','manager']` before this component mounts.
+  const cfg = SCOPE_CONFIG[scope ?? 'manager']
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const params = useParams<{ id?: string }>()
@@ -151,12 +174,13 @@ export function MaterialFormPage({ scope }: MaterialFormPageProps) {
   const brandsQuery = useQuery({
     queryKey: [scope, 'brands', 'material-form'],
     queryFn: cfg.listBrands,
+    enabled: scope !== null,
   })
 
   const materialQuery = useQuery({
     queryKey: [scope, 'materials', materialId, 'detail'],
     queryFn: () => cfg.getMaterial(materialId!),
-    enabled: isEditing,
+    enabled: isEditing && scope !== null,
   })
 
   // Wrapped in useMemo per exhaustive-deps: without it, `?? []` mints a new
@@ -208,7 +232,7 @@ export function MaterialFormPage({ scope }: MaterialFormPageProps) {
   const brandManagersQuery = useQuery({
     queryKey: ['org-admin', 'brand-managers', form.brand_id],
     queryFn: () => getOrgBrandManagers(form.brand_id!),
-    enabled: cfg.showManagerField && !isEditing && !!form.brand_id,
+    enabled: cfg.showManagerField && !isEditing && !!form.brand_id && scope !== null,
   })
 
   const brandManagers = brandManagersQuery.data
@@ -262,19 +286,19 @@ export function MaterialFormPage({ scope }: MaterialFormPageProps) {
 
         if (failedTitles.length === 0) {
           toast.success(`Material creado con ${pendingStudies.length} estudio(s) agregado(s).`)
-          navigate(cfg.backListPath)
+          navigate(routePath('/materials'))
           return
         }
 
         toast.warning(
           `Material creado, pero no se pudo agregar: ${failedTitles.join(', ')}. Puedes reintentar desde la sección Estudios.`,
         )
-        navigate(`${cfg.editPathPrefix}/${savedMaterial.id}/edit`)
+        navigate(routePath('/materials/:id/edit', { id: savedMaterial.id }))
         return
       }
 
       toast.success(isEditing ? 'Material actualizado.' : 'Material creado.')
-      navigate(cfg.backListPath)
+      navigate(routePath('/materials'))
     },
     onError: (error) => {
       const message = error instanceof Error ? error.message : 'No se pudo guardar.'
@@ -297,6 +321,10 @@ export function MaterialFormPage({ scope }: MaterialFormPageProps) {
     : material?.cover_url ||
       (material?.cover_path ? `/api/v1/public/material/${material.id}/cover` : null)
 
+  if (!scope) {
+    return null
+  }
+
   if (isEditing && materialQuery.isLoading) {
     return (
       <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
@@ -318,7 +346,7 @@ export function MaterialFormPage({ scope }: MaterialFormPageProps) {
       <div className="flex flex-col gap-2">
         <button
           type="button"
-          onClick={() => navigate(cfg.backListPath)}
+          onClick={() => navigate(routePath('/materials'))}
           className="flex w-fit items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" /> Volver a materiales
@@ -495,7 +523,7 @@ export function MaterialFormPage({ scope }: MaterialFormPageProps) {
           )}
 
           <div className="flex justify-end gap-3 border-t border-border/50 pt-6">
-            <Button type="button" variant="outline" onClick={() => navigate(cfg.backListPath)}>
+            <Button type="button" variant="outline" onClick={() => navigate(routePath('/materials'))}>
               Cancelar
             </Button>
             <Button type="submit" loading={saveMutation.isPending} disabled={isLocked}>

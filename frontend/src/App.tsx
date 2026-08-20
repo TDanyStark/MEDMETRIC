@@ -1,14 +1,15 @@
 import { useEffect, lazy, Suspense } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import { Toaster } from 'sonner'
 import { TooltipProvider } from './components/ui/tooltip'
 import { ProtectedRoute } from './components/auth/ProtectedRoute'
+import { LegacyRedirect } from './components/routing/LegacyRedirect'
 import { AppLayout } from './components/layout/AppLayout'
 import { ErrorBoundary } from './components/error/ErrorBoundary'
 import { PublicErrorFallback } from './components/error/PublicErrorFallback'
 import { useAuth } from './contexts/useAuth'
-import { getRoleHome } from './lib/auth'
+import { APP_ROUTES, type RouteDef } from './lib/routes'
 import { Loader2 } from 'lucide-react'
 
 // Lazy loaded pages
@@ -16,35 +17,6 @@ const LoginPage = lazy(() => import('./pages/LoginPage'))
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
 const PublicVisitPage = lazy(() => import('./pages/public/PublicVisitPage'))
 const PublicErrorPage = lazy(() => import('./pages/public/PublicErrorPage'))
-const RoleHomePage = lazy(() => import('./pages/RoleHomePage'))
-const DoctorsPage = lazy(() => import('./pages/doctors/DoctorsPage').then(m => ({ default: m.DoctorsPage })))
-const CommentsPage = lazy(() => import('./pages/comments/CommentsPage').then(m => ({ default: m.CommentsPage })))
-
-// Manager pages
-const ManagerBrandsPage = lazy(() => import('./pages/manager/ManagerBrandsPage').then(m => ({ default: m.ManagerBrandsPage })))
-const ManagerMaterialsPage = lazy(() => import('./pages/manager/ManagerMaterialsPage').then(m => ({ default: m.ManagerMaterialsPage })))
-const ManagerRepsPage = lazy(() => import('./pages/manager/ManagerRepsPage').then(m => ({ default: m.ManagerRepsPage })))
-const ManagerMetricsPage = lazy(() => import('./pages/manager/ManagerMetricsPage').then(m => ({ default: m.ManagerMetricsPage })))
-
-// Rep pages
-const RepLibraryPage = lazy(() => import('./pages/rep/RepLibraryPage').then(m => ({ default: m.RepLibraryPage })))
-const RepHistoryPage = lazy(() => import('./pages/rep/RepHistoryPage').then(m => ({ default: m.RepHistoryPage })))
-const RepMetricsPage = lazy(() => import('./pages/rep/RepMetricsPage').then(m => ({ default: m.RepMetricsPage })))
-
-// Org Admin pages
-const OrgAdminBrandsPage = lazy(() => import('./pages/org-admin/OrgAdminBrandsPage').then(m => ({ default: m.OrgAdminBrandsPage })))
-const OrgAdminMaterialsPage = lazy(() => import('./pages/org-admin/OrgAdminMaterialsPage').then(m => ({ default: m.OrgAdminMaterialsPage })))
-const OrgAdminMetricsPage = lazy(() => import('./pages/org-admin/OrgAdminMetricsPage').then(m => ({ default: m.OrgAdminMetricsPage })))
-const OrgAdminUsersPage = lazy(() => import('./pages/org-admin/OrgAdminUsersPage').then(m => ({ default: m.OrgAdminUsersPage })))
-const OrgAdminOrganizationPage = lazy(() => import('./pages/org-admin/OrgAdminOrganizationPage').then(m => ({ default: m.OrgAdminOrganizationPage })))
-
-// Shared material form (org-admin + manager, differentiated via `scope` prop)
-const MaterialFormPage = lazy(() => import('./pages/materials/MaterialFormPage').then(m => ({ default: m.MaterialFormPage })))
-
-// Super Admin pages
-const SuperAdminMetricsPage = lazy(() => import('./pages/superadmin/SuperAdminMetricsPage').then(m => ({ default: m.SuperAdminMetricsPage })))
-const SuperAdminOrgAdminsPage = lazy(() => import('./pages/superadmin/SuperAdminOrgAdminsPage').then(m => ({ default: m.SuperAdminOrgAdminsPage })))
-const SuperAdminOrganizationsPage = lazy(() => import('./pages/superadmin/SuperAdminOrganizationsPage').then(m => ({ default: m.SuperAdminOrganizationsPage })))
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -78,20 +50,6 @@ function SessionBootstrap() {
   return null
 }
 
-function HomeRedirect() {
-  const { user, isBootstrapping } = useAuth()
-
-  if (isBootstrapping) {
-    return <LoadingFallback />
-  }
-
-  if (!user) {
-    return <Navigate to="/login" replace />
-  }
-
-  return <Navigate to={getRoleHome(user.role)} replace />
-}
-
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -101,8 +59,10 @@ function App() {
           <SessionBootstrap />
           <Suspense fallback={<LoadingFallback />}>
             <Routes>
-              <Route path="/" element={<HomeRedirect />} />
-              <Route path="/login" element={<LoginPage />} />
+              <Route
+                path="/login"
+                element={<LoginPage />}
+              />
               <Route
                 path="/public/visit/:token"
                 element={
@@ -120,74 +80,27 @@ function App() {
                 }
               />
 
-              <Route
-                path="/superadmin"
-                element={
-                  <ProtectedRoute roles={['superadmin']}>
-                    <AppLayout />
-                  </ProtectedRoute>
-                }
-              >
-                <Route index element={<RoleHomePage role="superadmin" />} />
-                <Route path="organizations" element={<SuperAdminOrganizationsPage />} />
-                <Route path="org-admins" element={<SuperAdminOrgAdminsPage />} />
-                <Route path="metrics" element={<SuperAdminMetricsPage />} />
-              </Route>
+              {/* Rutas neutras (sin prefijo de rol) — fuente unica: APP_ROUTES. */}
+              {APP_ROUTES.map(route => (
+                <Route
+                  key={route.path}
+                  path={route.path}
+                  element={
+                    <ProtectedRoute roles={[...route.roles]}>
+                      <AppLayout />
+                    </ProtectedRoute>
+                  }
+                >
+                  <Route index element={route.element} />
+                </Route>
+              ))}
 
-              <Route
-                path="/org-admin"
-                element={
-                  <ProtectedRoute roles={['org_admin']}>
-                    <AppLayout />
-                  </ProtectedRoute>
-                }
-              >
-                <Route index element={<RoleHomePage role="org_admin" />} />
-                <Route path="users" element={<OrgAdminUsersPage />} />
-                <Route path="brands" element={<OrgAdminBrandsPage />} />
-                <Route path="materials" element={<OrgAdminMaterialsPage />} />
-                <Route path="materials/new" element={<MaterialFormPage scope="org-admin" />} />
-                <Route path="materials/:id/edit" element={<MaterialFormPage scope="org-admin" />} />
-                <Route path="doctors" element={<DoctorsPage />} />
-                <Route path="comments" element={<CommentsPage />} />
-                <Route path="metrics" element={<OrgAdminMetricsPage />} />
-                <Route path="organization" element={<OrgAdminOrganizationPage />} />
-              </Route>
-
-              <Route
-                path="/manager"
-                element={
-                  <ProtectedRoute roles={['manager']}>
-                    <AppLayout />
-                  </ProtectedRoute>
-                }
-              >
-                <Route index element={<RoleHomePage role="manager" />} />
-                <Route path="brands" element={<ManagerBrandsPage />} />
-                <Route path="materials" element={<ManagerMaterialsPage />} />
-                <Route path="materials/new" element={<MaterialFormPage scope="manager" />} />
-                <Route path="materials/:id/edit" element={<MaterialFormPage scope="manager" />} />
-                <Route path="reps" element={<ManagerRepsPage />} />
-                <Route path="doctors" element={<DoctorsPage />} />
-                <Route path="comments" element={<CommentsPage />} />
-                <Route path="metrics" element={<ManagerMetricsPage />} />
-              </Route>
-
-              <Route
-                path="/rep"
-                element={
-                  <ProtectedRoute roles={['rep']}>
-                    <AppLayout />
-                  </ProtectedRoute>
-                }
-              >
-                <Route index element={<RoleHomePage role="rep" />} />
-                <Route path="library" element={<RepLibraryPage />} />
-                <Route path="history" element={<RepHistoryPage />} />
-                <Route path="doctors" element={<DoctorsPage />} />
-                <Route path="comments" element={<CommentsPage />} />
-                <Route path="metrics" element={<RepMetricsPage />} />
-              </Route>
+              {/* Redirects legacy (paths viejos con prefijo -> path neutro), derivados de APP_ROUTES.legacy. */}
+              {APP_ROUTES.flatMap(route =>
+                ((route as RouteDef).legacy ?? []).map(legacyPath => (
+                  <Route key={legacyPath} path={legacyPath} element={<LegacyRedirect to={route.path} />} />
+                )),
+              )}
 
               <Route path="*" element={<NotFoundPage />} />
             </Routes>
