@@ -25,7 +25,13 @@ declare(strict_types=1);
  *
  *   Materials created by this script  -> title   starts with SEED_PREFIX
  *   Brands created by this script     -> name    starts with SEED_PREFIX
- *   Visit sessions created by this script -> doctor_name starts with SEED_PREFIX
+ *   Doctors created by this script    -> name    starts with SEED_PREFIX
+ *     (only created for an org that has ZERO doctors of its own; orgs with
+ *     a real doctor catalog reuse it instead, see the doctor-catalog block)
+ *   Visit sessions created by this script -> notes starts with SEED_PREFIX
+ *     (doctor_name is NOT a reliable tag: it snapshots the assigned
+ *     doctor's real name, which is untagged whenever the org reused its
+ *     own doctor catalog - see SEED_SESSION_NOTES docblock)
  *   Comments created by this script   -> body    starts with SEED_PREFIX
  *   Material views created by this script -> ip_address starts with SEED_IP_PREFIX
  *     (kept OUT of the tag-by-text convention on purpose: user_agent stays a
@@ -68,6 +74,21 @@ if (strtolower((string) $appEnv) === 'production') {
 const SEED_PREFIX = '[DEV SEED] ';
 const SEED_IP_PREFIX = '203.0.113.'; // TEST-NET-3 (RFC 5737) - reserved for documentation/examples, never routable.
 const DEFAULT_DAYS = 90;
+
+/**
+ * visit_sessions.notes tag used to find/clean up seed sessions.
+ *
+ * `doctor_name` alone is NOT a reliable tag anymore: since a session's
+ * doctor is now a real `doctors` row (see the doctor-catalog block below),
+ * doctor_name is a snapshot of that doctor's REAL name whenever the org
+ * already had its own doctor catalog (e.g. org 3 in local dev) - only
+ * orgs with ZERO doctors get synthetic SEED_PREFIX-tagged ones. `notes`
+ * is otherwise always NULL from this script (real sessions may set it,
+ * but nothing else in the codebase does), so it is safe as the
+ * unambiguous machine-readable + human-visible marker for every seeded
+ * session regardless of which doctor it landed on.
+ */
+const SEED_SESSION_NOTES = SEED_PREFIX . 'Sesion generada por el seeder de metricas de desarrollo.';
 
 const REP_USER_AGENTS = [
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
@@ -209,9 +230,10 @@ function seedCounts(PDO $pdo): array
     return [
         'material_views (ip LIKE seed range)' => scalar($pdo, "SELECT COUNT(*) AS c FROM material_views WHERE ip_address LIKE :p", [':p' => SEED_IP_PREFIX . '%']),
         'visit_session_comments (seed)' => scalar($pdo, "SELECT COUNT(*) AS c FROM visit_session_comments WHERE body LIKE :p", [':p' => SEED_PREFIX . '%']),
-        'visit_session_materials (of seed sessions)' => scalar($pdo, "SELECT COUNT(*) AS c FROM visit_session_materials vsm JOIN visit_sessions vs ON vs.id = vsm.visit_session_id WHERE vs.doctor_name LIKE :p", [':p' => SEED_PREFIX . '%']),
-        'visit_sessions (seed)' => scalar($pdo, "SELECT COUNT(*) AS c FROM visit_sessions WHERE doctor_name LIKE :p", [':p' => SEED_PREFIX . '%']),
+        'visit_session_materials (of seed sessions)' => scalar($pdo, "SELECT COUNT(*) AS c FROM visit_session_materials vsm JOIN visit_sessions vs ON vs.id = vsm.visit_session_id WHERE vs.notes LIKE :p OR vs.doctor_name LIKE :p2", [':p' => SEED_PREFIX . '%', ':p2' => SEED_PREFIX . '%']),
+        'visit_sessions (seed)' => scalar($pdo, "SELECT COUNT(*) AS c FROM visit_sessions WHERE notes LIKE :p OR doctor_name LIKE :p2", [':p' => SEED_PREFIX . '%', ':p2' => SEED_PREFIX . '%']),
         'materials (seed)' => scalar($pdo, "SELECT COUNT(*) AS c FROM materials WHERE title LIKE :p", [':p' => SEED_PREFIX . '%']),
+        'doctors (seed, only created when org had none)' => scalar($pdo, "SELECT COUNT(*) AS c FROM doctors WHERE name LIKE :p", [':p' => SEED_PREFIX . '%']),
         'manager_brands (of seed brands)' => scalar($pdo, "SELECT COUNT(*) AS c FROM manager_brands mb JOIN brands b ON b.id = mb.brand_id WHERE b.name LIKE :p", [':p' => SEED_PREFIX . '%']),
         'brands (seed)' => scalar($pdo, "SELECT COUNT(*) AS c FROM brands WHERE name LIKE :p", [':p' => SEED_PREFIX . '%']),
     ];
@@ -241,13 +263,24 @@ function cleanupSeed(PDO $pdo): array
     $stmt->execute([':p' => SEED_PREFIX . '%']);
     $deleted['visit_session_comments'] = $stmt->rowCount();
 
-    $stmt = $pdo->prepare("DELETE vsm FROM visit_session_materials vsm JOIN visit_sessions vs ON vs.id = vsm.visit_session_id WHERE vs.doctor_name LIKE :p");
-    $stmt->execute([':p' => SEED_PREFIX . '%']);
+    // Matches on notes OR doctor_name (see SEED_SESSION_NOTES docblock):
+    // notes is the reliable tag going forward; doctor_name LIKE is kept as
+    // a fallback so any leftover rows from a seed run predating this tag
+    // (fake doctor_name, NULL notes) still get swept up here.
+    $stmt = $pdo->prepare("DELETE vsm FROM visit_session_materials vsm JOIN visit_sessions vs ON vs.id = vsm.visit_session_id WHERE vs.notes LIKE :p OR vs.doctor_name LIKE :p2");
+    $stmt->execute([':p' => SEED_PREFIX . '%', ':p2' => SEED_PREFIX . '%']);
     $deleted['visit_session_materials'] = $stmt->rowCount();
 
-    $stmt = $pdo->prepare("DELETE FROM visit_sessions WHERE doctor_name LIKE :p");
-    $stmt->execute([':p' => SEED_PREFIX . '%']);
+    $stmt = $pdo->prepare("DELETE FROM visit_sessions WHERE notes LIKE :p OR doctor_name LIKE :p2");
+    $stmt->execute([':p' => SEED_PREFIX . '%', ':p2' => SEED_PREFIX . '%']);
     $deleted['visit_sessions'] = $stmt->rowCount();
+
+    // Must run AFTER visit_sessions (fk_visit_sessions_doctor is ON DELETE
+    // RESTRICT, not CASCADE/SET NULL) so no seed session still references
+    // one of these doctors when this DELETE runs.
+    $stmt = $pdo->prepare("DELETE FROM doctors WHERE name LIKE :p");
+    $stmt->execute([':p' => SEED_PREFIX . '%']);
+    $deleted['doctors'] = $stmt->rowCount();
 
     $stmt = $pdo->prepare("DELETE FROM materials WHERE title LIKE :p");
     $stmt->execute([':p' => SEED_PREFIX . '%']);
@@ -359,7 +392,23 @@ try {
          ON DUPLICATE KEY UPDATE active = 1"
     );
 
+    // Doctor catalog per org, mirrors the brand-ensuring block below: reuse
+    // the org's real doctors if it has any, only create a synthetic
+    // SEED_PREFIX-tagged set when the org has none. Needed because
+    // CreateVisitSessionAction::action() (lines 43-54) REQUIRES a valid
+    // doctor_id resolved against `doctors` for THIS org — visit_sessions
+    // created by the real app can never have doctor_id NULL. A raw INSERT
+    // that (like this script before this fix) hardcodes doctor_id=NULL
+    // produces a state the real app can never reach, analogous to the
+    // is_visible/last_login_at cases documented elsewhere in this file.
+    $insDoctor = $pdo->prepare(
+        "INSERT INTO doctors (organization_id, name, active, created_at, updated_at) VALUES (:org, :name, 1, NOW(), NOW())"
+    );
+    $selDoctors = $pdo->prepare("SELECT id, name FROM doctors WHERE organization_id = :org AND active = 1");
+
     $catalogSeedAt = (new DateTimeImmutable('-' . ($days + 30) . ' days'))->format('Y-m-d H:i:s');
+
+    $orgDoctors = []; // org_id => [doctor_id => name]
 
     foreach ($orgs as $orgId) {
         $tz = (string) $pdo->query("SELECT timezone FROM organizations WHERE id = {$orgId}")->fetchColumn();
@@ -373,6 +422,20 @@ try {
             $orgMaterials[$orgId] = [];
             continue;
         }
+
+        $doctors = [];
+        $selDoctors->execute([':org' => $orgId]);
+        foreach ($selDoctors->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $doctors[(int) $row['id']] = (string) $row['name'];
+        }
+        if ($doctors === []) {
+            foreach (FAKE_DOCTOR_NAMES as $doctorName) {
+                $insDoctor->execute([':org' => $orgId, ':name' => SEED_PREFIX . $doctorName]);
+                $doctors[(int) $pdo->lastInsertId()] = SEED_PREFIX . $doctorName;
+            }
+            echo "  org {$orgId}: no doctors found - created " . count($doctors) . " doctor(s) (" . SEED_PREFIX . "*)." . PHP_EOL;
+        }
+        $orgDoctors[$orgId] = $doctors;
 
         $managers = columnList($pdo, "SELECT id FROM users WHERE organization_id = :org AND role_id = :role AND active = 1", [':org' => $orgId, ':role' => $managerRoleId]);
 
@@ -464,7 +527,7 @@ try {
 
     $insSession = $pdo->prepare(
         "INSERT INTO visit_sessions (organization_id, rep_id, doctor_token, doctor_id, doctor_name, notes, active, created_at, updated_at)
-         VALUES (:org, :rep, :token, NULL, :dname, NULL, 1, :ts1, :ts2)"
+         VALUES (:org, :rep, :token, :doctor_id, :dname, :notes, 1, :ts1, :ts2)"
     );
     $materialForSessionStmt = $pdo->prepare(
         "SELECT material_id FROM visit_session_materials WHERE visit_session_id = :sid ORDER BY RAND() LIMIT 1"
@@ -486,10 +549,27 @@ try {
     // viewer_id=null and don't imply the rep logged in).
     $repActivityMax = [];
 
+    // doctor_id => latest local 'Y-m-d' among the seeded sessions assigned
+    // to that doctor. Used below to keep doctors.last_visit_date coherent
+    // — see DbDoctorRepository::touchLastVisit(), called by
+    // CreateVisitSessionAction::action() (line 71) after EVERY real session
+    // creation. Without this, a seeded doctor could show sessions in
+    // visit_sessions but never advance last_visit_date, a combination the
+    // real create-session flow can never produce (same invariant class as
+    // $repActivityMax above).
+    $doctorLastVisit = [];
+
+    // session_id => doctor_id assigned to that seeded session. Needed
+    // below when generating doctor comments, so each comment's doctor_id
+    // matches its own session's doctor_id (see CreatePublicCommentAction
+    // line 112: doctor_id is always the resolved session's doctor).
+    $sessionDoctorId = [];
+
     foreach ($orgs as $orgId) {
         $reps = $orgReps[$orgId];
         $materials = $orgMaterials[$orgId];
-        if ($reps === [] || $materials === []) {
+        $doctors = $orgDoctors[$orgId] ?? [];
+        if ($reps === [] || $materials === [] || $doctors === []) {
             continue;
         }
 
@@ -514,6 +594,8 @@ try {
 
             for ($s = 0; $s < $numSessions; $s++) {
                 $repId = $reps[array_rand($reps)];
+                $doctorId = array_rand($doctors);
+                $doctorName = $doctors[$doctorId];
                 $hour = random_int(8, 18);
                 $minute = random_int(0, 59);
                 $localTs = $localDay->setTime($hour, $minute, random_int(0, 59));
@@ -523,14 +605,22 @@ try {
                     ':org' => $orgId,
                     ':rep' => $repId,
                     ':token' => bin2hex(random_bytes(32)),
-                    ':dname' => SEED_PREFIX . FAKE_DOCTOR_NAMES[array_rand(FAKE_DOCTOR_NAMES)],
+                    ':doctor_id' => $doctorId,
+                    ':dname' => $doctorName,
+                    ':notes' => SEED_SESSION_NOTES,
                     ':ts1' => $utcTs,
                     ':ts2' => $utcTs,
                 ]);
                 $sessionId = (int) $pdo->lastInsertId();
                 $todaysSessionIds[] = $sessionId;
                 $sessionIdsSoFar[] = $sessionId;
+                $sessionDoctorId[$sessionId] = $doctorId;
                 $totalSessions++;
+
+                $localDayStr = $localDay->format('Y-m-d');
+                if (!isset($doctorLastVisit[$doctorId]) || $localDayStr > $doctorLastVisit[$doctorId]) {
+                    $doctorLastVisit[$doctorId] = $localDayStr;
+                }
 
                 $numMaterials = fuzzyRand(1, 3);
                 $sessionMaterials = (array) array_rand(array_flip($materials), min($numMaterials, count($materials)));
@@ -691,7 +781,10 @@ try {
                     'parent_id' => null,
                     'author_type' => 'doctor',
                     'author_user_id' => null,
-                    'doctor_id' => null,
+                    // Mirrors CreatePublicCommentAction: doctor_id is always
+                    // the resolved session's doctor, never left NULL for a
+                    // real doctor-authored comment.
+                    'doctor_id' => $sessionDoctorId[$sessionId] ?? null,
                     'body' => SEED_PREFIX . DOCTOR_COMMENT_TEMPLATES[array_rand(DOCTOR_COMMENT_TEMPLATES)],
                     'user_agent' => DOCTOR_USER_AGENTS[array_rand(DOCTOR_USER_AGENTS)],
                     'ip_address' => SEED_IP_PREFIX . random_int(2, 254),
@@ -731,6 +824,25 @@ try {
         echo "  {$reposUpdated} rep(s) had last_login_at set/advanced to match their latest seeded view." . PHP_EOL;
     }
 
+    // -------------------------------------------------------------------
+    // Keep doctors.last_visit_date coherent with generated sessions (see
+    // $doctorLastVisit docblock above). Same forward-only semantics as the
+    // last_login_at sync: never overwrites a more recent real visit date.
+    // -------------------------------------------------------------------
+
+    $doctorsUpdated = 0;
+    if ($doctorLastVisit !== []) {
+        heading('SYNCING doctors.last_visit_date WITH SEEDED SESSIONS');
+        $updVisit = $pdo->prepare(
+            "UPDATE doctors SET last_visit_date = :d WHERE id = :id AND (last_visit_date IS NULL OR last_visit_date < :d2)"
+        );
+        foreach ($doctorLastVisit as $doctorId => $d) {
+            $updVisit->execute([':d' => $d, ':id' => $doctorId, ':d2' => $d]);
+            $doctorsUpdated += $updVisit->rowCount();
+        }
+        echo "  {$doctorsUpdated} doctor(s) had last_visit_date set/advanced to match their latest seeded session." . PHP_EOL;
+    }
+
     $pdo->commit();
 
     heading('SUMMARY');
@@ -741,6 +853,7 @@ try {
     printf("  material_views created (total):    %d%s", $totalViewsRep + $totalViewsDoctor, PHP_EOL);
     printf("  visit_session_comments created:    %d%s", $totalComments, PHP_EOL);
     printf("  users.last_login_at synced:        %d%s", $reposUpdated, PHP_EOL);
+    printf("  doctors.last_visit_date synced:    %d%s", $doctorsUpdated, PHP_EOL);
 } catch (Throwable $e) {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();

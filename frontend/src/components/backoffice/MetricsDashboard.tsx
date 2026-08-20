@@ -265,10 +265,6 @@ export function MetricsDashboard() {
           <p className="mt-3 text-xs text-muted-foreground">
             {activeReps} de {totalReps} visitadores activos iniciaron sesión alguna vez
           </p>
-          <p className="mt-1 text-[11px] text-muted-foreground/70">
-            Histórico total, no varía con los filtros de fecha. Para ver quién consumió
-            contenido, mirá la tabla de abajo.
-          </p>
         </div>
 
         <div className="rounded-3xl border border-border/50 bg-background/50 p-5 shadow-sm flex flex-col items-start">
