@@ -50,13 +50,35 @@ export function RepMetricsPage() {
   const materialsPage = getNumberParam(searchParams, "materials_page");
   const unopenedPage = getNumberParam(searchParams, "unopened_page");
 
+  // Whether the USER (via the URL) chose an explicit date filter — as
+  // opposed to the rolling default below. Drives the "Limpiar" button and
+  // the brand-new-rep empty state; NOT affected by the default, which is
+  // display/query-only and never written back into the URL.
+  const hasFilters = Boolean(rawStartDate || rawEndDate);
+
   // Same cap as the backoffice dashboard (MetricsTrendConfig::MAX_TREND_DAYS,
   // mirrored client-side) so a shared/old URL never silently requests a
   // wider trend window than the backend will actually return.
   const { startDate: cappedStartDate, endDate: cappedEndDate, wasCapped } =
     capDateRangeToMaxDays(rawStartDate, rawEndDate);
-  const startDate = cappedStartDate ?? "";
-  const endDate = cappedEndDate ?? "";
+
+  // No explicit filter -> default to the last DEFAULT_METRICS_RANGE_DAYS
+  // (3 months), pre-filled into the pickers and sent to every endpoint,
+  // unifying what used to be 5 unfiltered ("full history") widgets vs. 1
+  // silently-capped-at-90-days chart into one consistent default
+  // everywhere (sdd/rep-metrics-module, "unificación del rango por
+  // defecto a 3 meses"). Recomputed each render (cheap, pure) so the
+  // window keeps rolling forward day to day; never written into the URL
+  // (see computeDefaultDateRange() docblock for why).
+  const defaultRange = computeDefaultDateRange();
+  const startDate = cappedStartDate ?? (hasFilters ? "" : defaultRange.startDate);
+  const endDate = cappedEndDate ?? (hasFilters ? "" : defaultRange.endDate);
+
+  // True only while the effective range is still the untouched rolling
+  // default (i.e. the user hasn't filtered) — used to phrase
+  // EffectiveRangeNotice accurately ("rango por defecto" vs. "rango que
+  // elegiste").
+  const isDefaultRange = !hasFilters;
 
   useEffect(() => {
     if (wasCapped && rawStartDate !== startDate) {
@@ -105,8 +127,6 @@ export function RepMetricsPage() {
     );
   };
 
-  const hasFilters = Boolean(startDate || endDate);
-
   const summaryQuery = useQuery({
     queryKey: ["rep-metrics", "summary", startDate, endDate],
     queryFn: () => getRepMetricsSummary(dateFilters),
@@ -151,8 +171,17 @@ export function RepMetricsPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8 animate-in fade-in duration-500">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
+      {/*
+        Row layout only kicks in at `xl:` (1280px), not the usual `sm:` —
+        the two date pickers need real width for the long-form Spanish
+        date ("30 de septiembre de 2026" is the worst case, longer than
+        the current month). Below 1280px the filter row stacks under the
+        title instead of fighting it for horizontal space; the filter row
+        itself keeps `flex-wrap` as a second safety net at narrow/tablet
+        widths.
+      */}
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+        <div className="min-w-0">
           <h1 className="text-3xl font-display font-semibold tracking-tight text-foreground">
             Mis Métricas
           </h1>
@@ -161,14 +190,21 @@ export function RepMetricsPage() {
           </p>
         </div>
 
-        <div className="flex flex-wrap items-end gap-3">
+        {/*
+          `shrink-0`: the filter block always renders at its natural width —
+          it never gets squeezed by the title competing for room on the same
+          row (that used to push "Limpiar" onto its own line at 1440px). If
+          the viewport is too narrow for both, the title (which can wrap)
+          gives way first, and below `xl:` the whole header stacks anyway.
+        */}
+        <div className="flex shrink-0 flex-wrap items-end gap-x-5 gap-y-3">
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-medium text-muted-foreground">Desde</label>
             <DatePicker
               value={startDate}
               onChange={(val) => setDateFilter("start_date", val || "")}
               placeholder="Desde"
-              className="w-[160px]"
+              className="w-[300px]"
               minDate={computeMinStartDate(endDate || undefined)}
               maxDate={endDate || undefined}
             />
@@ -179,7 +215,7 @@ export function RepMetricsPage() {
               value={endDate}
               onChange={(val) => setDateFilter("end_date", val || "")}
               placeholder="Hasta"
-              className="w-[160px]"
+              className="w-[300px]"
               minDate={startDate || undefined}
               maxDate={computeMaxEndDate(startDate || undefined)}
             />
@@ -187,7 +223,7 @@ export function RepMetricsPage() {
           {hasFilters && (
             <button
               onClick={clearFilters}
-              className="inline-flex h-11 items-center gap-1.5 rounded-2xl border border-border bg-background px-4 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-2xl border border-border bg-background px-4 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
               <X className="h-4 w-4" /> Limpiar
             </button>
@@ -197,7 +233,7 @@ export function RepMetricsPage() {
 
       {wasCapped && <DateRangeCapNotice maxDays={MAX_METRICS_TREND_DAYS} />}
       <EffectiveRangeNotice
-        hasFilters={hasFilters}
+        isDefaultRange={isDefaultRange}
         startDate={startDate}
         endDate={endDate}
         maxTrendDays={MAX_METRICS_TREND_DAYS}
@@ -224,17 +260,6 @@ export function RepMetricsPage() {
             timezone={user?.organization_timezone}
           />
 
-          <UnopenedMaterialsList
-            data={unopenedMaterialsQuery.data}
-            isLoading={unopenedMaterialsQuery.isLoading}
-            isError={unopenedMaterialsQuery.isError}
-            page={unopenedPage}
-            onPageChange={(next) =>
-              setSearchParams((prev) => updateSearchParams(prev, { unopened_page: next }))
-            }
-            timezone={user?.organization_timezone}
-          />
-
           <OpenTrendChart data={openTrendQuery.data} isLoading={openTrendQuery.isLoading} />
 
           <div className="grid gap-8 lg:grid-cols-2">
@@ -253,6 +278,25 @@ export function RepMetricsPage() {
             onPageChange={(next) =>
               setSearchParams((prev) => updateSearchParams(prev, { materials_page: next }))
             }
+          />
+
+          {/*
+            Last on the page, per explicit user request. Narrative check:
+            hero ("¿vio o no?") leads, NeverOpenedList stays second (the
+            session-level follow-up the design calls out as driving
+            action first), then trend/hour/device/top-materials analysis,
+            and finally this — the most granular, least urgent follow-up
+            detail list (per-material, not per-doctor) — closes the page.
+          */}
+          <UnopenedMaterialsList
+            data={unopenedMaterialsQuery.data}
+            isLoading={unopenedMaterialsQuery.isLoading}
+            isError={unopenedMaterialsQuery.isError}
+            page={unopenedPage}
+            onPageChange={(next) =>
+              setSearchParams((prev) => updateSearchParams(prev, { unopened_page: next }))
+            }
+            timezone={user?.organization_timezone}
           />
         </div>
       )}

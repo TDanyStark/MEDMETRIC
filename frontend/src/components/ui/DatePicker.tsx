@@ -38,18 +38,29 @@ export function DatePicker({
   ];
 
   return (
-    <div className={cn("flex items-center gap-1", className)}>
+    <div className={cn("flex items-center gap-1.5", className)}>
+      {/*
+        The wrapper's total width comes from the caller-supplied `className`
+        (each page sizes it to fit its own longest expected date string).
+        The trigger Button MUST fill that width via `flex-1 min-w-0` rather
+        than carrying its own fixed width — a fixed inner width larger than
+        the caller's wrapper used to force flexbox to shrink the button
+        below its content size, overlapping the date text with the icon.
+        `truncate` is a defensive fallback for any width still too tight.
+      */}
       <Popover>
         <PopoverTrigger asChild>
           <Button
             variant={"outline"}
             className={cn(
-              "w-[240px] justify-start text-left font-normal h-10 rounded-xl border-border/50 bg-background/50 hover:bg-muted/50 transition-all",
+              "min-w-0 flex-1 justify-start gap-2 overflow-hidden text-left font-normal h-10 rounded-xl border-border/50 bg-background/50 hover:bg-muted/50 transition-all",
               !date && "text-muted-foreground"
             )}
           >
-            <CalendarIcon className="mr-2 h-4 w-4" />
-            {date ? format(date, "PPP", { locale: es }) : <span>{placeholder}</span>}
+            <CalendarIcon className="h-4 w-4 shrink-0" />
+            <span className="truncate">
+              {date ? format(date, "PPP", { locale: es }) : placeholder}
+            </span>
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
@@ -77,7 +88,7 @@ export function DatePicker({
         <Button
           variant="ghost"
           size="sm"
-          className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+          className="h-8 w-8 shrink-0 p-0 text-muted-foreground hover:text-foreground"
           onClick={() => onChange(undefined)}
         >
           <X className="h-4 w-4" />
