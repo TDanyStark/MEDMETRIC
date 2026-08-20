@@ -19,3 +19,21 @@
  * If you change the backend constant, update this value in the same PR.
  */
 export const MAX_METRICS_TREND_DAYS = 90
+
+/**
+ * Default org-local window (in DAYS) the rep-metrics page (`/rep/metrics`)
+ * pre-fills its date pickers with, and every `GET /rep/metrics/*` request
+ * carries explicitly, when the user hasn't chosen a filter yet
+ * (sdd/rep-metrics-module, "unificación del rango por defecto a 3 meses").
+ *
+ * DELIBERATELY an alias for MAX_METRICS_TREND_DAYS, not a separate
+ * literal — mirrors `MetricsTrendConfig::DEFAULT_RANGE_DAYS` on the
+ * backend (see that constant's docblock for the full "default === cap"
+ * rationale): reusing the exact same 90-day value that already caps the
+ * trend chart means all 7 rep-metrics endpoints are GUARANTEED to agree
+ * on the same window whenever no filter is set, with no risk of the
+ * trend chart silently showing fewer days than the rest of the page (the
+ * bug this default unifies away). If you ever change this value, update
+ * `MetricsTrendConfig::DEFAULT_RANGE_DAYS` in the same PR.
+ */
+export const DEFAULT_METRICS_RANGE_DAYS = MAX_METRICS_TREND_DAYS

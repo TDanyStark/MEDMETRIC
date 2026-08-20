@@ -1,5 +1,5 @@
 import { addDays, format, parseISO } from 'date-fns'
-import { MAX_METRICS_TREND_DAYS } from './metricsTrendConfig'
+import { DEFAULT_METRICS_RANGE_DAYS, MAX_METRICS_TREND_DAYS } from './metricsTrendConfig'
 
 const DATE_FORMAT = 'yyyy-MM-dd'
 
@@ -7,6 +7,35 @@ export interface CappedDateRange {
   startDate: string | null
   endDate: string | null
   wasCapped: boolean
+}
+
+export interface DefaultDateRange {
+  startDate: string
+  endDate: string
+}
+
+/**
+ * The [startDate, endDate] pair the metrics date pickers pre-fill with
+ * when the user hasn't chosen a filter yet: the last `days` calendar days
+ * up to and including today, browser-local (same approximation already
+ * used by `computeMinStartDate`/`computeMaxEndDate` below — an exact
+ * org-local "today" would require plumbing the org timezone into every
+ * caller just for a date-picker default; the backend independently
+ * computes the authoritative org-local default via
+ * `OrgDateRange::lastNLocalDays()` regardless of what this returns, so a
+ * browser/org timezone mismatch can only shift the PRE-FILLED picker
+ * value by at most a day at the boundary, never what data actually comes
+ * back). NOT written to the URL by the caller — an absent `start_date`/
+ * `end_date` keeps meaning "no explicit filter, use today's rolling
+ * default", the same convention already used before this default existed
+ * (previously "no filter" meant "full history"; freezing a relative
+ * "last N days" into a shareable URL would make an old link silently
+ * show a different window than the one the sharer saw).
+ */
+export function computeDefaultDateRange(days: number = DEFAULT_METRICS_RANGE_DAYS): DefaultDateRange {
+  const end = new Date()
+  const start = addDays(end, -(days - 1))
+  return { startDate: format(start, DATE_FORMAT), endDate: format(end, DATE_FORMAT) }
 }
 
 /**

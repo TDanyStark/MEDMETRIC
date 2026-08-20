@@ -7,7 +7,12 @@ import { DatePicker } from "@/components/ui/DatePicker";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { DateRangeCapNotice } from "@/components/backoffice/DateRangeCapNotice";
 import { getNumberParam, getStringParam, updateSearchParams } from "@/lib/search";
-import { capDateRangeToMaxDays, computeMaxEndDate, computeMinStartDate } from "@/lib/dateRangeCap";
+import {
+  capDateRangeToMaxDays,
+  computeDefaultDateRange,
+  computeMaxEndDate,
+  computeMinStartDate,
+} from "@/lib/dateRangeCap";
 import { MAX_METRICS_TREND_DAYS } from "@/lib/metricsTrendConfig";
 import { useAuth } from "@/contexts/useAuth";
 import {
