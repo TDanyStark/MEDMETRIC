@@ -72,7 +72,12 @@ interface MetricsRepositoryInterface
     /**
      * Paginated detail list for study views ("Registro de Visualizaciones de
      * Estudios" table). Mirrors getMaterialViewsList's row-level detail
-     * pattern but reads study_views joined through material_studies.
+     * pattern but reads study_views joined through material_studies —
+     * INCLUDING the same doctor_id/doctor_link_status resolution (fix sdd/
+     * group-by-id-not-name: this table used to select the raw
+     * `visit_sessions.doctor_name` snapshot only, same bug already fixed
+     * for getMaterialViewsList — see that method's docblock for the full
+     * 'linked'|'legacy'|'no_visit' rationale).
      *
      * @return array
      */

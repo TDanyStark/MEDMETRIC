@@ -15,6 +15,13 @@ export interface RepMetricsSummary {
   sessions_viewed: number
   /** Fraction 0..1 (already rounded server-side to 4 decimals), NOT a percent. */
   open_rate: number
+  /**
+   * Count of DISTINCT doctors (deduped by `doctor_id`, fix
+   * sdd/group-by-id-not-name) who never opened anything the rep sent them —
+   * NOT a raw session count. Must always equal
+   * `RepNeverOpenedDoctor` list's `total` for identical filters (see
+   * `services/repMetrics.ts::listRepNeverOpenedDoctors`).
+   */
   doctors_never_opened: number
   first_open_median_hours: number | null
   materials_opened: number
@@ -89,6 +96,32 @@ export interface RepUnopenedMaterial {
   material_type: MaterialType
   sent_at: string
   days_elapsed: number
+}
+
+/** Subset of `DoctorLinkStatus` (services/metrics.ts) applicable here — a
+ * `visit_sessions` row always exists by definition, so `'no_visit'` never
+ * applies. */
+export type NeverOpenedDoctorLinkStatus = 'linked' | 'legacy'
+
+/**
+ * One DISTINCT doctor (deduped by `doctor_id`, fix sdd/group-by-id-not-name)
+ * who never opened anything the rep sent them — replaces the previous
+ * session-level `RepMetricSession` rows for the "médicos que nunca
+ * abrieron" widget. See
+ * `App\Domain\RepMetrics\RepMetricsRepositoryInterface::neverOpenedDoctors()`
+ * for the full identity/dedup rationale.
+ */
+export interface RepNeverOpenedDoctor {
+  /** Null only when `doctor_link_status === 'legacy'`. */
+  doctor_id: number | null
+  doctor_name: string | null
+  doctor_link_status: NeverOpenedDoctorLinkStatus
+  /** How many never-opened sessions were sent to this doctor (>=1). */
+  session_count: number
+  last_sent_at: string
+  /** A session id belonging to this doctor — stable React key when
+   * `doctor_id` is null (legacy rows always have session_count === 1). */
+  representative_session_id: number
 }
 
 export { type PaginatedData }

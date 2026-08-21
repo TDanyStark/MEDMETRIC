@@ -77,6 +77,7 @@ use App\Application\Actions\Rep\Metrics\SessionsAction as RepMetricsSessionsActi
 use App\Application\Actions\Rep\Metrics\SummaryAction as RepMetricsSummaryAction;
 use App\Application\Actions\Rep\Metrics\TopMaterialsAction as RepMetricsTopMaterialsAction;
 use App\Application\Actions\Rep\Metrics\UnopenedMaterialsAction as RepMetricsUnopenedMaterialsAction;
+use App\Application\Actions\Rep\Metrics\NeverOpenedDoctorsAction as RepMetricsNeverOpenedDoctorsAction;
 use App\Application\Actions\Rep\VisitSession\AddMaterialsToSessionAction;
 use App\Application\Actions\Rep\VisitSession\CreateVisitSessionAction;
 use App\Application\Actions\Rep\VisitSession\ListVisitSessionsAction;
@@ -393,6 +394,7 @@ return function (App $app) {
                 $metrics->get('/top-materials', RepMetricsTopMaterialsAction::class);
                 $metrics->get('/sessions', RepMetricsSessionsAction::class);
                 $metrics->get('/unopened-materials', RepMetricsUnopenedMaterialsAction::class);
+                $metrics->get('/never-opened-doctors', RepMetricsNeverOpenedDoctorsAction::class);
             });
 
         })->add(function ($request, $handler) use ($app) {

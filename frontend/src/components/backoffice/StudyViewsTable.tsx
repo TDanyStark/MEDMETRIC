@@ -7,6 +7,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { PaginationBar } from "@/components/backoffice/Workbench";
+import { MaterialViewDoctorCell } from "@/components/backoffice/MaterialViewDoctorCell";
 import { metricsApi } from "@/services/metrics";
 import { cn, formatDateTime } from "@/lib/utils";
 import { useAuth } from "@/contexts/useAuth";
@@ -79,9 +80,9 @@ export function StudyViewsTable({
                 <th className="px-4 py-3 font-medium">Fecha</th>
                 <th className="px-4 py-3 font-medium">Material</th>
                 <th className="px-4 py-3 font-medium min-w-[320px]">Estudio</th>
-                <th className="px-4 py-3 font-medium">Visualizador</th>
+                <th className="px-4 py-3 font-medium">Quién Vio</th>
                 <th className="px-4 py-3 font-medium">Representante</th>
-                <th className="px-4 py-3 font-medium">Médico</th>
+                <th className="px-4 py-3 font-medium">Médico de la Visita</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/50">
@@ -181,20 +182,10 @@ export function StudyViewsTable({
                       )}
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">
-                      {item.doctor_name ? (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className="inline-block align-middle truncate max-w-[200px] cursor-default">
-                              {item.doctor_name}
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p className="max-w-xs">{item.doctor_name}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      ) : (
-                        <span className="text-muted-foreground/50">—</span>
-                      )}
+                      <MaterialViewDoctorCell
+                        doctorName={item.doctor_name}
+                        doctorLinkStatus={item.doctor_link_status}
+                      />
                     </td>
                   </tr>
                 ))

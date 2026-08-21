@@ -78,7 +78,9 @@ export interface StudyViewListMetric {
   cover_path: string | null
   viewer_type: 'rep' | 'doctor'
   opened_at: string
+  doctor_id: number | null
   doctor_name: string | null
+  doctor_link_status: DoctorLinkStatus
   rep_name: string | null
 }
 

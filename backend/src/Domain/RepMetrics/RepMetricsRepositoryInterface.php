@@ -34,6 +34,20 @@ interface RepMetricsRepositoryInterface
     /**
      * Headline counters for the rep's own visit sessions.
      *
+     * `doctors_never_opened` counts DISTINCT DOCTORS (fix sdd/
+     * group-by-id-not-name — previously this counted raw unopened
+     * SESSIONS, `sessionsTotal - sessionsViewed`, which is a different,
+     * larger number whenever the same doctor has more than one unopened
+     * session: the field's own name promised "doctors", not "sessions").
+     * Identity for the dedup is `visit_sessions.doctor_id` — NEVER
+     * `doctor_name` text, because several organizations have doctors that
+     * share the exact same name, so text-based grouping would silently
+     * MERGE two different people into one count. A session with no
+     * `doctor_id` (pre-migration-014 legacy row) cannot be matched against
+     * anything else, so it always counts as its own distinct "doctor" —
+     * see `neverOpenedDoctors()` below for the row-level breakdown this
+     * number MUST equal (`neverOpenedDoctors(...)['total']`).
+     *
      * @param array{start_date?: string, end_date?: string} $filters Org-local
      *   calendar-date bounds (inclusive), applied to `visit_sessions.created_at`.
      * @return array{
@@ -189,4 +203,46 @@ interface RepMetricsRepositoryInterface
      * }>, total: int, page: int, per_page: int, last_page: int}
      */
     public function unopenedMaterials(int $repId, array $filters, int $page, string $timezone = TimezoneConfig::DEFAULT_ZONE): array;
+
+    /**
+     * Paginated "médicos que nunca abrieron" — one row per DISTINCT DOCTOR
+     * (fix sdd/group-by-id-not-name), not one row per session. Dedup key
+     * is `visit_sessions.doctor_id`; the display name is resolved via
+     * JOIN to the `doctors` catalog for the CURRENT canonical name, never
+     * the `visit_sessions.doctor_name` text snapshot — several
+     * organizations have doctors with duplicate names, so grouping/
+     * matching by text would merge distinct people or split one person
+     * across several rows depending on how the name was typed that visit.
+     *
+     * A session with no `doctor_id` (legacy, pre-migration-014) has no
+     * stable identity to merge against anything else, so it ALWAYS stays
+     * its own row (`doctor_link_status = 'legacy'`, `session_count = 1`),
+     * falling back to its own `doctor_name` snapshot for display — same
+     * 3-state-minus-no_visit convention as
+     * `DbMetricsRepository::getMaterialViewsList()` /
+     * `MaterialViewDoctorCell` (`no_visit` does not apply here: every row
+     * in scope is, by definition, a `visit_sessions` row, so there is
+     * always a session).
+     *
+     * `total` here MUST equal `summary($repId, $filters)['doctors_never_opened']`
+     * for identical filters — both use the exact same dedup key
+     * (`COALESCE(doctor_id, -id)`) over the exact same base predicate
+     * (`vs.rep_id = :rep` + date range on `vs.created_at` + "no doctor
+     * open exists"). Never allowed to disagree (spec/invariant "tarjeta
+     * == tabla", carried over from `unopenedMaterials()`).
+     *
+     * Pages at MetricsPaginationConfig::PAGE_SIZE (10), same convention as
+     * `sessions()` / `unopenedMaterials()`.
+     *
+     * @param array{q?: string, start_date?: string, end_date?: string} $filters
+     * @return array{items: array<int, array{
+     *     doctor_id: ?int,
+     *     doctor_name: ?string,
+     *     doctor_link_status: 'linked'|'legacy',
+     *     session_count: int,
+     *     last_sent_at: string,
+     *     representative_session_id: int
+     * }>, total: int, page: int, per_page: int, last_page: int}
+     */
+    public function neverOpenedDoctors(int $repId, array $filters, int $page, string $timezone = TimezoneConfig::DEFAULT_ZONE): array;
 }

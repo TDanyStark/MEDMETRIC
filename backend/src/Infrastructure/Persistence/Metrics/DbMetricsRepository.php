@@ -806,6 +806,13 @@ class DbMetricsRepository implements MetricsRepositoryInterface
         $pageSize = \App\Infrastructure\Config\MetricsPaginationConfig::PAGE_SIZE;
         $offset = ($page - 1) * $pageSize;
 
+        // Same doctor identity fix as getMaterialViewsList() (fix sdd/
+        // group-by-id-not-name): resolve by vs.doctor_id against the
+        // `doctors` catalog for the canonical, current name — never the
+        // vs.doctor_name text snapshot alone, which can be stale or
+        // ambiguous (several organizations have duplicate doctor names).
+        // doctor_link_status mirrors that method's 3-state contract
+        // exactly ('linked'/'legacy'/'no_visit').
         $sql = "SELECT 
                     sv.id,
                     ms.id as study_id,
@@ -815,12 +822,19 @@ class DbMetricsRepository implements MetricsRepositoryInterface
                     m.cover_path,
                     sv.viewer_type,
                     sv.opened_at,
-                    vs.doctor_name,
+                    vs.doctor_id,
+                    COALESCE(d.name, vs.doctor_name) as doctor_name,
+                    CASE
+                        WHEN vs.id IS NULL THEN 'no_visit'
+                        WHEN vs.doctor_id IS NOT NULL THEN 'linked'
+                        ELSE 'legacy'
+                    END as doctor_link_status,
                     rep.name as rep_name
                 FROM study_views sv
                 JOIN material_studies ms ON ms.id = sv.study_id
                 JOIN materials m ON m.id = ms.material_id
                 LEFT JOIN visit_sessions vs ON vs.id = sv.visit_session_id
+                LEFT JOIN doctors d ON d.id = vs.doctor_id
                 {$repJoin}
                 WHERE {$whereSql}
                 ORDER BY sv.opened_at DESC

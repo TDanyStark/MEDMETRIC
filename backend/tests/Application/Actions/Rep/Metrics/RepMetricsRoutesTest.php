@@ -56,6 +56,7 @@ class RepMetricsRoutesTest extends TestCase
             'GET /v1/rep/metrics/device-split',
             'GET /v1/rep/metrics/top-materials',
             'GET /v1/rep/metrics/sessions',
+            'GET /v1/rep/metrics/never-opened-doctors',
         ];
 
         foreach ($expected as $pattern) {
@@ -122,6 +123,7 @@ class RepMetricsRoutesTest extends TestCase
             'device-split' => ['/v1/rep/metrics/device-split'],
             'top-materials' => ['/v1/rep/metrics/top-materials'],
             'sessions' => ['/v1/rep/metrics/sessions'],
+            'never-opened-doctors' => ['/v1/rep/metrics/never-opened-doctors'],
         ];
     }
 

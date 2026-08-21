@@ -7,6 +7,7 @@ import {
   RepMetricSession,
   RepMetricSessionStatus,
   RepMetricsSummary,
+  RepNeverOpenedDoctor,
   RepOpenTrendPoint,
   RepTopMaterial,
   RepUnopenedMaterial,
@@ -89,6 +90,22 @@ export function listRepUnopenedMaterials(params: RepMetricsDateParams & { page?:
   return api
     .get<ApiResponse<PaginatedData<RepUnopenedMaterial>>>(
       `/rep/metrics/unopened-materials${buildQuery(params)}`,
+    )
+    .then(unwrap)
+}
+
+/**
+ * "Médicos que nunca abrieron" — one row per DISTINCT doctor (deduped by
+ * `doctor_id`, fix sdd/group-by-id-not-name). Replaces the previous
+ * `listRepMetricSessions({ status: 'never' })` call, which returned
+ * session-level rows keyed by the ambiguous `doctor_name` text.
+ */
+export function listRepNeverOpenedDoctors(
+  params: RepMetricsDateParams & { page?: number; q?: string },
+) {
+  return api
+    .get<ApiResponse<PaginatedData<RepNeverOpenedDoctor>>>(
+      `/rep/metrics/never-opened-doctors${buildQuery(params)}`,
     )
     .then(unwrap)
 }

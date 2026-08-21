@@ -119,11 +119,32 @@ class DbRepMetricsRepository implements RepMetricsRepositoryInterface
         $totalMaterials = (int) $materialsRow['total_materials'];
         $materialsOpened = (int) ($materialsRow['materials_opened'] ?? 0);
 
+        // Query D — DISTINCT doctors never opened (fix sdd/
+        // group-by-id-not-name). Dedup key is COALESCE(vs.doctor_id,
+        // -vs.id): doctor_id when present (so a doctor with 3 unopened
+        // sessions counts ONCE), or the session's own negated id when
+        // doctor_id is NULL (legacy row — can't be merged with anything,
+        // always counts as its own "doctor"). vs.id is always positive so
+        // negating it can never collide with a real doctor_id. This is
+        // the SAME key neverOpenedDoctors() groups by — the two MUST
+        // agree (invariant "tarjeta == tabla").
+        $neverOpenedDoctorsSql = "SELECT COUNT(DISTINCT COALESCE(vs.doctor_id, -vs.id)) AS doctors_never_opened
+                                   FROM visit_sessions vs
+                                   WHERE {$whereSql}
+                                     AND NOT EXISTS (
+                                         SELECT 1 FROM material_views mv
+                                         WHERE mv.visit_session_id = vs.id AND mv.viewer_type = 'doctor'
+                                     )";
+        $neverOpenedDoctorsStmt = $this->pdo->prepare($neverOpenedDoctorsSql);
+        $this->bindParams($neverOpenedDoctorsStmt, $params);
+        $neverOpenedDoctorsStmt->execute();
+        $doctorsNeverOpened = (int) $neverOpenedDoctorsStmt->fetchColumn();
+
         return [
             'sessions_total' => $sessionsTotal,
             'sessions_viewed' => $sessionsViewed,
             'open_rate' => $sessionsTotal > 0 ? round($sessionsViewed / $sessionsTotal, 4) : 0.0,
-            'doctors_never_opened' => $sessionsTotal - $sessionsViewed,
+            'doctors_never_opened' => $doctorsNeverOpened,
             'first_open_median_hours' => $firstOpenMedianHours,
             'materials_opened' => $materialsOpened,
             'materials_unopened' => $totalMaterials - $materialsOpened,
@@ -526,6 +547,94 @@ class DbRepMetricsRepository implements RepMetricsRepositoryInterface
             'material_type' => (string) $row['material_type'],
             'sent_at' => $row['sent_at'],
             'days_elapsed' => (int) $row['days_elapsed'],
+        ], $stmt->fetchAll(PDO::FETCH_ASSOC));
+
+        return [
+            'items' => $items,
+            'total' => $total,
+            'page' => $page,
+            'per_page' => $pageSize,
+            'last_page' => (int) ceil($total / max(1, $pageSize)),
+        ];
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function neverOpenedDoctors(int $repId, array $filters, int $page, string $timezone = TimezoneConfig::DEFAULT_ZONE): array
+    {
+        // Same convention as sessions()/unopenedMaterials(): the
+        // metrics-dashboard page size (10), not the generic
+        // PaginationConfig::PAGE_SIZE (20).
+        $pageSize = MetricsPaginationConfig::PAGE_SIZE;
+        $page = max(1, $page);
+        $offset = ($page - 1) * $pageSize;
+
+        // SAME base predicate as summary()'s Query D: vs.rep_id = :rep,
+        // date range on vs.created_at, "no doctor open exists" — this is
+        // what guarantees `total` here equals
+        // summary()['doctors_never_opened'] for identical filters.
+        $params = [':rep' => $repId];
+        $where = ['vs.rep_id = :rep'];
+        foreach ($this->dateRangeFragments($filters, 'vs.created_at', $timezone, $params) as $fragment) {
+            $where[] = $fragment;
+        }
+        $where[] = "NOT EXISTS (
+            SELECT 1 FROM material_views mv
+            WHERE mv.visit_session_id = vs.id AND mv.viewer_type = 'doctor'
+        )";
+
+        // q filters on the pre-aggregation row (either the canonical
+        // catalog name or the legacy text snapshot) — applied in WHERE,
+        // before GROUP BY, same as everywhere else in this class.
+        if (!empty($filters['q'])) {
+            $where[] = '(d.name LIKE :q OR vs.doctor_name LIKE :q)';
+            $params[':q'] = '%' . $filters['q'] . '%';
+        }
+
+        $whereSql = implode(' AND ', $where);
+
+        // Dedup key: doctor_id when present, else the session's own
+        // negated id (never collides with a real doctor_id, which is
+        // always positive) — identical to summary()'s Query D. Every
+        // other selected column is wrapped in an aggregate (MAX/COUNT) so
+        // this stays valid under ONLY_FULL_GROUP_BY with a single GROUP
+        // BY expression, no functional-dependency assumptions needed.
+        $groupedSql = "SELECT
+                            COALESCE(vs.doctor_id, -vs.id) AS doctor_key,
+                            MAX(vs.doctor_id) AS doctor_id,
+                            MAX(COALESCE(d.name, vs.doctor_name)) AS doctor_name,
+                            MAX(CASE WHEN vs.doctor_id IS NOT NULL THEN 'linked' ELSE 'legacy' END) AS doctor_link_status,
+                            COUNT(*) AS session_count,
+                            MAX(vs.created_at) AS last_sent_at,
+                            MAX(vs.id) AS representative_session_id
+                        FROM visit_sessions vs
+                        LEFT JOIN doctors d ON d.id = vs.doctor_id
+                        WHERE {$whereSql}
+                        GROUP BY COALESCE(vs.doctor_id, -vs.id)";
+
+        $countSql = "SELECT COUNT(*) FROM ({$groupedSql}) AS t";
+        $countStmt = $this->pdo->prepare($countSql);
+        $this->bindParams($countStmt, $params);
+        $countStmt->execute();
+        $total = (int) $countStmt->fetchColumn();
+
+        $sql = "{$groupedSql}
+                ORDER BY last_sent_at DESC, doctor_key DESC
+                LIMIT :limit OFFSET :offset";
+        $stmt = $this->pdo->prepare($sql);
+        $this->bindParams($stmt, $params);
+        $stmt->bindValue(':limit', $pageSize, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+
+        $items = array_map(static fn(array $row) => [
+            'doctor_id' => $row['doctor_id'] !== null ? (int) $row['doctor_id'] : null,
+            'doctor_name' => $row['doctor_name'],
+            'doctor_link_status' => (string) $row['doctor_link_status'],
+            'session_count' => (int) $row['session_count'],
+            'last_sent_at' => $row['last_sent_at'],
+            'representative_session_id' => (int) $row['representative_session_id'],
         ], $stmt->fetchAll(PDO::FETCH_ASSOC));
 
         return [

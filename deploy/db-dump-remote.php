@@ -54,7 +54,13 @@ $cmd = sprintf(
     escapeshellarg($out . '.err')
 );
 
-passthru($cmd, $code);
+// NOTE: passthru()/shell_exec()/system() are disabled via disable_functions on
+// this Hostinger shared-hosting PHP CLI. exec() is available and, unlike the
+// others, is the one built specifically to also return the real exit code via
+// its 3rd by-ref parameter - which is the behavior this script depends on to
+// decide whether to abort (see the $code !== 0 check below). $outputLines is
+// unused here because stdout/stderr are already redirected to files above.
+exec($cmd, $outputLines, $code);
 
 if ($code !== 0) {
     fwrite(STDERR, "[ERROR] mysqldump exited with code {$code}. See {$out}.err\n");

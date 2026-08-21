@@ -24,7 +24,7 @@ import {
   getRepHourHistogram,
   getRepMetricsSummary,
   getRepOpenTrend,
-  listRepMetricSessions,
+  listRepNeverOpenedDoctors,
   listRepTopMaterials,
   listRepUnopenedMaterials,
 } from "@/services/repMetrics";
@@ -159,9 +159,8 @@ export function RepMetricsPage() {
   });
 
   const neverOpenedQuery = useQuery({
-    queryKey: ["rep-metrics", "sessions", "never", startDate, endDate, neverPage],
-    queryFn: () =>
-      listRepMetricSessions({ ...dateFilters, status: "never", page: neverPage }),
+    queryKey: ["rep-metrics", "never-opened-doctors", startDate, endDate, neverPage],
+    queryFn: () => listRepNeverOpenedDoctors({ ...dateFilters, page: neverPage }),
   });
 
   const topMaterialsQuery = useQuery({
